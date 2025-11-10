@@ -11,6 +11,15 @@ import {
   attemptList,
   attemptView,
 } from "./src/commands/attempt.ts";
+import {
+  gitBranchStatus,
+  gitChangeTarget,
+  gitCreatePr,
+  gitMerge,
+  gitPush,
+  gitRebase,
+  gitRenameBranch,
+} from "./src/commands/git.ts";
 import { printError, printInfo } from "./src/utils/output.ts";
 
 const VERSION = "0.1.0";
@@ -51,6 +60,15 @@ COMMANDS:
     create      Create a new task attempt
     follow-up   Send a follow-up message to an attempt
 
+  git         Git operations for task attempts
+    merge       Merge task attempt branch
+    push        Push branch to remote
+    create-pr   Create GitHub pull request
+    rebase      Rebase task attempt
+    change-target Change target branch
+    rename-branch Rename task attempt branch
+    branch-status Check branch status
+
 OPTIONS:
   -h, --help     Show help
   -v, --version  Show version
@@ -87,6 +105,10 @@ async function main(): Promise<void> {
       "variant",
       "prompt",
       "project-id",
+      "body",
+      "target",
+      "old-base",
+      "new-base",
     ],
     alias: {
       h: "help",
@@ -291,6 +313,75 @@ async function main(): Promise<void> {
           default:
             printError(`Unknown attempt subcommand: ${subcommand}`);
             printInfo("Available subcommands: list, view, create, follow-up");
+            Deno.exit(1);
+        }
+        break;
+
+      case "git":
+        switch (subcommand) {
+          case "merge":
+            if (rest.length < 1) {
+              printError("Usage: vk git merge <attempt-id>");
+              Deno.exit(1);
+            }
+            await gitMerge(String(rest[0]));
+            break;
+          case "push":
+            if (rest.length < 1) {
+              printError("Usage: vk git push <attempt-id>");
+              Deno.exit(1);
+            }
+            await gitPush(String(rest[0]));
+            break;
+          case "create-pr":
+            if (rest.length < 1 || !args.title) {
+              printError("Usage: vk git create-pr <attempt-id> --title <title> [--body <body>] [--target <branch>]");
+              Deno.exit(1);
+            }
+            await gitCreatePr(String(rest[0]), {
+              title: args.title,
+              body: args.body,
+              target: args.target,
+            });
+            break;
+          case "rebase":
+            if (rest.length < 1) {
+              printError("Usage: vk git rebase <attempt-id> [--old-base <branch>] [--new-base <branch>]");
+              Deno.exit(1);
+            }
+            await gitRebase(String(rest[0]), {
+              oldBase: args["old-base"],
+              newBase: args["new-base"],
+            });
+            break;
+          case "change-target":
+            if (rest.length < 1 || !args.target) {
+              printError("Usage: vk git change-target <attempt-id> --target <branch>");
+              Deno.exit(1);
+            }
+            await gitChangeTarget(String(rest[0]), {
+              target: args.target,
+            });
+            break;
+          case "rename-branch":
+            if (rest.length < 1 || !args.name) {
+              printError("Usage: vk git rename-branch <attempt-id> --name <new-name>");
+              Deno.exit(1);
+            }
+            await gitRenameBranch(String(rest[0]), {
+              name: args.name,
+            });
+            break;
+          case "branch-status":
+            if (rest.length < 1) {
+              printError("Usage: vk git branch-status <attempt-id> [--json]");
+              Deno.exit(1);
+            }
+            await gitBranchStatus(String(rest[0]), { json: args.json });
+            break;
+          default:
+            printError(`Unknown git subcommand: ${subcommand}`);
+            printInfo("Available subcommands: merge, push, create-pr, rebase, change-target, rename-branch, branch-status");
             Deno.exit(1);
         }
         break;

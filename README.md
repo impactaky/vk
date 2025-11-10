@@ -155,6 +155,52 @@ Send a follow-up message:
 vk attempt follow-up <attempt-id> --prompt "Please fix the linting errors"
 ```
 
+### Git Operations
+
+Manage git operations for task attempts:
+
+Merge a task attempt branch:
+
+```bash
+vk git merge <attempt-id>
+```
+
+Push branch to remote:
+
+```bash
+vk git push <attempt-id>
+```
+
+Create a GitHub pull request:
+
+```bash
+vk git create-pr <attempt-id> --title "PR title" --body "PR description" --target main
+```
+
+Rebase a task attempt:
+
+```bash
+vk git rebase <attempt-id> --new-base feature-branch
+```
+
+Change target branch:
+
+```bash
+vk git change-target <attempt-id> --target new-branch
+```
+
+Rename task attempt branch:
+
+```bash
+vk git rename-branch <attempt-id> --name new-branch-name
+```
+
+Check branch status:
+
+```bash
+vk git branch-status <attempt-id>
+```
+
 ### Output Formats
 
 Most list and view commands support JSON output:

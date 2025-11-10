@@ -107,3 +107,59 @@ export enum CheckTokenResponse {
   VALID = "VALID",
   INVALID = "INVALID",
 }
+
+export interface CreateGitHubPrRequest {
+  title: string;
+  body?: string;
+  target_branch?: string;
+}
+
+export interface PullRequestInfo {
+  url: string;
+  number: number;
+}
+
+export interface RebaseRequest {
+  old_base_branch?: string;
+  new_base_branch?: string;
+}
+
+export interface ChangeTargetBranchRequest {
+  target_branch: string;
+}
+
+export interface ChangeTargetBranchResponse {
+  message: string;
+  updated_children_count?: number;
+}
+
+export interface RenameBranchRequest {
+  new_branch_name: string;
+}
+
+export interface RenameBranchResponse {
+  message: string;
+  updated_children_count: number;
+}
+
+export interface BranchStatus {
+  has_uncommitted_changes: boolean;
+  head_oid?: string;
+  ahead_count?: number;
+  behind_count?: number;
+  has_conflicts: boolean;
+  conflict_op?: string;
+  target_branch_exists: boolean;
+  target_branch_type?: string;
+}
+
+export enum ConflictOp {
+  MERGE = "MERGE",
+  REBASE = "REBASE",
+}
+
+export interface GitOperationError {
+  type: "merge_conflicts" | "rebase_in_progress";
+  message: string;
+  op?: ConflictOp;
+}
