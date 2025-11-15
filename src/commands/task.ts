@@ -2,15 +2,19 @@ import { ApiClient } from "../utils/api-client.ts";
 import { printError, printJson, printSuccess, printTable } from "../utils/output.ts";
 import type { CreateTask, Task, TaskWithAttemptStatus, UpdateTask } from "../types/api.ts";
 import { TaskStatus } from "../types/api.ts";
+import { getDefaultProjectId } from "../utils/git.ts";
 
 export async function taskList(
-  projectId: string,
+  projectId: string | undefined,
   options: { json?: boolean },
 ): Promise<void> {
   try {
+    // Auto-detect project ID if not provided
+    const resolvedProjectId = projectId || await getDefaultProjectId();
+
     const client = await ApiClient.create();
     const response = await client.get<TaskWithAttemptStatus[]>(
-      `/tasks?project_id=${projectId}`,
+      `/tasks?project_id=${resolvedProjectId}`,
     );
 
     if (!response.success || !response.data) {
@@ -80,15 +84,18 @@ export async function taskView(
 }
 
 export async function taskCreate(options: {
-  projectId: string;
+  projectId?: string;
   title: string;
   description?: string;
 }): Promise<void> {
   try {
+    // Auto-detect project ID if not provided
+    const resolvedProjectId = options.projectId || await getDefaultProjectId();
+
     const client = await ApiClient.create();
 
     const createData: CreateTask = {
-      project_id: options.projectId,
+      project_id: resolvedProjectId,
       title: options.title,
       description: options.description,
     };
