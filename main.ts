@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run --allow-net --allow-read --allow-write --allow-env
 
-import { parse } from "https://deno.land/std@0.224.0/flags/mod.ts";
+import { Command } from "https://deno.land/x/cliffy@v1.0.0-rc.4/command/mod.ts";
 import { authLogin, authLogout, authStatus } from "./src/commands/auth.ts";
 import { configGet, configList, configSet } from "./src/commands/config.ts";
 import { projectCreate, projectDelete, projectList, projectView } from "./src/commands/project.ts";
@@ -11,295 +11,245 @@ import {
   attemptList,
   attemptView,
 } from "./src/commands/attempt.ts";
-import { printError, printInfo } from "./src/utils/output.ts";
+import { printError } from "./src/utils/output.ts";
 
 const VERSION = "0.1.0";
 
-function printHelp(): void {
-  printInfo(`vk - CLI for vibe-kanban
-
-USAGE:
-  vk <command> [subcommand] [options]
-
-COMMANDS:
-  auth        Manage authentication
-    login       Log in via GitHub OAuth
-    status      Check authentication status
-    logout      Log out and clear credentials
-
-  config      Manage configuration
-    set         Set a configuration value
-    get         Get a configuration value
-    list        List all configuration
-
-  project     Manage projects
-    list        List all projects
-    view        View project details
-    create      Create a new project
-    delete      Delete a project
-
-  task        Manage tasks
-    list        List tasks for a project
-    view        View task details
-    create      Create a new task
-    update      Update a task
-    delete      Delete a task
-
-  attempt     Manage task attempts
-    list        List attempts for a task
-    view        View attempt details
-    create      Create a new task attempt
-    follow-up   Send a follow-up message to an attempt
-
-OPTIONS:
-  -h, --help     Show help
-  -v, --version  Show version
-  --json         Output as JSON (where applicable)
-
-EXAMPLES:
-  vk auth login
-  vk project list
-  vk task create <project-id> --title "My Task" --description "Task description"
-  vk attempt create <task-id> --executor claude-code --base-branch main
-
-For more information, visit: https://github.com/BloopAI/vibe-kanban
-`);
-}
-
-function printVersion(): void {
-  printInfo(`vk version ${VERSION}`);
-}
-
 async function main(): Promise<void> {
-  const args = parse(Deno.args, {
-    boolean: ["help", "version", "json", "force", "use-existing"],
-    string: [
-      "title",
-      "description",
-      "name",
-      "path",
-      "setup-script",
-      "dev-script",
-      "cleanup-script",
-      "status",
-      "executor",
-      "base-branch",
-      "variant",
-      "prompt",
-      "project-id",
-    ],
-    alias: {
-      h: "help",
-      v: "version",
-    },
-  });
+  // Create the root command
+  const cli = new Command()
+    .name("vk")
+    .version(VERSION)
+    .description("CLI for vibe-kanban")
+    .action(function() {
+      this.showHelp();
+    });
 
-  if (args.help) {
-    printHelp();
-    return;
-  }
+  // Auth commands
+  const authCommand = new Command()
+    .description("Manage authentication")
+    .action(function() {
+      this.showHelp();
+    });
 
-  if (args.version) {
-    printVersion();
-    return;
-  }
+  authCommand
+    .command("login")
+    .description("Log in via GitHub OAuth")
+    .action(async () => {
+      await authLogin();
+    });
 
-  const [command, subcommand, ...rest] = args._;
+  authCommand
+    .command("status")
+    .description("Check authentication status")
+    .action(async () => {
+      await authStatus();
+    });
 
-  if (!command) {
-    printHelp();
-    return;
-  }
+  authCommand
+    .command("logout")
+    .description("Log out and clear credentials")
+    .action(async () => {
+      await authLogout();
+    });
 
+  cli.command("auth", authCommand);
+
+  // Config commands
+  const configCommand = new Command()
+    .description("Manage configuration")
+    .action(function() {
+      this.showHelp();
+    });
+
+  configCommand
+    .command("set <key:string> <value:string>")
+    .description("Set a configuration value")
+    .action(async (_options, key, value) => {
+      await configSet(key, value);
+    });
+
+  configCommand
+    .command("get <key:string>")
+    .description("Get a configuration value")
+    .action(async (_options, key) => {
+      await configGet(key);
+    });
+
+  configCommand
+    .command("list")
+    .description("List all configuration")
+    .action(async () => {
+      await configList();
+    });
+
+  cli.command("config", configCommand);
+
+  // Project commands
+  const projectCommand = new Command()
+    .description("Manage projects")
+    .action(function() {
+      this.showHelp();
+    });
+
+  projectCommand
+    .command("list")
+    .description("List all projects")
+    .option("--json", "Output as JSON")
+    .action(async (options) => {
+      await projectList({ json: options.json });
+    });
+
+  projectCommand
+    .command("view <project-id:string>")
+    .description("View project details")
+    .option("--json", "Output as JSON")
+    .action(async (options, projectId) => {
+      await projectView(projectId, { json: options.json });
+    });
+
+  projectCommand
+    .command("create")
+    .description("Create a new project")
+    .option("--name <name:string>", "Project name", { required: true })
+    .option("--path <path:string>", "Project path", { required: true })
+    .option("--setup-script <script:string>", "Setup script")
+    .option("--dev-script <script:string>", "Dev script")
+    .option("--cleanup-script <script:string>", "Cleanup script")
+    .option("--use-existing", "Use existing directory")
+    .action(async (options) => {
+      await projectCreate({
+        name: options.name,
+        path: options.path,
+        setupScript: options.setupScript,
+        devScript: options.devScript,
+        cleanupScript: options.cleanupScript,
+        useExisting: options.useExisting,
+      });
+    });
+
+  projectCommand
+    .command("delete <project-id:string>")
+    .description("Delete a project")
+    .option("--force", "Force deletion without confirmation")
+    .action(async (options, projectId) => {
+      await projectDelete(projectId, { force: options.force });
+    });
+
+  cli.command("project", projectCommand);
+
+  // Task commands
+  const taskCommand = new Command()
+    .description("Manage tasks")
+    .action(function() {
+      this.showHelp();
+    });
+
+  taskCommand
+    .command("list <project-id:string>")
+    .description("List tasks for a project")
+    .option("--json", "Output as JSON")
+    .action(async (options, projectId) => {
+      await taskList(projectId, { json: options.json });
+    });
+
+  taskCommand
+    .command("view <task-id:string>")
+    .description("View task details")
+    .option("--json", "Output as JSON")
+    .action(async (options, taskId) => {
+      await taskView(taskId, { json: options.json });
+    });
+
+  taskCommand
+    .command("create")
+    .description("Create a new task")
+    .option("--project-id <id:string>", "Project ID", { required: true })
+    .option("--title <title:string>", "Task title", { required: true })
+    .option("--description <description:string>", "Task description")
+    .action(async (options) => {
+      await taskCreate({
+        projectId: options.projectId,
+        title: options.title,
+        description: options.description,
+      });
+    });
+
+  taskCommand
+    .command("update <task-id:string>")
+    .description("Update a task")
+    .option("--title <title:string>", "Task title")
+    .option("--description <description:string>", "Task description")
+    .option("--status <status:string>", "Task status")
+    .action(async (options, taskId) => {
+      await taskUpdate(taskId, {
+        title: options.title,
+        description: options.description,
+        status: options.status,
+      });
+    });
+
+  taskCommand
+    .command("delete <task-id:string>")
+    .description("Delete a task")
+    .option("--force", "Force deletion without confirmation")
+    .action(async (options, taskId) => {
+      await taskDelete(taskId, { force: options.force });
+    });
+
+  cli.command("task", taskCommand);
+
+  // Attempt commands
+  const attemptCommand = new Command()
+    .description("Manage task attempts")
+    .action(function() {
+      this.showHelp();
+    });
+
+  attemptCommand
+    .command("list <task-id:string>")
+    .description("List attempts for a task")
+    .option("--json", "Output as JSON")
+    .action(async (options, taskId) => {
+      await attemptList(taskId, { json: options.json });
+    });
+
+  attemptCommand
+    .command("view <attempt-id:string>")
+    .description("View attempt details")
+    .option("--json", "Output as JSON")
+    .action(async (options, attemptId) => {
+      await attemptView(attemptId, { json: options.json });
+    });
+
+  attemptCommand
+    .command("create <task-id:string>")
+    .description("Create a new task attempt")
+    .option("--executor <executor:string>", "Executor type", { required: true })
+    .option("--base-branch <branch:string>", "Base branch", { required: true })
+    .option("--variant <variant:string>", "Variant")
+    .action(async (options, taskId) => {
+      await attemptCreate({
+        taskId,
+        executor: options.executor,
+        baseBranch: options.baseBranch,
+        variant: options.variant,
+      });
+    });
+
+  attemptCommand
+    .command("follow-up <attempt-id:string>")
+    .description("Send a follow-up message to an attempt")
+    .option("--prompt <message:string>", "Follow-up message", { required: true })
+    .action(async (options, attemptId) => {
+      await attemptFollowUp(attemptId, { prompt: options.prompt });
+    });
+
+  cli.command("attempt", attemptCommand);
+
+  // All commands now use Cliffy, so always parse with Cliffy
   try {
-    switch (command) {
-      case "auth":
-        switch (subcommand) {
-          case "login":
-            await authLogin();
-            break;
-          case "status":
-            await authStatus();
-            break;
-          case "logout":
-            await authLogout();
-            break;
-          default:
-            printError(`Unknown auth subcommand: ${subcommand}`);
-            printInfo("Available subcommands: login, status, logout");
-            Deno.exit(1);
-        }
-        break;
-
-      case "config":
-        switch (subcommand) {
-          case "set":
-            if (rest.length < 2) {
-              printError("Usage: vk config set <key> <value>");
-              Deno.exit(1);
-            }
-            await configSet(String(rest[0]), String(rest[1]));
-            break;
-          case "get":
-            if (rest.length < 1) {
-              printError("Usage: vk config get <key>");
-              Deno.exit(1);
-            }
-            await configGet(String(rest[0]));
-            break;
-          case "list":
-            await configList();
-            break;
-          default:
-            printError(`Unknown config subcommand: ${subcommand}`);
-            printInfo("Available subcommands: set, get, list");
-            Deno.exit(1);
-        }
-        break;
-
-      case "project":
-        switch (subcommand) {
-          case "list":
-            await projectList({ json: args.json });
-            break;
-          case "view":
-            if (rest.length < 1) {
-              printError("Usage: vk project view <project-id>");
-              Deno.exit(1);
-            }
-            await projectView(String(rest[0]), { json: args.json });
-            break;
-          case "create":
-            if (!args.name || !args.path) {
-              printError("Usage: vk project create --name <name> --path <path>");
-              Deno.exit(1);
-            }
-            await projectCreate({
-              name: args.name,
-              path: args.path,
-              setupScript: args["setup-script"],
-              devScript: args["dev-script"],
-              cleanupScript: args["cleanup-script"],
-              useExisting: args["use-existing"],
-            });
-            break;
-          case "delete":
-            if (rest.length < 1) {
-              printError("Usage: vk project delete <project-id>");
-              Deno.exit(1);
-            }
-            await projectDelete(String(rest[0]), { force: args.force });
-            break;
-          default:
-            printError(`Unknown project subcommand: ${subcommand}`);
-            printInfo("Available subcommands: list, view, create, delete");
-            Deno.exit(1);
-        }
-        break;
-
-      case "task":
-        switch (subcommand) {
-          case "list":
-            if (rest.length < 1) {
-              printError("Usage: vk task list <project-id>");
-              Deno.exit(1);
-            }
-            await taskList(String(rest[0]), { json: args.json });
-            break;
-          case "view":
-            if (rest.length < 1) {
-              printError("Usage: vk task view <task-id>");
-              Deno.exit(1);
-            }
-            await taskView(String(rest[0]), { json: args.json });
-            break;
-          case "create":
-            if (!args["project-id"] || !args.title) {
-              printError("Usage: vk task create --project-id <id> --title <title>");
-              Deno.exit(1);
-            }
-            await taskCreate({
-              projectId: args["project-id"],
-              title: args.title,
-              description: args.description,
-            });
-            break;
-          case "update":
-            if (rest.length < 1) {
-              printError(
-                "Usage: vk task update <task-id> [--title <title>] [--description <desc>] [--status <status>]",
-              );
-              Deno.exit(1);
-            }
-            await taskUpdate(String(rest[0]), {
-              title: args.title,
-              description: args.description,
-              status: args.status,
-            });
-            break;
-          case "delete":
-            if (rest.length < 1) {
-              printError("Usage: vk task delete <task-id>");
-              Deno.exit(1);
-            }
-            await taskDelete(String(rest[0]), { force: args.force });
-            break;
-          default:
-            printError(`Unknown task subcommand: ${subcommand}`);
-            printInfo("Available subcommands: list, view, create, update, delete");
-            Deno.exit(1);
-        }
-        break;
-
-      case "attempt":
-        switch (subcommand) {
-          case "list":
-            if (rest.length < 1) {
-              printError("Usage: vk attempt list <task-id>");
-              Deno.exit(1);
-            }
-            await attemptList(String(rest[0]), { json: args.json });
-            break;
-          case "view":
-            if (rest.length < 1) {
-              printError("Usage: vk attempt view <attempt-id>");
-              Deno.exit(1);
-            }
-            await attemptView(String(rest[0]), { json: args.json });
-            break;
-          case "create":
-            if (rest.length < 1 || !args.executor || !args["base-branch"]) {
-              printError(
-                "Usage: vk attempt create <task-id> --executor <executor> --base-branch <branch>",
-              );
-              Deno.exit(1);
-            }
-            await attemptCreate({
-              taskId: String(rest[0]),
-              executor: args.executor,
-              baseBranch: args["base-branch"],
-              variant: args.variant,
-            });
-            break;
-          case "follow-up":
-            if (rest.length < 1 || !args.prompt) {
-              printError("Usage: vk attempt follow-up <attempt-id> --prompt <message>");
-              Deno.exit(1);
-            }
-            await attemptFollowUp(String(rest[0]), { prompt: args.prompt });
-            break;
-          default:
-            printError(`Unknown attempt subcommand: ${subcommand}`);
-            printInfo("Available subcommands: list, view, create, follow-up");
-            Deno.exit(1);
-        }
-        break;
-
-      default:
-        printError(`Unknown command: ${command}`);
-        printInfo("Run 'vk --help' for usage information");
-        Deno.exit(1);
-    }
+    await cli.parse(Deno.args);
   } catch (error) {
     printError(error instanceof Error ? error.message : String(error));
     Deno.exit(1);
