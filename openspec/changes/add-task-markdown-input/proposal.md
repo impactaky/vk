@@ -6,11 +6,11 @@ Users frequently want to create tasks with multi-line descriptions that include 
 
 ## What Changes
 
-- Add support for reading markdown input from stdin or file for `vk task create`
-- Parse markdown to extract title from the first heading (H1)
+- Add `--markdown <file>` option to `vk task create` command
+- Parse markdown file to extract title from the first heading (H1)
 - Use remaining content as the task description
 - Maintain backward compatibility with existing `--title` and `--description` flags
-- Prioritize explicit flags over markdown parsing when both are provided
+- When `--markdown` is provided, individual `--title` and `--description` flags override parsed values
 
 ## Impact
 
