@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-net --allow-read --allow-write --allow-env
+#!/usr/bin/env -S deno run --allow-net --allow-read --allow-write --allow-env --allow-run=git
 
 import { Command } from "https://deno.land/x/cliffy@v1.0.0-rc.4/command/mod.ts";
 import { authLogin, authLogout, authStatus } from "./src/commands/auth.ts";
@@ -146,8 +146,8 @@ async function main(): Promise<void> {
     });
 
   taskCommand
-    .command("list <project-id:string>")
-    .description("List tasks for a project")
+    .command("list [project-id:string]")
+    .description("List tasks for a project (auto-detects from git remote if not specified)")
     .option("--json", "Output as JSON")
     .action(async (options, projectId) => {
       await taskList(projectId, { json: options.json });
@@ -163,8 +163,8 @@ async function main(): Promise<void> {
 
   taskCommand
     .command("create")
-    .description("Create a new task")
-    .option("--project-id <id:string>", "Project ID", { required: true })
+    .description("Create a new task (auto-detects project from git remote if --project-id not specified)")
+    .option("--project-id <id:string>", "Project ID (auto-detected if omitted)")
     .option("--title <title:string>", "Task title", { required: true })
     .option("--description <description:string>", "Task description")
     .action(async (options) => {
