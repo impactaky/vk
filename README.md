@@ -13,7 +13,7 @@ A command-line interface for managing [vibe-kanban](https://github.com/BloopAI/v
 ```bash
 git clone https://github.com/impactaky/vk.git
 cd vk
-deno install --allow-net --allow-read --allow-write --allow-env -n vk main.ts
+deno install --allow-net --allow-read --allow-write --allow-env --allow-run=git -n vk main.ts
 ```
 
 ## Usage
@@ -105,6 +105,12 @@ List tasks for a project:
 vk task list <project-id>
 ```
 
+Or, when working in a git repository, the project ID can be auto-detected:
+
+```bash
+vk task list
+```
+
 View task details:
 
 ```bash
@@ -115,6 +121,12 @@ Create a new task:
 
 ```bash
 vk task create --project-id <project-id> --title "Task title" --description "Task description"
+```
+
+Or, with auto-detection from git remote:
+
+```bash
+vk task create --title "Task title" --description "Task description"
 ```
 
 Update a task:
@@ -169,7 +181,7 @@ vk task view <task-id> --json
 ### Run locally
 
 ```bash
-deno run --allow-net --allow-read --allow-write --allow-env main.ts <command>
+deno run --allow-net --allow-read --allow-write --allow-env --allow-run=git main.ts <command>
 ```
 
 ### Lint and format

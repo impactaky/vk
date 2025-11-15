@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-net --allow-read --allow-write --allow-env
+#!/usr/bin/env -S deno run --allow-net --allow-read --allow-write --allow-env --allow-run=git
 
 import { Command } from "https://deno.land/x/cliffy@v1.0.0-rc.4/command/mod.ts";
 import { authLogin, authLogout, authStatus } from "./src/commands/auth.ts";

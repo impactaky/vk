@@ -1,7 +1,7 @@
 {
   "tasks": {
     "dev": "deno run --allow-all main.ts",
-    "start": "deno run --allow-net --allow-read --allow-write --allow-env main.ts",
+    "start": "deno run --allow-net --allow-read --allow-write --allow-env --allow-run=git main.ts",
     "lint": "deno lint",
     "fmt": "deno fmt",
     "check": "deno check main.ts"
