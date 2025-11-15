@@ -1,7 +1,10 @@
-# Task Management Specification Deltas
+# task-management Specification
 
-## ADDED Requirements
+## Purpose
 
+This specification defines the task management capabilities of the vk CLI, including how tasks are created, listed, and managed. It covers both explicit project ID specification and automatic project detection via git remote URL matching.
+
+## Requirements
 ### Requirement: Automatic Project Detection
 
 The CLI SHALL automatically detect the current project ID by matching the git remote repository basename against registered vibe-kanban projects when the user does not explicitly provide a project ID.
@@ -40,8 +43,6 @@ The CLI SHALL automatically detect the current project ID by matching the git re
 - **THEN** the CLI SHALL use `explicit-id` regardless of git remote detection
 - **AND** no automatic detection SHALL occur
 
-## MODIFIED Requirements
-
 ### Requirement: Task List Command Arguments
 
 The task list command SHALL accept an optional project ID parameter, falling back to automatic detection when not provided.
@@ -75,3 +76,4 @@ The task create command SHALL accept an optional `--project-id` parameter, falli
 - **THEN** the CLI SHALL attempt automatic project detection via git remote
 - **AND** use the detected project ID if successful
 - **AND** display an error if detection fails
+
