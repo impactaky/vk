@@ -1,9 +1,6 @@
 /**
  * Markdown parser utility for extracting task title and description.
- * Uses @libs/markdown for parsing markdown content.
  */
-
-import { Renderer } from "@libs/markdown";
 
 export interface ParsedTask {
   title: string;
@@ -21,11 +18,7 @@ export class MarkdownParseError extends Error {
  * Parse markdown content to extract task title and description.
  * The first heading becomes the title, and remaining content becomes the description.
  */
-export async function parseTaskFromMarkdown(
-  content: string,
-): Promise<ParsedTask> {
-  // Use Renderer to validate markdown syntax
-  const _renderer = new Renderer();
+export function parseTaskFromMarkdown(content: string): ParsedTask {
 
   const lines = content.split("\n");
   let titleLine = -1;
@@ -68,7 +61,7 @@ export async function parseTaskFromMarkdown(
 export async function parseTaskFromFile(filePath: string): Promise<ParsedTask> {
   try {
     const content = await Deno.readTextFile(filePath);
-    return await parseTaskFromMarkdown(content);
+    return parseTaskFromMarkdown(content);
   } catch (error) {
     if (error instanceof Deno.errors.NotFound) {
       throw new MarkdownParseError(`File not found: ${filePath}`);
