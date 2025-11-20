@@ -86,6 +86,21 @@ vk task delete <task-id>
 vk task delete <task-id> --force
 ```
 
+### Shell Completions
+
+Enable tab-completion for commands, options, and arguments:
+
+```bash
+# Bash (add to ~/.bashrc)
+source <(vk completions bash)
+
+# Zsh (add to ~/.zshrc)
+source <(vk completions zsh)
+
+# Fish (add to ~/.config/fish/config.fish)
+source (vk completions fish | psub)
+```
+
 ## Development
 
 ```bash

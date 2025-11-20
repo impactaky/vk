@@ -1,4 +1,5 @@
 import { Command } from "@cliffy/command";
+import { CompletionsCommand } from "@cliffy/command/completions";
 import { projectCommand } from "./commands/project.ts";
 import { taskCommand } from "./commands/task.ts";
 import { configCommand } from "./commands/config.ts";
@@ -12,4 +13,5 @@ await new Command()
   .command("project", projectCommand)
   .command("task", taskCommand)
   .command("config", configCommand)
+  .command("completions", new CompletionsCommand())
   .parse(Deno.args);
