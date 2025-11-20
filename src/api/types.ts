@@ -64,3 +64,30 @@ export interface UpdateTask {
   parent_task_attempt?: string;
   image_ids?: string[];
 }
+
+export interface TaskAttempt {
+  id: string;
+  task_id: string;
+  container_ref?: string;
+  branch: string;
+  target_branch: string;
+  executor: string;
+  worktree_deleted: boolean;
+  setup_completed_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type TaskAttemptStatus =
+  | "SetupRunning"
+  | "SetupComplete"
+  | "SetupFailed"
+  | "ExecutorRunning"
+  | "ExecutorComplete"
+  | "ExecutorFailed";
+
+export interface CreateAttempt {
+  task_id: string;
+  executor_profile_id: string;
+  base_branch: string;
+}
