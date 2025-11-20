@@ -3,6 +3,10 @@ import { Confirm, Input } from "@cliffy/prompt";
 import { Table } from "@cliffy/table";
 import { ApiClient } from "../api/client.ts";
 import type { CreateProject } from "../api/types.ts";
+import {
+  ProjectResolverError,
+  resolveProjectFromGit,
+} from "../utils/project-resolver.ts";
 
 export const projectCommand = new Command()
   .description("Manage projects")
@@ -40,31 +44,46 @@ projectCommand
 projectCommand
   .command("show")
   .description("Show project details")
-  .arguments("<id:string>")
+  .arguments("[id:string]")
   .option("--json", "Output as JSON")
-  .action(async (options, id) => {
-    const client = await ApiClient.create();
-    const project = await client.getProject(id);
+  .action(async (options, id?: string) => {
+    try {
+      const client = await ApiClient.create();
+      let projectId = id;
 
-    if (options.json) {
-      console.log(JSON.stringify(project, null, 2));
-      return;
-    }
+      if (!projectId) {
+        const resolved = await resolveProjectFromGit(client);
+        projectId = resolved.id;
+      }
 
-    console.log(`ID:            ${project.id}`);
-    console.log(`Name:          ${project.name}`);
-    console.log(`Git Repo Path: ${project.git_repo_path}`);
-    if (project.setup_script) {
-      console.log(`Setup Script:  ${project.setup_script}`);
+      const project = await client.getProject(projectId);
+
+      if (options.json) {
+        console.log(JSON.stringify(project, null, 2));
+        return;
+      }
+
+      console.log(`ID:            ${project.id}`);
+      console.log(`Name:          ${project.name}`);
+      console.log(`Git Repo Path: ${project.git_repo_path}`);
+      if (project.setup_script) {
+        console.log(`Setup Script:  ${project.setup_script}`);
+      }
+      if (project.dev_script) {
+        console.log(`Dev Script:    ${project.dev_script}`);
+      }
+      if (project.cleanup_script) {
+        console.log(`Cleanup Script: ${project.cleanup_script}`);
+      }
+      console.log(`Created:       ${project.created_at}`);
+      console.log(`Updated:       ${project.updated_at}`);
+    } catch (error) {
+      if (error instanceof ProjectResolverError) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      throw error;
     }
-    if (project.dev_script) {
-      console.log(`Dev Script:    ${project.dev_script}`);
-    }
-    if (project.cleanup_script) {
-      console.log(`Cleanup Script: ${project.cleanup_script}`);
-    }
-    console.log(`Created:       ${project.created_at}`);
-    console.log(`Updated:       ${project.updated_at}`);
   });
 
 // Create project
@@ -104,20 +123,35 @@ projectCommand
 projectCommand
   .command("delete")
   .description("Delete a project")
-  .arguments("<id:string>")
+  .arguments("[id:string]")
   .option("--force", "Skip confirmation")
-  .action(async (options, id) => {
-    if (!options.force) {
-      const confirmed = await Confirm.prompt(
-        `Are you sure you want to delete project ${id}?`,
-      );
-      if (!confirmed) {
-        console.log("Cancelled.");
-        return;
-      }
-    }
+  .action(async (options, id?: string) => {
+    try {
+      const client = await ApiClient.create();
+      let projectId = id;
 
-    const client = await ApiClient.create();
-    await client.deleteProject(id);
-    console.log(`Project ${id} deleted.`);
+      if (!projectId) {
+        const resolved = await resolveProjectFromGit(client);
+        projectId = resolved.id;
+      }
+
+      if (!options.force) {
+        const confirmed = await Confirm.prompt(
+          `Are you sure you want to delete project ${projectId}?`,
+        );
+        if (!confirmed) {
+          console.log("Cancelled.");
+          return;
+        }
+      }
+
+      await client.deleteProject(projectId);
+      console.log(`Project ${projectId} deleted.`);
+    } catch (error) {
+      if (error instanceof ProjectResolverError) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      throw error;
+    }
   });
