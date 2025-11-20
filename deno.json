@@ -1,0 +1,15 @@
+{
+  "name": "@vibe-kanban/cli",
+  "version": "0.1.0",
+  "exports": "./src/main.ts",
+  "tasks": {
+    "dev": "deno run --allow-all src/main.ts",
+    "check": "deno check src/main.ts",
+    "lint": "deno lint",
+    "fmt": "deno fmt"
+  },
+  "imports": {
+    "@cliffy/command": "jsr:@cliffy/command@^1.0.0-rc.7",
+    "@cliffy/command/completions": "jsr:@cliffy/command@^1.0.0-rc.7/completions"
+  }
+}
