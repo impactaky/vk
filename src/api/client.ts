@@ -1,10 +1,12 @@
 import { getApiUrl } from "./config.ts";
 import type {
   ApiResponse,
+  CreateAttempt,
   CreateProject,
   CreateTask,
   Project,
   Task,
+  TaskAttempt,
   TaskWithAttemptStatus,
   UpdateTask,
 } from "./types.ts";
@@ -97,6 +99,22 @@ export class ApiClient {
   deleteTask(id: string): Promise<void> {
     return this.request<void>(`/tasks/${id}`, {
       method: "DELETE",
+    });
+  }
+
+  // Attempt endpoints
+  listAttempts(taskId: string): Promise<TaskAttempt[]> {
+    return this.request<TaskAttempt[]>(`/task-attempts?task_id=${taskId}`);
+  }
+
+  getAttempt(id: string): Promise<TaskAttempt> {
+    return this.request<TaskAttempt>(`/task-attempts/${id}`);
+  }
+
+  createAttempt(attempt: CreateAttempt): Promise<TaskAttempt> {
+    return this.request<TaskAttempt>("/task-attempts", {
+      method: "POST",
+      body: JSON.stringify(attempt),
     });
   }
 }
