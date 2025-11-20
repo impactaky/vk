@@ -12,9 +12,16 @@
     "@cliffy/command": "jsr:@cliffy/command@1.0.0-rc.7",
     "@cliffy/prompt": "jsr:@cliffy/prompt@1.0.0-rc.7",
     "@cliffy/table": "jsr:@cliffy/table@1.0.0-rc.7",
-    "@std/path": "jsr:@std/path@1.0.8"
+    "@std/path": "jsr:@std/path@1.0.8",
+    "@std/assert": "jsr:@std/assert@1.0.9"
   },
   "compilerOptions": {
     "strict": true
+  },
+  "fmt": {
+    "include": ["src/", "tests/"]
+  },
+  "lint": {
+    "include": ["src/", "tests/"]
   }
 }

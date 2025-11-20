@@ -1,4 +1,4 @@
-import { assertEquals } from "jsr:@std/assert";
+import { assertEquals } from "@std/assert";
 import { ApiClient } from "../src/api/client.ts";
 
 Deno.test("ApiClient - constructor strips trailing slash", () => {
