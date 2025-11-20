@@ -10,7 +10,7 @@ Requires [Deno](https://deno.land/) v2.x.
 
 ```bash
 # Install globally (run from the project directory)
-deno install -g --allow-net --allow-read --allow-write --allow-env -n vk --config deno.json src/main.ts
+deno install -g --allow-net --allow-read --allow-write --allow-env --allow-run=git -n vk --config deno.json src/main.ts
 
 # Now you can use it anywhere
 vk --help
@@ -27,7 +27,7 @@ deno uninstall -g vk
 
 ```bash
 # Run directly
-deno run --allow-net --allow-read --allow-write --allow-env src/main.ts --help
+deno run --allow-net --allow-read --allow-write --allow-env --allow-run=git src/main.ts --help
 
 # Or use the dev task
 deno task dev --help
