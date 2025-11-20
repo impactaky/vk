@@ -4,6 +4,7 @@
 
 1. **Add markdown parsing utility**
    - Create `src/utils/markdown-parser.ts`
+   - Use `@libs/markdown` (jsr:@libs/markdown) for parsing
    - Extract first heading as title
    - Extract remaining content as description
    - Handle edge cases (no heading, empty file)
