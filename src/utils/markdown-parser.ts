@@ -42,7 +42,12 @@ export function parseTaskFromMarkdown(content: string): ParsedTask {
 
   // Get remaining content as description
   const descriptionLines = lines.slice(titleLine + 1);
-  const description = descriptionLines.join("\n").trim();
+  // Trim leading empty lines but preserve internal line feeds
+  let description = descriptionLines.join("\n");
+  // Remove leading whitespace/newlines
+  description = description.replace(/^\s*\n/, "");
+  // Remove only trailing whitespace (not newlines in the middle)
+  description = description.trimEnd();
 
   return {
     title,
