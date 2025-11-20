@@ -3,6 +3,10 @@ import { Confirm, Input } from "@cliffy/prompt";
 import { Table } from "@cliffy/table";
 import { ApiClient } from "../api/client.ts";
 import type { CreateTask, TaskStatus, UpdateTask } from "../api/types.ts";
+import {
+  getProjectId,
+  ProjectResolverError,
+} from "../utils/project-resolver.ts";
 
 export const taskCommand = new Command()
   .description("Manage tasks")
@@ -14,29 +18,41 @@ export const taskCommand = new Command()
 taskCommand
   .command("list")
   .description("List tasks for a project")
-  .option("--project <id:string>", "Project ID", { required: true })
+  .option(
+    "--project <id:string>",
+    "Project ID (auto-detected from git if omitted)",
+  )
   .option("--json", "Output as JSON")
   .action(async (options) => {
-    const client = await ApiClient.create();
-    const tasks = await client.listTasks(options.project);
+    try {
+      const client = await ApiClient.create();
+      const projectId = await getProjectId(options.project, client);
+      const tasks = await client.listTasks(projectId);
 
-    if (options.json) {
-      console.log(JSON.stringify(tasks, null, 2));
-      return;
+      if (options.json) {
+        console.log(JSON.stringify(tasks, null, 2));
+        return;
+      }
+
+      if (tasks.length === 0) {
+        console.log("No tasks found.");
+        return;
+      }
+
+      const table = new Table()
+        .header(["ID", "Title", "Status", "Executor"])
+        .body(
+          tasks.map((t) => [t.id, t.title, t.status, t.executor || "-"]),
+        );
+
+      table.render();
+    } catch (error) {
+      if (error instanceof ProjectResolverError) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      throw error;
     }
-
-    if (tasks.length === 0) {
-      console.log("No tasks found.");
-      return;
-    }
-
-    const table = new Table()
-      .header(["ID", "Title", "Status", "Executor"])
-      .body(
-        tasks.map((t) => [t.id, t.title, t.status, t.executor || "-"]),
-      );
-
-    table.render();
   });
 
 // Show task
@@ -69,35 +85,48 @@ taskCommand
 taskCommand
   .command("create")
   .description("Create a new task")
-  .option("--project <id:string>", "Project ID", { required: true })
+  .option(
+    "--project <id:string>",
+    "Project ID (auto-detected from git if omitted)",
+  )
   .option("--title <title:string>", "Task title")
   .option("--description <desc:string>", "Task description")
   .action(async (options) => {
-    let title = options.title;
-    let description = options.description;
+    try {
+      const client = await ApiClient.create();
+      const projectId = await getProjectId(options.project, client);
 
-    if (!title) {
-      title = await Input.prompt("Task title:");
+      let title = options.title;
+      let description = options.description;
+
+      if (!title) {
+        title = await Input.prompt("Task title:");
+      }
+
+      if (!description) {
+        description = await Input.prompt({
+          message: "Task description (optional):",
+          default: "",
+        });
+      }
+
+      const createTask: CreateTask = {
+        project_id: projectId,
+        title,
+        description: description || undefined,
+      };
+
+      const task = await client.createTask(createTask);
+
+      console.log(`Task created successfully!`);
+      console.log(`ID: ${task.id}`);
+    } catch (error) {
+      if (error instanceof ProjectResolverError) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      throw error;
     }
-
-    if (!description) {
-      description = await Input.prompt({
-        message: "Task description (optional):",
-        default: "",
-      });
-    }
-
-    const createTask: CreateTask = {
-      project_id: options.project,
-      title,
-      description: description || undefined,
-    };
-
-    const client = await ApiClient.create();
-    const task = await client.createTask(createTask);
-
-    console.log(`Task created successfully!`);
-    console.log(`ID: ${task.id}`);
   });
 
 // Update task
