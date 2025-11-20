@@ -9,8 +9,8 @@ Requires [Deno](https://deno.land/) v2.x.
 ### Install as `vk` command
 
 ```bash
-# Install globally
-deno install -g --allow-net --allow-read --allow-write --allow-env -n vk src/main.ts
+# Install globally (run from the project directory)
+deno install -g --allow-net --allow-read --allow-write --allow-env -n vk --config deno.json src/main.ts
 
 # Now you can use it anywhere
 vk --help
