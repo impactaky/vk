@@ -1,0 +1,20 @@
+{
+  "name": "@vibe-kanban/cli",
+  "version": "0.1.0",
+  "tasks": {
+    "dev": "deno run --allow-net --allow-read --allow-write --allow-env src/main.ts",
+    "fmt": "deno fmt",
+    "lint": "deno lint",
+    "check": "deno check src/main.ts",
+    "test": "deno test --allow-net --allow-read --allow-write --allow-env"
+  },
+  "imports": {
+    "@cliffy/command": "jsr:@cliffy/command@1.0.0-rc.7",
+    "@cliffy/prompt": "jsr:@cliffy/prompt@1.0.0-rc.7",
+    "@cliffy/table": "jsr:@cliffy/table@1.0.0-rc.7",
+    "@std/path": "jsr:@std/path@1.0.8"
+  },
+  "compilerOptions": {
+    "strict": true
+  }
+}
