@@ -118,6 +118,7 @@
       "jsr:@cliffy/command@1.0.0-rc.7",
       "jsr:@cliffy/prompt@1.0.0-rc.7",
       "jsr:@cliffy/table@1.0.0-rc.7",
+      "jsr:@libs/markdown@^2.0.4",
       "jsr:@std/assert@1.0.9",
       "jsr:@std/path@1.0.8"
     ]
