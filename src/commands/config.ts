@@ -19,7 +19,7 @@ configCommand
 // Set config value
 configCommand
   .command("set")
-  .description("Set a configuration value")
+  .description("Set a configuration value. Available keys: api-url")
   .arguments("<key:string> <value:string>")
   .action(async (_options, key, value) => {
     const config = await loadConfig();
