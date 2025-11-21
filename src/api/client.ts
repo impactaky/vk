@@ -1,10 +1,16 @@
 import { getApiUrl } from "./config.ts";
 import type {
   ApiResponse,
+  BranchStatus,
+  ChangeTargetBranchRequest,
   CreateAttempt,
   CreateProject,
+  CreatePRRequest,
   CreateTask,
+  MergeResult,
   Project,
+  PRResult,
+  RenameBranchRequest,
   Task,
   TaskAttempt,
   TaskWithAttemptStatus,
@@ -116,5 +122,66 @@ export class ApiClient {
       method: "POST",
       body: JSON.stringify(attempt),
     });
+  }
+
+  deleteAttempt(id: string): Promise<void> {
+    return this.request<void>(`/task-attempts/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  changeTargetBranch(
+    id: string,
+    request: ChangeTargetBranchRequest,
+  ): Promise<TaskAttempt> {
+    return this.request<TaskAttempt>(
+      `/task-attempts/${id}/change-target-branch`,
+      {
+        method: "POST",
+        body: JSON.stringify(request),
+      },
+    );
+  }
+
+  renameBranch(id: string, request: RenameBranchRequest): Promise<TaskAttempt> {
+    return this.request<TaskAttempt>(`/task-attempts/${id}/rename-branch`, {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
+  }
+
+  mergeAttempt(id: string): Promise<MergeResult> {
+    return this.request<MergeResult>(`/task-attempts/${id}/merge`, {
+      method: "POST",
+    });
+  }
+
+  pushAttempt(id: string): Promise<void> {
+    return this.request<void>(`/task-attempts/${id}/push`, {
+      method: "POST",
+    });
+  }
+
+  rebaseAttempt(id: string): Promise<void> {
+    return this.request<void>(`/task-attempts/${id}/rebase`, {
+      method: "POST",
+    });
+  }
+
+  stopAttempt(id: string): Promise<void> {
+    return this.request<void>(`/task-attempts/${id}/stop`, {
+      method: "POST",
+    });
+  }
+
+  createPR(id: string, request?: CreatePRRequest): Promise<PRResult> {
+    return this.request<PRResult>(`/task-attempts/${id}/pr`, {
+      method: "POST",
+      body: JSON.stringify(request || {}),
+    });
+  }
+
+  getBranchStatus(id: string): Promise<BranchStatus> {
+    return this.request<BranchStatus>(`/task-attempts/${id}/branch-status`);
   }
 }
