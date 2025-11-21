@@ -7,6 +7,10 @@ import {
   getProjectId,
   ProjectResolverError,
 } from "../utils/project-resolver.ts";
+import {
+  MarkdownParseError,
+  parseTaskFromFile,
+} from "../utils/markdown-parser.ts";
 
 export const taskCommand = new Command()
   .description("Manage tasks")
@@ -91,6 +95,7 @@ taskCommand
   )
   .option("--title <title:string>", "Task title")
   .option("--description <desc:string>", "Task description")
+  .option("--from <file:file>", "Create task from markdown file")
   .action(async (options) => {
     try {
       const client = await ApiClient.create();
@@ -99,15 +104,29 @@ taskCommand
       let title = options.title;
       let description = options.description;
 
-      if (!title) {
-        title = await Input.prompt("Task title:");
-      }
+      // Handle --from option
+      if (options.from) {
+        if (options.title || options.description) {
+          console.error(
+            "Error: Cannot use --from with --title or --description",
+          );
+          Deno.exit(1);
+        }
 
-      if (!description) {
-        description = await Input.prompt({
-          message: "Task description (optional):",
-          default: "",
-        });
+        const parsed = await parseTaskFromFile(options.from);
+        title = parsed.title;
+        description = parsed.description;
+      } else {
+        if (!title) {
+          title = await Input.prompt("Task title:");
+        }
+
+        if (!description) {
+          description = await Input.prompt({
+            message: "Task description (optional):",
+            default: "",
+          });
+        }
       }
 
       const createTask: CreateTask = {
@@ -122,6 +141,10 @@ taskCommand
       console.log(`ID: ${task.id}`);
     } catch (error) {
       if (error instanceof ProjectResolverError) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      if (error instanceof MarkdownParseError) {
         console.error(`Error: ${error.message}`);
         Deno.exit(1);
       }
