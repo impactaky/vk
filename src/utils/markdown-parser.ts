@@ -19,7 +19,6 @@ export class MarkdownParseError extends Error {
  * The first heading becomes the title, and remaining content becomes the description.
  */
 export function parseTaskFromMarkdown(content: string): ParsedTask {
-
   const lines = content.split("\n");
   let titleLine = -1;
   let title = "";
