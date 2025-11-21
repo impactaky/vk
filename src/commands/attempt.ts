@@ -1,7 +1,8 @@
 import { Command } from "@cliffy/command";
+import { Confirm } from "@cliffy/prompt";
 import { Table } from "@cliffy/table";
 import { ApiClient } from "../api/client.ts";
-import type { CreateAttempt } from "../api/types.ts";
+import type { CreateAttempt, CreatePRRequest } from "../api/types.ts";
 
 export const attemptCommand = new Command()
   .description("Manage task attempts")
@@ -78,6 +79,7 @@ attemptCommand
     required: true,
   })
   .option("--base-branch <branch:string>", "Base branch", { default: "main" })
+  .option("--target-branch <branch:string>", "Target branch")
   .action(async (options) => {
     const client = await ApiClient.create();
 
@@ -85,6 +87,7 @@ attemptCommand
       task_id: options.task,
       executor_profile_id: options.executor,
       base_branch: options.baseBranch,
+      target_branch: options.targetBranch,
     };
 
     const attempt = await client.createAttempt(createAttempt);
@@ -92,4 +95,166 @@ attemptCommand
     console.log(`Attempt created successfully!`);
     console.log(`ID: ${attempt.id}`);
     console.log(`Branch: ${attempt.branch}`);
+  });
+
+// Delete attempt
+attemptCommand
+  .command("delete")
+  .description("Delete an attempt")
+  .arguments("<id:string>")
+  .option("--force", "Delete without confirmation")
+  .action(async (options, id) => {
+    const client = await ApiClient.create();
+
+    if (!options.force) {
+      const confirmed = await Confirm.prompt(
+        `Are you sure you want to delete attempt ${id}?`,
+      );
+      if (!confirmed) {
+        console.log("Deletion cancelled.");
+        return;
+      }
+    }
+
+    await client.deleteAttempt(id);
+    console.log(`Attempt ${id} deleted successfully.`);
+  });
+
+// Update attempt
+attemptCommand
+  .command("update")
+  .description("Update attempt properties")
+  .arguments("<id:string>")
+  .option("--target-branch <branch:string>", "New target branch")
+  .option("--branch <name:string>", "New branch name")
+  .action(async (options, id) => {
+    const client = await ApiClient.create();
+
+    if (options.targetBranch) {
+      const attempt = await client.changeTargetBranch(id, {
+        target_branch: options.targetBranch,
+      });
+      console.log(`Target branch updated to: ${attempt.target_branch}`);
+    }
+
+    if (options.branch) {
+      const attempt = await client.renameBranch(id, {
+        new_branch_name: options.branch,
+      });
+      console.log(`Branch renamed to: ${attempt.branch}`);
+    }
+
+    if (!options.targetBranch && !options.branch) {
+      console.log(
+        "No update options specified. Use --target-branch or --branch.",
+      );
+    }
+  });
+
+// Merge attempt
+attemptCommand
+  .command("merge")
+  .description("Merge attempt branch into target branch")
+  .arguments("<id:string>")
+  .option("--json", "Output as JSON")
+  .action(async (options, id) => {
+    const client = await ApiClient.create();
+    const result = await client.mergeAttempt(id);
+
+    if (options.json) {
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+
+    if (result.success) {
+      console.log("Merge successful!");
+      if (result.message) {
+        console.log(result.message);
+      }
+    } else {
+      console.log("Merge failed.");
+      if (result.message) {
+        console.log(result.message);
+      }
+    }
+  });
+
+// Push attempt
+attemptCommand
+  .command("push")
+  .description("Push attempt branch to remote")
+  .arguments("<id:string>")
+  .action(async (_options, id) => {
+    const client = await ApiClient.create();
+    await client.pushAttempt(id);
+    console.log(`Branch pushed successfully.`);
+  });
+
+// Rebase attempt
+attemptCommand
+  .command("rebase")
+  .description("Rebase attempt branch onto target branch")
+  .arguments("<id:string>")
+  .action(async (_options, id) => {
+    const client = await ApiClient.create();
+    await client.rebaseAttempt(id);
+    console.log(`Branch rebased successfully.`);
+  });
+
+// Stop attempt
+attemptCommand
+  .command("stop")
+  .description("Stop attempt execution")
+  .arguments("<id:string>")
+  .action(async (_options, id) => {
+    const client = await ApiClient.create();
+    await client.stopAttempt(id);
+    console.log(`Attempt execution stopped.`);
+  });
+
+// Create PR
+attemptCommand
+  .command("pr")
+  .description("Create a GitHub PR for the attempt")
+  .arguments("<id:string>")
+  .option("--title <title:string>", "PR title")
+  .option("--body <body:string>", "PR body")
+  .option("--json", "Output as JSON")
+  .action(async (options, id) => {
+    const client = await ApiClient.create();
+
+    const request: CreatePRRequest = {};
+    if (options.title) request.title = options.title;
+    if (options.body) request.body = options.body;
+
+    const result = await client.createPR(id, request);
+
+    if (options.json) {
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+
+    console.log(`PR created successfully!`);
+    console.log(`URL: ${result.url}`);
+    console.log(`Number: #${result.number}`);
+  });
+
+// Branch status
+attemptCommand
+  .command("branch-status")
+  .description("Show branch status for an attempt")
+  .arguments("<id:string>")
+  .option("--json", "Output as JSON")
+  .action(async (options, id) => {
+    const client = await ApiClient.create();
+    const status = await client.getBranchStatus(id);
+
+    if (options.json) {
+      console.log(JSON.stringify(status, null, 2));
+      return;
+    }
+
+    console.log(`Ahead:         ${status.ahead}`);
+    console.log(`Behind:        ${status.behind}`);
+    console.log(`Has Conflicts: ${status.has_conflicts}`);
   });

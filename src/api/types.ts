@@ -90,4 +90,34 @@ export interface CreateAttempt {
   task_id: string;
   executor_profile_id: string;
   base_branch: string;
+  target_branch?: string;
+}
+
+export interface ChangeTargetBranchRequest {
+  target_branch: string;
+}
+
+export interface RenameBranchRequest {
+  new_branch_name: string;
+}
+
+export interface CreatePRRequest {
+  title?: string;
+  body?: string;
+}
+
+export interface BranchStatus {
+  ahead: number;
+  behind: number;
+  has_conflicts: boolean;
+}
+
+export interface MergeResult {
+  success: boolean;
+  message?: string;
+}
+
+export interface PRResult {
+  url: string;
+  number: number;
 }
