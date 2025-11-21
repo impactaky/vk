@@ -117,7 +117,5 @@ export interface MergeResult {
   message?: string;
 }
 
-export interface PRResult {
-  url: string;
-  number: number;
-}
+// PR creation returns just the URL string
+export type PRResult = string;

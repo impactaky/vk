@@ -232,16 +232,15 @@ attemptCommand
       body: options.body || task.description || "",
     };
 
-    const result = await client.createPR(id, request);
+    const prUrl = await client.createPR(id, request);
 
     if (options.json) {
-      console.log(JSON.stringify(result, null, 2));
+      console.log(JSON.stringify({ url: prUrl }, null, 2));
       return;
     }
 
     console.log(`PR created successfully!`);
-    console.log(`URL: ${result.url}`);
-    console.log(`Number: #${result.number}`);
+    console.log(`URL: ${prUrl}`);
   });
 
 // Branch status
