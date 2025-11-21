@@ -11,6 +11,11 @@ import {
   MarkdownParseError,
   parseTaskFromFile,
 } from "../utils/markdown-parser.ts";
+import {
+  FzfCancelledError,
+  FzfNotInstalledError,
+  selectTask,
+} from "../utils/fzf.ts";
 
 export const taskCommand = new Command()
   .description("Manage tasks")
@@ -63,26 +68,57 @@ taskCommand
 taskCommand
   .command("show")
   .description("Show task details")
-  .arguments("<id:string>")
+  .arguments("[id:string]")
+  .option(
+    "--project <id:string>",
+    "Project ID (for fzf selection, auto-detected from git if omitted)",
+  )
   .option("--json", "Output as JSON")
   .action(async (options, id) => {
-    const client = await ApiClient.create();
-    const task = await client.getTask(id);
+    try {
+      const client = await ApiClient.create();
 
-    if (options.json) {
-      console.log(JSON.stringify(task, null, 2));
-      return;
-    }
+      let taskId = id;
+      if (!taskId) {
+        const projectId = await getProjectId(options.project, client);
+        const tasks = await client.listTasks(projectId);
+        if (tasks.length === 0) {
+          console.error("No tasks found in the project.");
+          Deno.exit(1);
+        }
+        taskId = await selectTask(tasks);
+      }
 
-    console.log(`ID:          ${task.id}`);
-    console.log(`Project ID:  ${task.project_id}`);
-    console.log(`Title:       ${task.title}`);
-    console.log(`Status:      ${task.status}`);
-    if (task.description) {
-      console.log(`Description: ${task.description}`);
+      const task = await client.getTask(taskId);
+
+      if (options.json) {
+        console.log(JSON.stringify(task, null, 2));
+        return;
+      }
+
+      console.log(`ID:          ${task.id}`);
+      console.log(`Project ID:  ${task.project_id}`);
+      console.log(`Title:       ${task.title}`);
+      console.log(`Status:      ${task.status}`);
+      if (task.description) {
+        console.log(`Description: ${task.description}`);
+      }
+      console.log(`Created:     ${task.created_at}`);
+      console.log(`Updated:     ${task.updated_at}`);
+    } catch (error) {
+      if (error instanceof ProjectResolverError) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      if (
+        error instanceof FzfNotInstalledError ||
+        error instanceof FzfCancelledError
+      ) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      throw error;
     }
-    console.log(`Created:     ${task.created_at}`);
-    console.log(`Updated:     ${task.updated_at}`);
   });
 
 // Create task
@@ -156,7 +192,11 @@ taskCommand
 taskCommand
   .command("update")
   .description("Update a task")
-  .arguments("<id:string>")
+  .arguments("[id:string]")
+  .option(
+    "--project <id:string>",
+    "Project ID (for fzf selection, auto-detected from git if omitted)",
+  )
   .option("--title <title:string>", "New title")
   .option("--description <desc:string>", "New description")
   .option(
@@ -164,47 +204,105 @@ taskCommand
     "New status (pending, in_progress, completed, cancelled)",
   )
   .action(async (options, id) => {
-    const update: UpdateTask = {};
+    try {
+      const update: UpdateTask = {};
 
-    if (options.title) {
-      update.title = options.title;
-    }
-    if (options.description !== undefined) {
-      update.description = options.description;
-    }
-    if (options.status) {
-      update.status = options.status as TaskStatus;
-    }
+      if (options.title) {
+        update.title = options.title;
+      }
+      if (options.description !== undefined) {
+        update.description = options.description;
+      }
+      if (options.status) {
+        update.status = options.status as TaskStatus;
+      }
 
-    if (Object.keys(update).length === 0) {
-      console.log("No updates specified.");
-      return;
+      if (Object.keys(update).length === 0) {
+        console.log("No updates specified.");
+        return;
+      }
+
+      const client = await ApiClient.create();
+
+      let taskId = id;
+      if (!taskId) {
+        const projectId = await getProjectId(options.project, client);
+        const tasks = await client.listTasks(projectId);
+        if (tasks.length === 0) {
+          console.error("No tasks found in the project.");
+          Deno.exit(1);
+        }
+        taskId = await selectTask(tasks);
+      }
+
+      const task = await client.updateTask(taskId, update);
+
+      console.log(`Task ${task.id} updated.`);
+    } catch (error) {
+      if (error instanceof ProjectResolverError) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      if (
+        error instanceof FzfNotInstalledError ||
+        error instanceof FzfCancelledError
+      ) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      throw error;
     }
-
-    const client = await ApiClient.create();
-    const task = await client.updateTask(id, update);
-
-    console.log(`Task ${task.id} updated.`);
   });
 
 // Delete task
 taskCommand
   .command("delete")
   .description("Delete a task")
-  .arguments("<id:string>")
+  .arguments("[id:string]")
+  .option(
+    "--project <id:string>",
+    "Project ID (for fzf selection, auto-detected from git if omitted)",
+  )
   .option("--force", "Skip confirmation")
   .action(async (options, id) => {
-    if (!options.force) {
-      const confirmed = await Confirm.prompt(
-        `Are you sure you want to delete task ${id}?`,
-      );
-      if (!confirmed) {
-        console.log("Cancelled.");
-        return;
-      }
-    }
+    try {
+      const client = await ApiClient.create();
 
-    const client = await ApiClient.create();
-    await client.deleteTask(id);
-    console.log(`Task ${id} deleted.`);
+      let taskId = id;
+      if (!taskId) {
+        const projectId = await getProjectId(options.project, client);
+        const tasks = await client.listTasks(projectId);
+        if (tasks.length === 0) {
+          console.error("No tasks found in the project.");
+          Deno.exit(1);
+        }
+        taskId = await selectTask(tasks);
+      }
+
+      if (!options.force) {
+        const confirmed = await Confirm.prompt(
+          `Are you sure you want to delete task ${taskId}?`,
+        );
+        if (!confirmed) {
+          console.log("Cancelled.");
+          return;
+        }
+      }
+
+      await client.deleteTask(taskId);
+      console.log(`Task ${taskId} deleted.`);
+    } catch (error) {
+      if (error instanceof ProjectResolverError) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      if (
+        error instanceof FzfNotInstalledError ||
+        error instanceof FzfCancelledError
+      ) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      throw error;
+    }
   });

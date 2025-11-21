@@ -4,6 +4,11 @@
 
 import type { ApiClient } from "../api/client.ts";
 import { extractRepoBasename, getCurrentRepoBasename } from "./git.ts";
+import {
+  FzfCancelledError,
+  FzfNotInstalledError,
+  selectProject,
+} from "./fzf.ts";
 
 export interface ResolvedProject {
   id: string;
@@ -26,14 +31,30 @@ export async function resolveProjectFromGit(
   client: ApiClient,
 ): Promise<ResolvedProject> {
   const currentBasename = await getCurrentRepoBasename();
+  const projects = await client.listProjects();
 
   if (!currentBasename) {
-    throw new ProjectResolverError(
-      "Not in a git repository or no remote origin configured. Please specify --project.",
-    );
+    // No git repo - try fzf selection
+    try {
+      const selectedId = await selectProject(projects);
+      const selected = projects.find((p) => p.id === selectedId);
+      if (!selected) {
+        throw new ProjectResolverError("Selected project not found.");
+      }
+      return { id: selected.id, name: selected.name };
+    } catch (error) {
+      if (error instanceof FzfNotInstalledError) {
+        throw new ProjectResolverError(
+          "Not in a git repository or no remote origin configured. " +
+            error.message,
+        );
+      }
+      if (error instanceof FzfCancelledError) {
+        throw new ProjectResolverError("Selection cancelled.");
+      }
+      throw error;
+    }
   }
-
-  const projects = await client.listProjects();
 
   const matches = projects.filter((p) => {
     const projectBasename = extractRepoBasename(p.git_repo_path);
@@ -41,9 +62,26 @@ export async function resolveProjectFromGit(
   });
 
   if (matches.length === 0) {
-    throw new ProjectResolverError(
-      `No project found matching repository "${currentBasename}". Please specify --project.`,
-    );
+    // No matching project - try fzf selection
+    try {
+      const selectedId = await selectProject(projects);
+      const selected = projects.find((p) => p.id === selectedId);
+      if (!selected) {
+        throw new ProjectResolverError("Selected project not found.");
+      }
+      return { id: selected.id, name: selected.name };
+    } catch (error) {
+      if (error instanceof FzfNotInstalledError) {
+        throw new ProjectResolverError(
+          `No project found matching repository "${currentBasename}". ` +
+            error.message,
+        );
+      }
+      if (error instanceof FzfCancelledError) {
+        throw new ProjectResolverError("Selection cancelled.");
+      }
+      throw error;
+    }
   }
 
   if (matches.length > 1) {

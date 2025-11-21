@@ -1,0 +1,154 @@
+/**
+ * FZF utility for interactive selection
+ */
+
+import type {
+  Project,
+  TaskAttempt,
+  TaskWithAttemptStatus,
+} from "../api/types.ts";
+
+export class FzfNotInstalledError extends Error {
+  constructor() {
+    super(
+      "fzf is not installed. Please install fzf to use interactive selection.\n" +
+        "Installation: https://github.com/junegunn/fzf#installation",
+    );
+    this.name = "FzfNotInstalledError";
+  }
+}
+
+export class FzfCancelledError extends Error {
+  constructor() {
+    super("Selection cancelled.");
+    this.name = "FzfCancelledError";
+  }
+}
+
+/**
+ * Check if fzf is installed
+ */
+export async function isFzfInstalled(): Promise<boolean> {
+  try {
+    const command = new Deno.Command("which", {
+      args: ["fzf"],
+      stdout: "null",
+      stderr: "null",
+    });
+    const { code } = await command.output();
+    return code === 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Run fzf with given items and return selected item
+ */
+async function runFzf(items: string[], prompt?: string): Promise<string> {
+  if (!(await isFzfInstalled())) {
+    throw new FzfNotInstalledError();
+  }
+
+  if (items.length === 0) {
+    throw new Error("No items to select from.");
+  }
+
+  const args = ["--height=40%", "--reverse"];
+  if (prompt) {
+    args.push(`--prompt=${prompt} `);
+  }
+
+  const command = new Deno.Command("fzf", {
+    args,
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "inherit",
+  });
+
+  const process = command.spawn();
+
+  // Write items to stdin
+  const writer = process.stdin.getWriter();
+  const input = items.join("\n");
+  await writer.write(new TextEncoder().encode(input));
+  await writer.close();
+
+  const { code, stdout } = await process.output();
+
+  if (code !== 0) {
+    throw new FzfCancelledError();
+  }
+
+  const selected = new TextDecoder().decode(stdout).trim();
+  return selected;
+}
+
+/**
+ * Format project for fzf display
+ */
+export function formatProject(project: Project): string {
+  return `${project.id}\t${project.name}\t${project.git_repo_path}`;
+}
+
+/**
+ * Format task for fzf display
+ */
+export function formatTask(task: TaskWithAttemptStatus): string {
+  return `${task.id}\t${task.title}\t[${task.status}]`;
+}
+
+/**
+ * Format attempt for fzf display
+ */
+export function formatAttempt(attempt: TaskAttempt): string {
+  return `${attempt.id}\t${attempt.branch}\t${attempt.executor}`;
+}
+
+/**
+ * Extract ID from fzf selection (first column)
+ */
+function extractId(selection: string): string {
+  return selection.split("\t")[0];
+}
+
+/**
+ * Select a project using fzf
+ */
+export async function selectProject(projects: Project[]): Promise<string> {
+  if (projects.length === 0) {
+    throw new Error("No projects available.");
+  }
+
+  const items = projects.map(formatProject);
+  const selected = await runFzf(items, "Select project:");
+  return extractId(selected);
+}
+
+/**
+ * Select a task using fzf
+ */
+export async function selectTask(
+  tasks: TaskWithAttemptStatus[],
+): Promise<string> {
+  if (tasks.length === 0) {
+    throw new Error("No tasks available.");
+  }
+
+  const items = tasks.map(formatTask);
+  const selected = await runFzf(items, "Select task:");
+  return extractId(selected);
+}
+
+/**
+ * Select an attempt using fzf
+ */
+export async function selectAttempt(attempts: TaskAttempt[]): Promise<string> {
+  if (attempts.length === 0) {
+    throw new Error("No attempts available.");
+  }
+
+  const items = attempts.map(formatAttempt);
+  const selected = await runFzf(items, "Select attempt:");
+  return extractId(selected);
+}
