@@ -217,15 +217,20 @@ attemptCommand
   .command("pr")
   .description("Create a GitHub PR for the attempt")
   .arguments("<id:string>")
-  .option("--title <title:string>", "PR title")
-  .option("--body <body:string>", "PR body")
+  .option("--title <title:string>", "PR title (defaults to task title)")
+  .option("--body <body:string>", "PR body (defaults to task description)")
   .option("--json", "Output as JSON")
   .action(async (options, id) => {
     const client = await ApiClient.create();
 
-    const request: CreatePRRequest = {};
-    if (options.title) request.title = options.title;
-    if (options.body) request.body = options.body;
+    // Get attempt to find task_id, then get task for defaults
+    const attempt = await client.getAttempt(id);
+    const task = await client.getTask(attempt.task_id);
+
+    const request: CreatePRRequest = {
+      title: options.title || task.title,
+      body: options.body || task.description || "",
+    };
 
     const result = await client.createPR(id, request);
 
