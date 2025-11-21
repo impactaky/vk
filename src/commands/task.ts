@@ -81,6 +81,24 @@ taskCommand
     if (task.description) {
       console.log(`Description: ${task.description}`);
     }
+    if (task.priority !== undefined) {
+      console.log(`Priority:    ${task.priority}`);
+    }
+    if (task.due_date) {
+      console.log(`Due Date:    ${task.due_date}`);
+    }
+    if (task.labels && task.labels.length > 0) {
+      console.log(`Labels:      ${task.labels.join(", ")}`);
+    }
+    if (task.percent_done !== undefined) {
+      console.log(`Progress:    ${task.percent_done}%`);
+    }
+    if (task.hex_color) {
+      console.log(`Color:       ${task.hex_color}`);
+    }
+    if (task.is_favorite) {
+      console.log(`Favorite:    Yes`);
+    }
     console.log(`Created:     ${task.created_at}`);
     console.log(`Updated:     ${task.updated_at}`);
   });
@@ -96,6 +114,11 @@ taskCommand
   .option("--title <title:string>", "Task title")
   .option("--description <desc:string>", "Task description")
   .option("--from <file:file>", "Create task from markdown file")
+  .option("--priority <priority:number>", "Task priority (1-5)")
+  .option("--due-date <date:string>", "Due date (ISO format)")
+  .option("--labels <labels:string>", "Comma-separated labels")
+  .option("--color <color:string>", "Hex color (e.g., #ff5733)")
+  .option("--favorite", "Mark as favorite")
   .action(async (options) => {
     try {
       const client = await ApiClient.create();
@@ -133,6 +156,11 @@ taskCommand
         project_id: projectId,
         title,
         description: description || undefined,
+        priority: options.priority,
+        due_date: options.dueDate,
+        labels: options.labels?.split(",").map((l: string) => l.trim()),
+        hex_color: options.color,
+        is_favorite: options.favorite,
       };
 
       const task = await client.createTask(createTask);
@@ -163,6 +191,12 @@ taskCommand
     "--status <status:string>",
     "New status (pending, in_progress, completed, cancelled)",
   )
+  .option("--priority <priority:number>", "Task priority (1-5)")
+  .option("--due-date <date:string>", "Due date (ISO format, empty to clear)")
+  .option("--labels <labels:string>", "Comma-separated labels")
+  .option("--percent-done <percent:number>", "Completion percentage (0-100)")
+  .option("--color <color:string>", "Hex color (e.g., #ff5733)")
+  .option("--favorite", "Toggle favorite status")
   .action(async (options, id) => {
     const update: UpdateTask = {};
 
@@ -174,6 +208,24 @@ taskCommand
     }
     if (options.status) {
       update.status = options.status as TaskStatus;
+    }
+    if (options.priority !== undefined) {
+      update.priority = options.priority;
+    }
+    if (options.dueDate !== undefined) {
+      update.due_date = options.dueDate || undefined;
+    }
+    if (options.labels !== undefined) {
+      update.labels = options.labels.split(",").map((l: string) => l.trim());
+    }
+    if (options.percentDone !== undefined) {
+      update.percent_done = options.percentDone;
+    }
+    if (options.color !== undefined) {
+      update.hex_color = options.color;
+    }
+    if (options.favorite !== undefined) {
+      update.is_favorite = options.favorite;
     }
 
     if (Object.keys(update).length === 0) {

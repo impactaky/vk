@@ -10,6 +10,9 @@ export interface Project {
   id: string;
   name: string;
   git_repo_path: string;
+  description?: string;
+  hex_color?: string;
+  is_archived?: boolean;
   setup_script?: string;
   dev_script?: string;
   cleanup_script?: string;
@@ -22,11 +25,20 @@ export interface Project {
 export interface CreateProject {
   name: string;
   git_repo_path: string;
+  description?: string;
+  hex_color?: string;
   setup_script?: string;
   dev_script?: string;
   cleanup_script?: string;
   copy_files?: string[];
   use_existing_repo: boolean;
+}
+
+export interface UpdateProject {
+  name?: string;
+  description?: string;
+  hex_color?: string;
+  is_archived?: boolean;
 }
 
 export interface Task {
@@ -35,6 +47,12 @@ export interface Task {
   title: string;
   description?: string;
   status: TaskStatus;
+  priority?: number;
+  due_date?: string;
+  labels?: string[];
+  percent_done?: number;
+  hex_color?: string;
+  is_favorite?: boolean;
   shared_task_id?: string;
   parent_task_attempt?: string;
   created_at: string;
@@ -54,6 +72,11 @@ export interface CreateTask {
   project_id: string;
   title: string;
   description?: string;
+  priority?: number;
+  due_date?: string;
+  labels?: string[];
+  hex_color?: string;
+  is_favorite?: boolean;
   image_ids?: string[];
 }
 
@@ -61,6 +84,12 @@ export interface UpdateTask {
   title?: string;
   description?: string;
   status?: TaskStatus;
+  priority?: number;
+  due_date?: string;
+  labels?: string[];
+  percent_done?: number;
+  hex_color?: string;
+  is_favorite?: boolean;
   parent_task_attempt?: string;
   image_ids?: string[];
 }
