@@ -14,6 +14,7 @@ import type {
   Task,
   TaskAttempt,
   TaskWithAttemptStatus,
+  UpdateProject,
   UpdateTask,
 } from "./types.ts";
 
@@ -68,6 +69,13 @@ export class ApiClient {
     return this.request<Project>("/projects", {
       method: "POST",
       body: JSON.stringify(project),
+    });
+  }
+
+  updateProject(id: string, update: UpdateProject): Promise<Project> {
+    return this.request<Project>(`/projects/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(update),
     });
   }
 
