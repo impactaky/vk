@@ -28,7 +28,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 
 ```bash
 # Install globally (run from the project directory)
-deno install -g --allow-net --allow-read --allow-write --allow-env --allow-run=git,which,fzf -n vk --config deno.json src/main.ts
+deno install -g --allow-net --allow-read --allow-write --allow-env --allow-run=git,fzf -n vk --config deno.json src/main.ts
 
 # Now you can use it anywhere
 vk --help
@@ -45,7 +45,7 @@ deno uninstall -g vk
 
 ```bash
 # Run directly
-deno run --allow-net --allow-read --allow-write --allow-env --allow-run=git,which,fzf src/main.ts --help
+deno run --allow-net --allow-read --allow-write --allow-env --allow-run=git,fzf src/main.ts --help
 
 # Or use the dev task
 deno task dev --help

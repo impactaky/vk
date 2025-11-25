@@ -30,8 +30,8 @@ export class FzfCancelledError extends Error {
  */
 export async function isFzfInstalled(): Promise<boolean> {
   try {
-    const command = new Deno.Command("which", {
-      args: ["fzf"],
+    const command = new Deno.Command("fzf", {
+      args: ["--version"],
       stdout: "null",
       stderr: "null",
     });
