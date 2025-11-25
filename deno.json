@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "exports": "./src/main.ts",
   "tasks": {
-    "dev": "deno run --allow-net --allow-read --allow-write --allow-env --allow-run=git src/main.ts",
+    "dev": "deno run --allow-net --allow-read --allow-write --allow-env --allow-run=git,fzf src/main.ts",
     "fmt": "deno fmt",
     "lint": "deno lint",
     "check": "deno check src/main.ts",
