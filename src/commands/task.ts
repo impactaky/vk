@@ -16,6 +16,7 @@ import {
   FzfNotInstalledError,
   selectTask,
 } from "../utils/fzf.ts";
+import { applyFilters } from "../utils/filter.ts";
 
 export const taskCommand = new Command()
   .description("Manage tasks")
@@ -31,12 +32,42 @@ taskCommand
     "--project <id:string>",
     "Project ID (auto-detected from git if omitted)",
   )
+  .option("--status <status:string>", "Filter by task status")
+  .option("--priority <priority:number>", "Filter by priority")
+  .option("--executor <executor:string>", "Filter by executor")
+  .option("--label <label:string>", "Filter by label")
+  .option("--favorite <favorite:boolean>", "Filter by favorite status")
+  .option("--color <color:string>", "Filter by hex color")
   .option("--json", "Output as JSON")
   .action(async (options) => {
     try {
       const client = await ApiClient.create();
       const projectId = await getProjectId(options.project, client);
-      const tasks = await client.listTasks(projectId);
+      let tasks = await client.listTasks(projectId);
+
+      // Build filter object from provided options
+      const filters: Record<string, unknown> = {};
+      if (options.status !== undefined) {
+        filters.status = options.status;
+      }
+      if (options.priority !== undefined) {
+        filters.priority = options.priority;
+      }
+      if (options.executor !== undefined) {
+        filters.executor = options.executor;
+      }
+      if (options.label !== undefined) {
+        filters.labels = options.label;
+      }
+      if (options.favorite !== undefined) {
+        filters.is_favorite = options.favorite;
+      }
+      if (options.color !== undefined) {
+        filters.hex_color = options.color;
+      }
+
+      // Apply filters
+      tasks = applyFilters(tasks, filters);
 
       if (options.json) {
         console.log(JSON.stringify(tasks, null, 2));

@@ -13,6 +13,7 @@ import {
   selectAttempt,
   selectTask,
 } from "../utils/fzf.ts";
+import { applyFilters } from "../utils/filter.ts";
 
 /**
  * Helper to get attempt ID, either from argument or via fzf selection
@@ -51,10 +52,28 @@ attemptCommand
   .command("list")
   .description("List attempts for a task")
   .option("--task <id:string>", "Task ID", { required: true })
+  .option("--executor <executor:string>", "Filter by executor")
+  .option("--branch <branch:string>", "Filter by branch name")
+  .option("--target-branch <branch:string>", "Filter by target branch")
   .option("--json", "Output as JSON")
   .action(async (options) => {
     const client = await ApiClient.create();
-    const attempts = await client.listAttempts(options.task);
+    let attempts = await client.listAttempts(options.task);
+
+    // Build filter object from provided options
+    const filters: Record<string, unknown> = {};
+    if (options.executor !== undefined) {
+      filters.executor = options.executor;
+    }
+    if (options.branch !== undefined) {
+      filters.branch = options.branch;
+    }
+    if (options.targetBranch !== undefined) {
+      filters.target_branch = options.targetBranch;
+    }
+
+    // Apply filters
+    attempts = applyFilters(attempts, filters);
 
     if (options.json) {
       console.log(JSON.stringify(attempts, null, 2));

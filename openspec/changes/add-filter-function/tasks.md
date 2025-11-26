@@ -2,64 +2,64 @@
 
 ## Tasks
 
-1. **Create filter utility module**
-   - Create `src/utils/filter.ts` with filtering logic
-   - Implement `applyFilters<T>(items: T[], filters: Record<string, unknown>): T[]` function
-   - Add type coercion for boolean, number, and string values
-   - Implement array field matching (any element matches)
-   - Add strict type checking for filter values
-   - Write unit tests in `src/utils/filter_test.ts`
+1. **Create filter utility module** ✅
+   - [x] Create `src/utils/filter.ts` with filtering logic
+   - [x] Implement `applyFilters<T>(items: T[], filters: Record<string, unknown>): T[]` function
+   - [x] Add type coercion for boolean, number, and string values
+   - [x] Implement array field matching (any element matches)
+   - [x] Add strict type checking for filter values
+   - [x] Write unit tests in `src/utils/filter_test.ts`
 
-2. **Add filter options to project list command**
-   - Add `--name <name:string>` option to filter by project name
-   - Add `--archived <archived:boolean>` option to filter by archived status
-   - Add `--color <color:string>` option to filter by hex color
-   - Collect all specified filter options into a filter object
-   - Apply filters using the utility function to fetched projects before display
-   - Update both table and JSON output paths
-   - Test manually with various filter combinations
+2. **Add filter options to project list command** ✅
+   - [x] Add `--name <name:string>` option to filter by project name
+   - [x] Add `--archived <archived:boolean>` option to filter by archived status
+   - [x] Add `--color <color:string>` option to filter by hex color
+   - [x] Collect all specified filter options into a filter object
+   - [x] Apply filters using the utility function to fetched projects before display
+   - [x] Update both table and JSON output paths
+   - [x] Test manually with various filter combinations
 
-3. **Add filter options to task list command**
-   - Add `--status <status:string>` option to filter by task status
-   - Add `--priority <priority:number>` option to filter by priority
-   - Add `--executor <executor:string>` option to filter by executor
-   - Add `--label <label:string>` option to filter by label (array matching)
-   - Add `--favorite <favorite:boolean>` option to filter by favorite status
-   - Add `--color <color:string>` option to filter by hex color
-   - Collect all specified filter options into a filter object
-   - Apply filters using the utility function to fetched tasks before display
-   - Update both table and JSON output paths
-   - Test manually with various filter combinations
+3. **Add filter options to task list command** ✅
+   - [x] Add `--status <status:string>` option to filter by task status
+   - [x] Add `--priority <priority:number>` option to filter by priority
+   - [x] Add `--executor <executor:string>` option to filter by executor
+   - [x] Add `--label <label:string>` option to filter by label (array matching)
+   - [x] Add `--favorite <favorite:boolean>` option to filter by favorite status
+   - [x] Add `--color <color:string>` option to filter by hex color
+   - [x] Collect all specified filter options into a filter object
+   - [x] Apply filters using the utility function to fetched tasks before display
+   - [x] Update both table and JSON output paths
+   - [x] Test manually with various filter combinations
 
-4. **Add filter options to attempt list command**
-   - Add `--executor <executor:string>` option to filter by executor
-   - Add `--branch <branch:string>` option to filter by branch name
-   - Add `--target-branch <branch:string>` option to filter by target branch
-   - Collect all specified filter options into a filter object
-   - Apply filters using the utility function to fetched attempts before display
-   - Update both table and JSON output paths
-   - Test manually with various filter combinations
+4. **Add filter options to attempt list command** ✅
+   - [x] Add `--executor <executor:string>` option to filter by executor
+   - [x] Add `--branch <branch:string>` option to filter by branch name
+   - [x] Add `--target-branch <branch:string>` option to filter by target branch
+   - [x] Collect all specified filter options into a filter object
+   - [x] Apply filters using the utility function to fetched attempts before display
+   - [x] Update both table and JSON output paths
+   - [x] Test manually with various filter combinations
 
-5. **Add integration tests**
-   - Create integration test file for filter functionality
-   - Test each list command with filter options
-   - Test multiple filter combinations (AND logic)
-   - Test filters with JSON output
-   - Test array field matching for labels
-   - Test boolean and numeric value parsing
+5. **Add integration tests** ✅
+   - [x] Create integration test file for filter functionality
+   - [x] Test each list command with filter options
+   - [x] Test multiple filter combinations (AND logic)
+   - [x] Test filters with JSON output
+   - [x] Test array field matching for labels
+   - [x] Test boolean and numeric value parsing
 
-6. **Update documentation and help text**
-   - Update command descriptions to mention filter options
-   - Ensure help text clearly shows all filter options
-   - Update README with filter usage examples
-   - Document available filter options for each command
+6. **Update documentation and help text** ✅
+   - [x] Update command descriptions to mention filter options
+   - [x] Ensure help text clearly shows all filter options
+   - [x] Update README with filter usage examples
+   - [x] Document available filter options for each command
 
-7. **Run validation and quality checks**
-   - Run `deno fmt` to format code
-   - Run `deno lint` to check for issues
-   - Run `deno check` for type checking
-   - Run `deno test` to ensure all tests pass
-   - Manually test all three list commands with various filter options
+7. **Run validation and quality checks** ✅
+   - [x] Run `deno fmt` to format code
+   - [x] Run `deno lint` to check for issues
+   - [x] Run `deno check` for type checking
+   - [x] Run `deno test` to ensure all tests pass
+   - [x] Manually test all three list commands with various filter options
 
 ## Dependencies
 - Tasks 2, 3, 4 depend on task 1 (filter utility must exist first)

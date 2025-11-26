@@ -7,6 +7,7 @@ import {
   ProjectResolverError,
   resolveProjectFromGit,
 } from "../utils/project-resolver.ts";
+import { applyFilters } from "../utils/filter.ts";
 
 export const projectCommand = new Command()
   .description("Manage projects")
@@ -18,10 +19,28 @@ export const projectCommand = new Command()
 projectCommand
   .command("list")
   .description("List all projects")
+  .option("--name <name:string>", "Filter by project name")
+  .option("--archived <archived:boolean>", "Filter by archived status")
+  .option("--color <color:string>", "Filter by hex color")
   .option("--json", "Output as JSON")
   .action(async (options) => {
     const client = await ApiClient.create();
-    const projects = await client.listProjects();
+    let projects = await client.listProjects();
+
+    // Build filter object from provided options
+    const filters: Record<string, unknown> = {};
+    if (options.name !== undefined) {
+      filters.name = options.name;
+    }
+    if (options.archived !== undefined) {
+      filters.is_archived = options.archived;
+    }
+    if (options.color !== undefined) {
+      filters.hex_color = options.color;
+    }
+
+    // Apply filters
+    projects = applyFilters(projects, filters);
 
     if (options.json) {
       console.log(JSON.stringify(projects, null, 2));
