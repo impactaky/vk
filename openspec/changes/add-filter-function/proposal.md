@@ -4,7 +4,7 @@
 `add-filter-function`
 
 ## Overview
-Add GitHub CLI-style filter options to all list commands (`project list`, `task list`, and `attempt list`) to enable filtering results by field values using simple key-value syntax.
+Add GitHub CLI-style filter options to all list commands (`project list`, `task list`, and `attempt list`) to enable filtering results by field-specific flags (e.g., `--status completed`, `--archived true`).
 
 ## Motivation
 Currently, users must retrieve all results and manually filter them, which is inefficient for large datasets. Adding filter functionality allows users to:
@@ -14,10 +14,10 @@ Currently, users must retrieve all results and manually filter them, which is in
 - Improve CLI usability to match familiar patterns from gh command
 
 ## Scope
-This change adds filter capability to three list commands:
-1. `vk project list` - filter by id, name, git_repo_path, is_archived, hex_color
-2. `vk task list` - filter by id, title, status, priority, executor, labels, is_favorite, hex_color
-3. `vk attempt list` - filter by id, branch, executor, target_branch
+This change adds filter options to three list commands:
+1. `vk project list` - filter by `--name`, `--archived`, `--color`
+2. `vk task list` - filter by `--status`, `--priority`, `--executor`, `--label`, `--favorite`, `--color`
+3. `vk attempt list` - filter by `--executor`, `--branch`, `--target-branch`
 
 ## User Experience
 
@@ -25,36 +25,41 @@ This change adds filter capability to three list commands:
 
 Filter tasks by status:
 ```bash
-vk task list --filter status=completed
+vk task list --status completed
 ```
 
 Filter tasks with multiple conditions:
 ```bash
-vk task list --filter status=in_progress --filter priority=5
+vk task list --status in_progress --priority 5
 ```
 
 Filter projects by archived status:
 ```bash
-vk project list --filter is_archived=false
+vk project list --archived false
 ```
 
 Filter attempts by executor:
 ```bash
-vk attempt list --task task-123 --filter executor=CLAUDE_CODE
+vk attempt list --task task-123 --executor CLAUDE_CODE
+```
+
+Filter tasks by label:
+```bash
+vk task list --label bug
 ```
 
 Use filters with JSON output:
 ```bash
-vk task list --filter status=completed --json
+vk task list --status completed --json
 ```
 
 ## Technical Approach
-- Add `--filter` option to list commands supporting multiple values
-- Parse filter as `key=value` pairs
-- Apply filters client-side after fetching from API
-- Support both boolean (true/false) and string value matching
+- Add individual option flags for each filterable field on list commands
+- Parse option values and apply filters client-side after fetching from API
+- Support boolean (true/false), numeric, and string value matching
 - Array fields (like labels) match if any element matches the filter value
 - Filters work with both table and JSON output modes
+- All filter options are optional and use AND logic when combined
 
 ## Dependencies
 None - this is a pure client-side feature.
@@ -62,17 +67,17 @@ None - this is a pure client-side feature.
 ## Risks and Mitigations
 - **Risk**: Client-side filtering may be slow for very large result sets
   - **Mitigation**: Document that filtering happens client-side; consider server-side filtering in future if needed
-- **Risk**: Complex filter syntax may confuse users
-  - **Mitigation**: Keep syntax simple (key=value only); document with clear examples
+- **Risk**: Adding many flags may clutter the help output
+  - **Mitigation**: Group filter options logically in help text; use clear descriptions
 
 ## Alternatives Considered
-1. **JMESPath/jq-style queries**: More powerful but more complex; rejected for simplicity
-2. **Server-side filtering**: Requires API changes; deferred for future consideration
-3. **Single filter flag with complex syntax**: Less intuitive than multiple --filter flags
+1. **Generic --filter flag with key=value syntax**: Less intuitive than dedicated flags; rejected for better UX
+2. **JMESPath/jq-style queries**: More powerful but more complex; rejected for simplicity
+3. **Server-side filtering**: Requires API changes; deferred for future consideration
 
 ## Success Criteria
-- All list commands support --filter option
-- Multiple filters can be combined (AND logic)
+- All list commands support field-specific filter flags
+- Multiple filter flags can be combined (AND logic)
 - Filters work with both table and JSON output
-- Clear error messages for invalid filter syntax
+- Clear help text showing available filter options
 - Documentation includes filter examples for each command
