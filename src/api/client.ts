@@ -125,6 +125,12 @@ export class ApiClient {
     return this.request<TaskAttempt>(`/task-attempts/${id}`);
   }
 
+  searchAttemptsByBranch(branchName: string): Promise<TaskAttempt[]> {
+    return this.request<TaskAttempt[]>(
+      `/task-attempts?branch=${encodeURIComponent(branchName)}`,
+    );
+  }
+
   createAttempt(attempt: CreateAttempt): Promise<TaskAttempt> {
     return this.request<TaskAttempt>("/task-attempts", {
       method: "POST",

@@ -71,3 +71,43 @@ export async function getCurrentRepoBasename(): Promise<string | null> {
   }
   return extractRepoBasename(url);
 }
+
+/**
+ * Get the current git branch name
+ * @returns The current branch name or null if not in a git repo
+ */
+export async function getCurrentBranch(): Promise<string | null> {
+  try {
+    const command = new Deno.Command("git", {
+      args: ["branch", "--show-current"],
+      stdout: "piped",
+      stderr: "piped",
+    });
+
+    const { code, stdout } = await command.output();
+
+    if (code !== 0) {
+      return null;
+    }
+
+    const branch = new TextDecoder().decode(stdout).trim();
+    return branch || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Parse a branch name to extract attempt identifier
+ * Expected pattern: {username}/{hash}-{description}
+ * Example: impactaky/bd84-try-to-set-task -> bd84
+ *
+ * @param branchName The branch name to parse
+ * @returns The hash prefix or null if pattern doesn't match
+ */
+export function parseBranchName(branchName: string): string | null {
+  // Pattern: {username}/{4-char-hash}-{description}
+  const pattern = /^[^/]+\/([a-f0-9]{4})-/;
+  const match = branchName.match(pattern);
+  return match ? match[1] : null;
+}
