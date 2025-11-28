@@ -159,7 +159,7 @@ Deno.test("Integration - Task filtering with multiple conditions", () => {
       status: "completed",
       project_id: "p1",
       priority: 5,
-      executor: "CLAUDE_CODE",
+      executor: "CLAUDE_CODE:DEFAULT",
     },
     {
       id: "2",
@@ -167,7 +167,7 @@ Deno.test("Integration - Task filtering with multiple conditions", () => {
       status: "in_progress",
       project_id: "p1",
       priority: 5,
-      executor: "CLAUDE_CODE",
+      executor: "CLAUDE_CODE:DEFAULT",
     },
     {
       id: "3",
@@ -175,14 +175,14 @@ Deno.test("Integration - Task filtering with multiple conditions", () => {
       status: "completed",
       project_id: "p1",
       priority: 3,
-      executor: "CLAUDE_CODE",
+      executor: "CLAUDE_CODE:DEFAULT",
     },
   ];
 
   const result = applyFilters(tasks, {
     status: "completed",
     priority: 5,
-    executor: "CLAUDE_CODE",
+    executor: "CLAUDE_CODE:DEFAULT",
   });
   assertEquals(result.length, 1);
   assertEquals(result[0].id, "1");
@@ -217,29 +217,29 @@ Deno.test("Integration - Attempt filtering by executor", () => {
       id: "1",
       task_id: "t1",
       branch: "branch-1",
-      executor: "CLAUDE_CODE",
+      executor: "CLAUDE_CODE:DEFAULT",
       target_branch: "main",
     },
     {
       id: "2",
       task_id: "t1",
       branch: "branch-2",
-      executor: "HUMAN",
+      executor: "HUMAN:DEFAULT",
       target_branch: "main",
     },
     {
       id: "3",
       task_id: "t1",
       branch: "branch-3",
-      executor: "CLAUDE_CODE",
+      executor: "CLAUDE_CODE:DEFAULT",
       target_branch: "develop",
     },
   ];
 
-  const result = applyFilters(attempts, { executor: "CLAUDE_CODE" });
+  const result = applyFilters(attempts, { executor: "CLAUDE_CODE:DEFAULT" });
   assertEquals(result.length, 2);
-  assertEquals(result[0].executor, "CLAUDE_CODE");
-  assertEquals(result[1].executor, "CLAUDE_CODE");
+  assertEquals(result[0].executor, "CLAUDE_CODE:DEFAULT");
+  assertEquals(result[1].executor, "CLAUDE_CODE:DEFAULT");
 });
 
 Deno.test("Integration - Attempt filtering by branch", () => {
@@ -248,14 +248,14 @@ Deno.test("Integration - Attempt filtering by branch", () => {
       id: "1",
       task_id: "t1",
       branch: "feature-branch",
-      executor: "CLAUDE_CODE",
+      executor: "CLAUDE_CODE:DEFAULT",
       target_branch: "main",
     },
     {
       id: "2",
       task_id: "t1",
       branch: "bugfix-branch",
-      executor: "CLAUDE_CODE",
+      executor: "CLAUDE_CODE:DEFAULT",
       target_branch: "main",
     },
   ];
@@ -271,21 +271,21 @@ Deno.test("Integration - Attempt filtering by target branch", () => {
       id: "1",
       task_id: "t1",
       branch: "branch-1",
-      executor: "CLAUDE_CODE",
+      executor: "CLAUDE_CODE:DEFAULT",
       target_branch: "main",
     },
     {
       id: "2",
       task_id: "t1",
       branch: "branch-2",
-      executor: "CLAUDE_CODE",
+      executor: "CLAUDE_CODE:DEFAULT",
       target_branch: "develop",
     },
     {
       id: "3",
       task_id: "t1",
       branch: "branch-3",
-      executor: "CLAUDE_CODE",
+      executor: "CLAUDE_CODE:DEFAULT",
       target_branch: "main",
     },
   ];
@@ -302,27 +302,27 @@ Deno.test("Integration - Attempt filtering with multiple conditions", () => {
       id: "1",
       task_id: "t1",
       branch: "branch-1",
-      executor: "CLAUDE_CODE",
+      executor: "CLAUDE_CODE:DEFAULT",
       target_branch: "main",
     },
     {
       id: "2",
       task_id: "t1",
       branch: "branch-2",
-      executor: "CLAUDE_CODE",
+      executor: "CLAUDE_CODE:DEFAULT",
       target_branch: "develop",
     },
     {
       id: "3",
       task_id: "t1",
       branch: "branch-3",
-      executor: "HUMAN",
+      executor: "HUMAN:DEFAULT",
       target_branch: "main",
     },
   ];
 
   const result = applyFilters(attempts, {
-    executor: "CLAUDE_CODE",
+    executor: "CLAUDE_CODE:DEFAULT",
     target_branch: "main",
   });
   assertEquals(result.length, 1);

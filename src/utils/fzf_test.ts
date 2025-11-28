@@ -42,12 +42,12 @@ Deno.test("formatAttempt formats attempt correctly", () => {
     task_id: "task-456",
     branch: "feature/fix-bug",
     target_branch: "main",
-    executor: "CLAUDE_CODE",
+    executor: "CLAUDE_CODE:DEFAULT",
     worktree_deleted: false,
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",
   };
 
   const result = formatAttempt(attempt);
-  assertEquals(result, "attempt-789\tfeature/fix-bug\tCLAUDE_CODE");
+  assertEquals(result, "attempt-789\tfeature/fix-bug\tCLAUDE_CODE:DEFAULT");
 });

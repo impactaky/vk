@@ -97,7 +97,7 @@ vk task list --project <project-id> --json
 # Filter tasks
 vk task list --status completed
 vk task list --priority 5
-vk task list --executor CLAUDE_CODE
+vk task list --executor CLAUDE_CODE:DEFAULT
 vk task list --label bug
 vk task list --favorite true
 vk task list --color "#ff5733"
@@ -131,17 +131,18 @@ vk attempt list --task <task-id>
 vk attempt list --task <task-id> --json
 
 # Filter attempts
-vk attempt list --task <task-id> --executor CLAUDE_CODE
+vk attempt list --task <task-id> --executor CLAUDE_CODE:DEFAULT
 vk attempt list --task <task-id> --branch feature-branch
 vk attempt list --task <task-id> --target-branch main
-vk attempt list --task <task-id> --executor CLAUDE_CODE --target-branch main  # Multiple filters
+vk attempt list --task <task-id> --executor CLAUDE_CODE:DEFAULT --target-branch main  # Multiple filters
 
 # Show attempt details
 vk attempt show <attempt-id>
 vk attempt show  # Interactive selection with fzf (if installed)
 
-# Create a new attempt
-vk attempt create --task <task-id> --executor CLAUDE_CODE
+# Create a new attempt (executor format: <name>:<variant>)
+vk attempt create --task <task-id> --executor CLAUDE_CODE:DEFAULT
+vk attempt create --task <task-id> --executor CLAUDE_CODE:AGGRESSIVE
 
 # Update attempt
 vk attempt update <attempt-id> --target-branch develop
