@@ -148,3 +148,11 @@ export interface MergeResult {
 
 // PR creation returns just the URL string
 export type PRResult = string;
+
+export interface ExecutorProfile {
+  id: string;
+  name: string;
+  executor_type: string;
+  created_at: string;
+  updated_at: string;
+}

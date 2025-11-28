@@ -7,6 +7,7 @@ import type {
   CreateProject,
   CreatePRRequest,
   CreateTask,
+  ExecutorProfile,
   MergeResult,
   Project,
   PRResult,
@@ -191,5 +192,10 @@ export class ApiClient {
 
   getBranchStatus(id: string): Promise<BranchStatus> {
     return this.request<BranchStatus>(`/task-attempts/${id}/branch-status`);
+  }
+
+  // Executor Profile endpoints
+  listExecutorProfiles(): Promise<ExecutorProfile[]> {
+    return this.request<ExecutorProfile[]>("/executor-profiles");
   }
 }

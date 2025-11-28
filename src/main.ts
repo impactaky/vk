@@ -4,6 +4,7 @@ import { projectCommand } from "./commands/project.ts";
 import { taskCommand } from "./commands/task.ts";
 import { configCommand } from "./commands/config.ts";
 import { attemptCommand } from "./commands/attempt.ts";
+import { executorCommand } from "./commands/executor.ts";
 
 const VERSION = "0.1.0";
 
@@ -14,6 +15,7 @@ await new Command()
   .command("project", projectCommand)
   .command("task", taskCommand)
   .command("attempt", attemptCommand)
+  .command("executor", executorCommand)
   .command("config", configCommand)
   .command("completions", new CompletionsCommand())
   .parse(Deno.args);

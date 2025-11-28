@@ -14,6 +14,10 @@ import {
   selectTask,
 } from "../utils/fzf.ts";
 import { applyFilters } from "../utils/filter.ts";
+import {
+  ExecutorResolverError,
+  resolveExecutor,
+} from "../utils/executor-resolver.ts";
 
 /**
  * Helper to get attempt ID, either from argument or via fzf selection
@@ -147,26 +151,37 @@ attemptCommand
   .command("create")
   .description("Create a new attempt for a task")
   .option("--task <id:string>", "Task ID", { required: true })
-  .option("--executor <executor:string>", "Executor profile ID", {
+  .option("--executor <executor:string>", "Executor name or profile ID", {
     required: true,
   })
   .option("--base-branch <branch:string>", "Base branch", { default: "main" })
   .option("--target-branch <branch:string>", "Target branch")
   .action(async (options) => {
-    const client = await ApiClient.create();
+    try {
+      const client = await ApiClient.create();
 
-    const createAttempt: CreateAttempt = {
-      task_id: options.task,
-      executor_profile_id: options.executor,
-      base_branch: options.baseBranch,
-      target_branch: options.targetBranch,
-    };
+      // Resolve executor name to profile ID
+      const executorProfileId = await resolveExecutor(options.executor, client);
 
-    const attempt = await client.createAttempt(createAttempt);
+      const createAttempt: CreateAttempt = {
+        task_id: options.task,
+        executor_profile_id: executorProfileId,
+        base_branch: options.baseBranch,
+        target_branch: options.targetBranch,
+      };
 
-    console.log(`Attempt created successfully!`);
-    console.log(`ID: ${attempt.id}`);
-    console.log(`Branch: ${attempt.branch}`);
+      const attempt = await client.createAttempt(createAttempt);
+
+      console.log(`Attempt created successfully!`);
+      console.log(`ID: ${attempt.id}`);
+      console.log(`Branch: ${attempt.branch}`);
+    } catch (error) {
+      if (error instanceof ExecutorResolverError) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      throw error;
+    }
   });
 
 // Delete attempt
