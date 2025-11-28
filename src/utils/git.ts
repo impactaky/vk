@@ -71,3 +71,64 @@ export async function getCurrentRepoBasename(): Promise<string | null> {
   }
   return extractRepoBasename(url);
 }
+
+/**
+ * Get the current git branch name
+ * @returns The current branch name or null if not in a git repo
+ */
+export async function getCurrentBranchName(): Promise<string | null> {
+  try {
+    const command = new Deno.Command("git", {
+      args: ["branch", "--show-current"],
+      stdout: "piped",
+      stderr: "piped",
+    });
+
+    const { code, stdout } = await command.output();
+
+    if (code !== 0) {
+      return null;
+    }
+
+    const branch = new TextDecoder().decode(stdout).trim();
+    return branch || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Extract task ID from a branch name following the pattern <prefix>/<task-id>-<description>
+ * Examples:
+ * - "impactaky/99d7-try-to-set-task" -> "99d7"
+ * - "user/abc123-feature" -> "abc123"
+ * - "main" -> null
+ * - "feature-branch" -> null
+ *
+ * @param branchName The branch name to parse
+ * @returns The task ID or null if no valid pattern found
+ */
+export function extractTaskIdFromBranch(branchName: string): string | null {
+  // Pattern: <prefix>/<task-id>-<description> or <prefix>/<task-id>_<description>
+  // Task ID is the part between / and the first - or _
+  const match = branchName.match(/^[^/]+\/([^-_]+)[-_]/);
+
+  if (match && match[1]) {
+    return match[1];
+  }
+
+  return null;
+}
+
+/**
+ * Get the task ID from the current git branch
+ * Combines getCurrentBranchName() and extractTaskIdFromBranch()
+ * @returns The task ID or null if not in a git repo or branch doesn't follow naming convention
+ */
+export async function getCurrentTaskId(): Promise<string | null> {
+  const branchName = await getCurrentBranchName();
+  if (!branchName) {
+    return null;
+  }
+  return extractTaskIdFromBranch(branchName);
+}

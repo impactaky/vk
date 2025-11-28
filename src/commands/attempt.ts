@@ -14,6 +14,7 @@ import {
   selectTask,
 } from "../utils/fzf.ts";
 import { applyFilters } from "../utils/filter.ts";
+import { getCurrentTaskId } from "../utils/git.ts";
 
 /**
  * Helper to get attempt ID, either from argument or via fzf selection
@@ -51,14 +52,33 @@ export const attemptCommand = new Command()
 attemptCommand
   .command("list")
   .description("List attempts for a task")
-  .option("--task <id:string>", "Task ID", { required: true })
+  .option(
+    "--task <id:string>",
+    "Task ID (auto-detected from branch if omitted)",
+  )
   .option("--executor <executor:string>", "Filter by executor")
   .option("--branch <branch:string>", "Filter by branch name")
   .option("--target-branch <branch:string>", "Filter by target branch")
   .option("--json", "Output as JSON")
   .action(async (options) => {
-    const client = await ApiClient.create();
-    let attempts = await client.listAttempts(options.task);
+    try {
+      const client = await ApiClient.create();
+
+      let taskId = options.task;
+      if (!taskId) {
+        // Try to auto-detect from branch name
+        const detectedTaskId = await getCurrentTaskId();
+        if (detectedTaskId) {
+          taskId = detectedTaskId;
+        } else {
+          console.error(
+            "Error: Task ID could not be determined from branch name. Please specify --task.",
+          );
+          Deno.exit(1);
+        }
+      }
+
+      let attempts = await client.listAttempts(taskId);
 
     // Build filter object from provided options
     const filters: Record<string, unknown> = {};
@@ -92,6 +112,13 @@ attemptCommand
       );
 
     table.render();
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      throw error;
+    }
   });
 
 // Show attempt
@@ -146,27 +173,49 @@ attemptCommand
 attemptCommand
   .command("create")
   .description("Create a new attempt for a task")
-  .option("--task <id:string>", "Task ID", { required: true })
+  .option("--task <id:string>", "Task ID (auto-detected from branch if omitted)")
   .option("--executor <executor:string>", "Executor profile ID", {
     required: true,
   })
   .option("--base-branch <branch:string>", "Base branch", { default: "main" })
   .option("--target-branch <branch:string>", "Target branch")
   .action(async (options) => {
-    const client = await ApiClient.create();
+    try {
+      const client = await ApiClient.create();
 
-    const createAttempt: CreateAttempt = {
-      task_id: options.task,
-      executor_profile_id: options.executor,
-      base_branch: options.baseBranch,
-      target_branch: options.targetBranch,
-    };
+      let taskId = options.task;
+      if (!taskId) {
+        // Try to auto-detect from branch name
+        const detectedTaskId = await getCurrentTaskId();
+        if (detectedTaskId) {
+          taskId = detectedTaskId;
+        } else {
+          console.error(
+            "Error: Task ID could not be determined from branch name. Please specify --task.",
+          );
+          Deno.exit(1);
+        }
+      }
 
-    const attempt = await client.createAttempt(createAttempt);
+      const createAttempt: CreateAttempt = {
+        task_id: taskId,
+        executor_profile_id: options.executor,
+        base_branch: options.baseBranch,
+        target_branch: options.targetBranch,
+      };
 
-    console.log(`Attempt created successfully!`);
-    console.log(`ID: ${attempt.id}`);
-    console.log(`Branch: ${attempt.branch}`);
+      const attempt = await client.createAttempt(createAttempt);
+
+      console.log(`Attempt created successfully!`);
+      console.log(`ID: ${attempt.id}`);
+      console.log(`Branch: ${attempt.branch}`);
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      throw error;
+    }
   });
 
 // Delete attempt

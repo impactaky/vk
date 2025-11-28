@@ -17,6 +17,7 @@ import {
   selectTask,
 } from "../utils/fzf.ts";
 import { applyFilters } from "../utils/filter.ts";
+import { getCurrentTaskId } from "../utils/git.ts";
 
 export const taskCommand = new Command()
   .description("Manage tasks")
@@ -111,13 +112,20 @@ taskCommand
 
       let taskId = id;
       if (!taskId) {
-        const projectId = await getProjectId(options.project, client);
-        const tasks = await client.listTasks(projectId);
-        if (tasks.length === 0) {
-          console.error("No tasks found in the project.");
-          Deno.exit(1);
+        // Try to auto-detect from branch name first
+        const detectedTaskId = await getCurrentTaskId();
+        if (detectedTaskId) {
+          taskId = detectedTaskId;
+        } else {
+          // Fall back to fzf selection
+          const projectId = await getProjectId(options.project, client);
+          const tasks = await client.listTasks(projectId);
+          if (tasks.length === 0) {
+            console.error("No tasks found in the project.");
+            Deno.exit(1);
+          }
+          taskId = await selectTask(tasks);
         }
-        taskId = await selectTask(tasks);
       }
 
       const task = await client.getTask(taskId);
@@ -309,13 +317,20 @@ taskCommand
 
       let taskId = id;
       if (!taskId) {
-        const projectId = await getProjectId(options.project, client);
-        const tasks = await client.listTasks(projectId);
-        if (tasks.length === 0) {
-          console.error("No tasks found in the project.");
-          Deno.exit(1);
+        // Try to auto-detect from branch name first
+        const detectedTaskId = await getCurrentTaskId();
+        if (detectedTaskId) {
+          taskId = detectedTaskId;
+        } else {
+          // Fall back to fzf selection
+          const projectId = await getProjectId(options.project, client);
+          const tasks = await client.listTasks(projectId);
+          if (tasks.length === 0) {
+            console.error("No tasks found in the project.");
+            Deno.exit(1);
+          }
+          taskId = await selectTask(tasks);
         }
-        taskId = await selectTask(tasks);
       }
 
       const task = await client.updateTask(taskId, update);
@@ -353,13 +368,20 @@ taskCommand
 
       let taskId = id;
       if (!taskId) {
-        const projectId = await getProjectId(options.project, client);
-        const tasks = await client.listTasks(projectId);
-        if (tasks.length === 0) {
-          console.error("No tasks found in the project.");
-          Deno.exit(1);
+        // Try to auto-detect from branch name first
+        const detectedTaskId = await getCurrentTaskId();
+        if (detectedTaskId) {
+          taskId = detectedTaskId;
+        } else {
+          // Fall back to fzf selection
+          const projectId = await getProjectId(options.project, client);
+          const tasks = await client.listTasks(projectId);
+          if (tasks.length === 0) {
+            console.error("No tasks found in the project.");
+            Deno.exit(1);
+          }
+          taskId = await selectTask(tasks);
         }
-        taskId = await selectTask(tasks);
       }
 
       if (!options.force) {
