@@ -14,9 +14,9 @@ import {
 import {
   FzfCancelledError,
   FzfNotInstalledError,
-  selectTask,
 } from "../utils/fzf.ts";
 import { applyFilters } from "../utils/filter.ts";
+import { getTaskIdWithAutoDetect } from "../utils/attempt-resolver.ts";
 
 export const taskCommand = new Command()
   .description("Manage tasks")
@@ -109,16 +109,11 @@ taskCommand
     try {
       const client = await ApiClient.create();
 
-      let taskId = id;
-      if (!taskId) {
-        const projectId = await getProjectId(options.project, client);
-        const tasks = await client.listTasks(projectId);
-        if (tasks.length === 0) {
-          console.error("No tasks found in the project.");
-          Deno.exit(1);
-        }
-        taskId = await selectTask(tasks);
-      }
+      const taskId = await getTaskIdWithAutoDetect(
+        client,
+        id,
+        options.project,
+      );
 
       const task = await client.getTask(taskId);
 
@@ -307,16 +302,11 @@ taskCommand
 
       const client = await ApiClient.create();
 
-      let taskId = id;
-      if (!taskId) {
-        const projectId = await getProjectId(options.project, client);
-        const tasks = await client.listTasks(projectId);
-        if (tasks.length === 0) {
-          console.error("No tasks found in the project.");
-          Deno.exit(1);
-        }
-        taskId = await selectTask(tasks);
-      }
+      const taskId = await getTaskIdWithAutoDetect(
+        client,
+        id,
+        options.project,
+      );
 
       const task = await client.updateTask(taskId, update);
 
@@ -351,16 +341,11 @@ taskCommand
     try {
       const client = await ApiClient.create();
 
-      let taskId = id;
-      if (!taskId) {
-        const projectId = await getProjectId(options.project, client);
-        const tasks = await client.listTasks(projectId);
-        if (tasks.length === 0) {
-          console.error("No tasks found in the project.");
-          Deno.exit(1);
-        }
-        taskId = await selectTask(tasks);
-      }
+      const taskId = await getTaskIdWithAutoDetect(
+        client,
+        id,
+        options.project,
+      );
 
       if (!options.force) {
         const confirmed = await Confirm.prompt(
