@@ -69,6 +69,12 @@ vk config show
 vk project list
 vk project list --json
 
+# Filter projects
+vk project list --name "Frontend"
+vk project list --archived false
+vk project list --color "#3498db"
+vk project list --archived false --name "Frontend"  # Multiple filters
+
 # Show project details
 vk project show <project-id>
 
@@ -87,6 +93,16 @@ vk project delete <project-id> --force
 # List tasks for a project
 vk task list --project <project-id>
 vk task list --project <project-id> --json
+
+# Filter tasks
+vk task list --status completed
+vk task list --priority 5
+vk task list --executor CLAUDE_CODE
+vk task list --label bug
+vk task list --favorite true
+vk task list --color "#ff5733"
+vk task list --status in_progress --priority 5  # Multiple filters
+vk task list --status completed --json  # Filters work with JSON output
 
 # Show task details
 vk task show <task-id>
@@ -113,6 +129,12 @@ vk task delete  # Interactive selection with fzf (if installed)
 # List attempts for a task
 vk attempt list --task <task-id>
 vk attempt list --task <task-id> --json
+
+# Filter attempts
+vk attempt list --task <task-id> --executor CLAUDE_CODE
+vk attempt list --task <task-id> --branch feature-branch
+vk attempt list --task <task-id> --target-branch main
+vk attempt list --task <task-id> --executor CLAUDE_CODE --target-branch main  # Multiple filters
 
 # Show attempt details
 vk attempt show <attempt-id>
