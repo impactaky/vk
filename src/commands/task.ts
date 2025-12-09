@@ -11,10 +11,7 @@ import {
   MarkdownParseError,
   parseTaskFromFile,
 } from "../utils/markdown-parser.ts";
-import {
-  FzfCancelledError,
-  FzfNotInstalledError,
-} from "../utils/fzf.ts";
+import { FzfCancelledError, FzfNotInstalledError } from "../utils/fzf.ts";
 import { applyFilters } from "../utils/filter.ts";
 import { getTaskIdWithAutoDetect } from "../utils/attempt-resolver.ts";
 

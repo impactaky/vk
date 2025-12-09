@@ -4,10 +4,7 @@ import { Table } from "@cliffy/table";
 import { ApiClient } from "../api/client.ts";
 import type { CreateAttempt, CreatePRRequest } from "../api/types.ts";
 import { ProjectResolverError } from "../utils/project-resolver.ts";
-import {
-  FzfCancelledError,
-  FzfNotInstalledError,
-} from "../utils/fzf.ts";
+import { FzfCancelledError, FzfNotInstalledError } from "../utils/fzf.ts";
 import { applyFilters } from "../utils/filter.ts";
 import {
   getAttemptIdWithAutoDetect,
@@ -48,38 +45,38 @@ attemptCommand
 
       let attempts = await client.listAttempts(taskId);
 
-    // Build filter object from provided options
-    const filters: Record<string, unknown> = {};
-    if (options.executor !== undefined) {
-      filters.executor = options.executor;
-    }
-    if (options.branch !== undefined) {
-      filters.branch = options.branch;
-    }
-    if (options.targetBranch !== undefined) {
-      filters.target_branch = options.targetBranch;
-    }
+      // Build filter object from provided options
+      const filters: Record<string, unknown> = {};
+      if (options.executor !== undefined) {
+        filters.executor = options.executor;
+      }
+      if (options.branch !== undefined) {
+        filters.branch = options.branch;
+      }
+      if (options.targetBranch !== undefined) {
+        filters.target_branch = options.targetBranch;
+      }
 
-    // Apply filters
-    attempts = applyFilters(attempts, filters);
+      // Apply filters
+      attempts = applyFilters(attempts, filters);
 
-    if (options.json) {
-      console.log(JSON.stringify(attempts, null, 2));
-      return;
-    }
+      if (options.json) {
+        console.log(JSON.stringify(attempts, null, 2));
+        return;
+      }
 
-    if (attempts.length === 0) {
-      console.log("No attempts found.");
-      return;
-    }
+      if (attempts.length === 0) {
+        console.log("No attempts found.");
+        return;
+      }
 
-    const table = new Table()
-      .header(["ID", "Branch", "Executor", "Target Branch"])
-      .body(
-        attempts.map((a) => [a.id, a.branch, a.executor, a.target_branch]),
-      );
+      const table = new Table()
+        .header(["ID", "Branch", "Executor", "Target Branch"])
+        .body(
+          attempts.map((a) => [a.id, a.branch, a.executor, a.target_branch]),
+        );
 
-    table.render();
+      table.render();
     } catch (error) {
       if (error instanceof ProjectResolverError) {
         console.error(`Error: ${error.message}`);
