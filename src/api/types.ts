@@ -115,9 +115,14 @@ export type TaskAttemptStatus =
   | "ExecutorComplete"
   | "ExecutorFailed";
 
+export interface ExecutorProfileID {
+  executor: string;
+  variant: string;
+}
+
 export interface CreateAttempt {
   task_id: string;
-  executor_profile_id: string;
+  executor_profile_id: ExecutorProfileID;
   base_branch: string;
   target_branch?: string;
 }

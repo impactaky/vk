@@ -2,7 +2,11 @@ import { Command } from "@cliffy/command";
 import { Confirm } from "@cliffy/prompt";
 import { Table } from "@cliffy/table";
 import { ApiClient } from "../api/client.ts";
-import type { CreateAttempt, CreatePRRequest } from "../api/types.ts";
+import type {
+  CreateAttempt,
+  CreatePRRequest,
+  ExecutorProfileID,
+} from "../api/types.ts";
 import { ProjectResolverError } from "../utils/project-resolver.ts";
 import { FzfCancelledError, FzfNotInstalledError } from "../utils/fzf.ts";
 import { applyFilters } from "../utils/filter.ts";
@@ -10,6 +14,30 @@ import {
   getAttemptIdWithAutoDetect,
   getTaskIdWithAutoDetect,
 } from "../utils/attempt-resolver.ts";
+
+/**
+ * Parse executor string in format "<name>:<variant>" into ExecutorProfileID
+ * @param executorString - String in format "NAME:VARIANT" (e.g., "CLAUDE_CODE:DEFAULT")
+ * @returns ExecutorProfileID object with executor and variant fields
+ * @throws Error if format is invalid
+ */
+function parseExecutorString(executorString: string): ExecutorProfileID {
+  const parts = executorString.split(":");
+  if (parts.length !== 2) {
+    throw new Error(
+      `Invalid executor format: "${executorString}". Expected format: <name>:<variant> (e.g., CLAUDE_CODE:DEFAULT)`,
+    );
+  }
+
+  const [executor, variant] = parts;
+  if (!executor || !variant) {
+    throw new Error(
+      `Invalid executor format: "${executorString}". Both name and variant must be non-empty.`,
+    );
+  }
+
+  return { executor, variant };
+}
 
 export const attemptCommand = new Command()
   .description("Manage task attempts")
@@ -150,26 +178,41 @@ attemptCommand
   .command("create")
   .description("Create a new attempt for a task")
   .option("--task <id:string>", "Task ID", { required: true })
-  .option("--executor <executor:string>", "Executor profile ID", {
-    required: true,
-  })
+  .option(
+    "--executor <executor:string>",
+    "Executor profile ID in format <name>:<variant> (e.g., CLAUDE_CODE:DEFAULT)",
+    {
+      required: true,
+    },
+  )
   .option("--base-branch <branch:string>", "Base branch", { default: "main" })
   .option("--target-branch <branch:string>", "Target branch")
   .action(async (options) => {
-    const client = await ApiClient.create();
+    try {
+      const client = await ApiClient.create();
 
-    const createAttempt: CreateAttempt = {
-      task_id: options.task,
-      executor_profile_id: options.executor,
-      base_branch: options.baseBranch,
-      target_branch: options.targetBranch,
-    };
+      // Parse executor string into profile ID
+      const executorProfileId = parseExecutorString(options.executor);
 
-    const attempt = await client.createAttempt(createAttempt);
+      const createAttempt: CreateAttempt = {
+        task_id: options.task,
+        executor_profile_id: executorProfileId,
+        base_branch: options.baseBranch,
+        target_branch: options.targetBranch,
+      };
 
-    console.log(`Attempt created successfully!`);
-    console.log(`ID: ${attempt.id}`);
-    console.log(`Branch: ${attempt.branch}`);
+      const attempt = await client.createAttempt(createAttempt);
+
+      console.log(`Attempt created successfully!`);
+      console.log(`ID: ${attempt.id}`);
+      console.log(`Branch: ${attempt.branch}`);
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      throw error;
+    }
   });
 
 // Delete attempt

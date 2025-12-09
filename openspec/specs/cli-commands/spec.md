@@ -289,53 +289,18 @@ Then the CLI uses the first match and optionally warns about multiple matches
 ---
 
 ### Requirement: Attempt List Command
-The CLI MUST provide a command to list attempts for a task with optional filtering and auto-detection support.
+The CLI MUST filter attempts by full executor profile ID in `<name>:<variant>` format.
 
-#### Scenario: List attempts for task with explicit task ID
-- **WHEN** a task with id "task-456" has attempts
-- **AND** the user runs `vk attempt list --task task-456`
-- **THEN** the CLI displays a table of attempts with id, branch, executor, and status
+#### Scenario: Filter attempts by executor with variant
+Given a task has attempts with executors "CLAUDE_CODE:DEFAULT" and "CLAUDE_CODE:AGGRESSIVE"
+When the user runs `vk attempt list --task task-456 --executor CLAUDE_CODE:DEFAULT`
+Then the CLI displays only attempts with executor "CLAUDE_CODE" and variant "DEFAULT"
 
-#### Scenario: List attempts with JSON output and explicit task ID
-- **WHEN** a task with id "task-456" has attempts
-- **AND** the user runs `vk attempt list --task task-456 --json`
-- **THEN** the CLI outputs the attempts as JSON array
-
-#### Scenario: List attempts with auto-detected project
-- **WHEN** the user is in a git repository matching project "abc-123"
-- **AND** task "task-456" belongs to project "abc-123"
-- **AND** the user runs `vk attempt list --task task-456`
-- **THEN** the CLI displays attempts for the specified task
-
-#### Scenario: List attempts with auto-detected task ID from branch
-- **WHEN** user is in a branch corresponding to an attempt with task_id "task-456"
-- **AND** the user runs `vk attempt list` without --task flag
-- **THEN** the CLI auto-detects task-456 and displays its attempts
-
-#### Scenario: Filter attempts by executor
-- **WHEN** a task has attempts with various executors
-- **AND** the user runs `vk attempt list --task task-456 --executor CLAUDE_CODE`
-- **THEN** the CLI displays only attempts with executor "CLAUDE_CODE"
-
-#### Scenario: Filter attempts by branch
-- **WHEN** a task has attempts with different branch names
-- **AND** the user runs `vk attempt list --task task-456 --branch feature-branch`
-- **THEN** the CLI displays only attempts with branch name "feature-branch"
-
-#### Scenario: Filter attempts by target branch
-- **WHEN** a task has attempts targeting different branches
-- **AND** the user runs `vk attempt list --task task-456 --target-branch main`
-- **THEN** the CLI displays only attempts targeting the "main" branch
-
-#### Scenario: Filter attempts with multiple conditions
-- **WHEN** a task has multiple attempts
-- **AND** the user runs `vk attempt list --task task-456 --executor CLAUDE_CODE --target-branch main`
-- **THEN** the CLI displays only attempts matching all filter conditions (AND logic)
-
-#### Scenario: Filter attempts with JSON output
-- **WHEN** a task has multiple attempts
-- **AND** the user runs `vk attempt list --task task-456 --executor CLAUDE_CODE --json`
-- **THEN** the CLI outputs filtered attempts as JSON array
+#### Scenario: Filter attempts with full match
+Given a task has attempts with executors "CLAUDE_CODE:DEFAULT" and "OTHER_EXECUTOR:DEFAULT"
+When the user runs `vk attempt list --task task-456 --executor CLAUDE_CODE:DEFAULT`
+Then the CLI displays only attempts matching the full "CLAUDE_CODE:DEFAULT" string
+And does not display attempts with "OTHER_EXECUTOR:DEFAULT"
 
 ### Requirement: Attempt Show Command
 The CLI MUST provide a command to show attempt details with auto-detection support.
