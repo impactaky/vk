@@ -7,17 +7,13 @@ import type {
   CreatePRRequest,
   ExecutorProfileID,
 } from "../api/types.ts";
-import {
-  getProjectId,
-  ProjectResolverError,
-} from "../utils/project-resolver.ts";
-import {
-  FzfCancelledError,
-  FzfNotInstalledError,
-  selectAttempt,
-  selectTask,
-} from "../utils/fzf.ts";
+import { ProjectResolverError } from "../utils/project-resolver.ts";
+import { FzfCancelledError, FzfNotInstalledError } from "../utils/fzf.ts";
 import { applyFilters } from "../utils/filter.ts";
+import {
+  getAttemptIdWithAutoDetect,
+  getTaskIdWithAutoDetect,
+} from "../utils/attempt-resolver.ts";
 
 /**
  * Parse executor string in format "<name>:<variant>" into ExecutorProfileID
@@ -43,32 +39,6 @@ function parseExecutorString(executorString: string): ExecutorProfileID {
   return { executor, variant };
 }
 
-/**
- * Helper to get attempt ID, either from argument or via fzf selection
- */
-async function getAttemptId(
-  client: ApiClient,
-  id: string | undefined,
-  projectId?: string,
-): Promise<string> {
-  if (id) return id;
-
-  // Need to select task first, then attempt
-  const resolvedProjectId = await getProjectId(projectId, client);
-  const tasks = await client.listTasks(resolvedProjectId);
-  if (tasks.length === 0) {
-    throw new Error("No tasks found in the project.");
-  }
-
-  const taskId = await selectTask(tasks);
-  const attempts = await client.listAttempts(taskId);
-  if (attempts.length === 0) {
-    throw new Error("No attempts found for the selected task.");
-  }
-
-  return await selectAttempt(attempts);
-}
-
 export const attemptCommand = new Command()
   .description("Manage task attempts")
   .action(function () {
@@ -79,47 +49,76 @@ export const attemptCommand = new Command()
 attemptCommand
   .command("list")
   .description("List attempts for a task")
-  .option("--task <id:string>", "Task ID", { required: true })
+  .option(
+    "--task <id:string>",
+    "Task ID (auto-detected from current branch if omitted)",
+  )
+  .option(
+    "--project <id:string>",
+    "Project ID (for fzf selection, auto-detected from git if omitted)",
+  )
   .option("--executor <executor:string>", "Filter by executor")
   .option("--branch <branch:string>", "Filter by branch name")
   .option("--target-branch <branch:string>", "Filter by target branch")
   .option("--json", "Output as JSON")
   .action(async (options) => {
-    const client = await ApiClient.create();
-    let attempts = await client.listAttempts(options.task);
+    try {
+      const client = await ApiClient.create();
 
-    // Build filter object from provided options
-    const filters: Record<string, unknown> = {};
-    if (options.executor !== undefined) {
-      filters.executor = options.executor;
-    }
-    if (options.branch !== undefined) {
-      filters.branch = options.branch;
-    }
-    if (options.targetBranch !== undefined) {
-      filters.target_branch = options.targetBranch;
-    }
-
-    // Apply filters
-    attempts = applyFilters(attempts, filters);
-
-    if (options.json) {
-      console.log(JSON.stringify(attempts, null, 2));
-      return;
-    }
-
-    if (attempts.length === 0) {
-      console.log("No attempts found.");
-      return;
-    }
-
-    const table = new Table()
-      .header(["ID", "Branch", "Executor", "Target Branch"])
-      .body(
-        attempts.map((a) => [a.id, a.branch, a.executor, a.target_branch]),
+      const taskId = await getTaskIdWithAutoDetect(
+        client,
+        options.task,
+        options.project,
       );
 
-    table.render();
+      let attempts = await client.listAttempts(taskId);
+
+      // Build filter object from provided options
+      const filters: Record<string, unknown> = {};
+      if (options.executor !== undefined) {
+        filters.executor = options.executor;
+      }
+      if (options.branch !== undefined) {
+        filters.branch = options.branch;
+      }
+      if (options.targetBranch !== undefined) {
+        filters.target_branch = options.targetBranch;
+      }
+
+      // Apply filters
+      attempts = applyFilters(attempts, filters);
+
+      if (options.json) {
+        console.log(JSON.stringify(attempts, null, 2));
+        return;
+      }
+
+      if (attempts.length === 0) {
+        console.log("No attempts found.");
+        return;
+      }
+
+      const table = new Table()
+        .header(["ID", "Branch", "Executor", "Target Branch"])
+        .body(
+          attempts.map((a) => [a.id, a.branch, a.executor, a.target_branch]),
+        );
+
+      table.render();
+    } catch (error) {
+      if (error instanceof ProjectResolverError) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      if (
+        error instanceof FzfNotInstalledError ||
+        error instanceof FzfCancelledError
+      ) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      throw error;
+    }
   });
 
 // Show attempt
@@ -135,7 +134,11 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptId(client, id, options.project);
+      const attemptId = await getAttemptIdWithAutoDetect(
+        client,
+        id,
+        options.project,
+      );
       const attempt = await client.getAttempt(attemptId);
 
       if (options.json) {
@@ -225,7 +228,11 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptId(client, id, options.project);
+      const attemptId = await getAttemptIdWithAutoDetect(
+        client,
+        id,
+        options.project,
+      );
 
       if (!options.force) {
         const confirmed = await Confirm.prompt(
@@ -266,7 +273,11 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptId(client, id, options.project);
+      const attemptId = await getAttemptIdWithAutoDetect(
+        client,
+        id,
+        options.project,
+      );
 
       if (options.targetBranch) {
         const attempt = await client.changeTargetBranch(attemptId, {
@@ -313,7 +324,11 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptId(client, id, options.project);
+      const attemptId = await getAttemptIdWithAutoDetect(
+        client,
+        id,
+        options.project,
+      );
       const result = await client.mergeAttempt(attemptId);
 
       if (options.json) {
@@ -357,7 +372,11 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptId(client, id, options.project);
+      const attemptId = await getAttemptIdWithAutoDetect(
+        client,
+        id,
+        options.project,
+      );
       await client.pushAttempt(attemptId);
       console.log(`Branch pushed successfully.`);
     } catch (error) {
@@ -385,7 +404,11 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptId(client, id, options.project);
+      const attemptId = await getAttemptIdWithAutoDetect(
+        client,
+        id,
+        options.project,
+      );
       await client.rebaseAttempt(attemptId);
       console.log(`Branch rebased successfully.`);
     } catch (error) {
@@ -413,7 +436,11 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptId(client, id, options.project);
+      const attemptId = await getAttemptIdWithAutoDetect(
+        client,
+        id,
+        options.project,
+      );
       await client.stopAttempt(attemptId);
       console.log(`Attempt execution stopped.`);
     } catch (error) {
@@ -444,7 +471,11 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptId(client, id, options.project);
+      const attemptId = await getAttemptIdWithAutoDetect(
+        client,
+        id,
+        options.project,
+      );
 
       // Get attempt to find task_id, then get task for defaults
       const attempt = await client.getAttempt(attemptId);
@@ -490,7 +521,11 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptId(client, id, options.project);
+      const attemptId = await getAttemptIdWithAutoDetect(
+        client,
+        id,
+        options.project,
+      );
       const status = await client.getBranchStatus(attemptId);
 
       if (options.json) {

@@ -125,6 +125,13 @@ export class ApiClient {
     return this.request<TaskAttempt>(`/task-attempts/${id}`);
   }
 
+  async searchAttemptsByBranch(branchName: string): Promise<TaskAttempt[]> {
+    // The API doesn't support filtering by branch directly
+    // Fetch all attempts and filter client-side
+    const allAttempts = await this.request<TaskAttempt[]>(`/task-attempts`);
+    return allAttempts.filter((attempt) => attempt.branch === branchName);
+  }
+
   createAttempt(attempt: CreateAttempt): Promise<TaskAttempt> {
     return this.request<TaskAttempt>("/task-attempts", {
       method: "POST",
