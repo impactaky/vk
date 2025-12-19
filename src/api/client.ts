@@ -1,12 +1,14 @@
 import { getApiUrl } from "./config.ts";
 import type {
   ApiResponse,
+  AttachPRRequest,
   BranchStatus,
   ChangeTargetBranchRequest,
   CreateAttempt,
   CreateProject,
   CreatePRRequest,
   CreateTask,
+  FollowUpRequest,
   MergeResult,
   Project,
   PRResult,
@@ -14,6 +16,7 @@ import type {
   Task,
   TaskAttempt,
   TaskWithAttemptStatus,
+  UnifiedPRComment,
   UpdateProject,
   UpdateTask,
 } from "./types.ts";
@@ -198,5 +201,40 @@ export class ApiClient {
 
   getBranchStatus(id: string): Promise<BranchStatus> {
     return this.request<BranchStatus>(`/task-attempts/${id}/branch-status`);
+  }
+
+  // Force push attempt branch to remote
+  forcePushAttempt(id: string): Promise<void> {
+    return this.request<void>(`/task-attempts/${id}/push/force`, {
+      method: "POST",
+    });
+  }
+
+  // Abort git conflicts for an attempt
+  abortConflicts(id: string): Promise<void> {
+    return this.request<void>(`/task-attempts/${id}/conflicts/abort`, {
+      method: "POST",
+    });
+  }
+
+  // Send follow-up message to a running attempt
+  followUp(id: string, request: FollowUpRequest): Promise<void> {
+    return this.request<void>(`/task-attempts/${id}/follow-up`, {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
+  }
+
+  // Attach an existing PR to an attempt
+  attachPR(id: string, request: AttachPRRequest): Promise<PRResult> {
+    return this.request<PRResult>(`/task-attempts/${id}/pr/attach`, {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
+  }
+
+  // Get PR comments for an attempt
+  getPRComments(id: string): Promise<UnifiedPRComment[]> {
+    return this.request<UnifiedPRComment[]>(`/task-attempts/${id}/pr/comments`);
   }
 }

@@ -35,7 +35,10 @@ taskCommand
     "--project <id:string>",
     "Project ID (auto-detected from git if omitted)",
   )
-  .option("--status <status:string>", "Filter by task status")
+  .option(
+    "--status <status:string>",
+    "Filter by task status (todo, inprogress, inreview, done, cancelled)",
+  )
   .option("--priority <priority:number>", "Filter by priority")
   .option("--executor <executor:string>", "Filter by executor")
   .option("--label <label:string>", "Filter by label")
@@ -291,7 +294,7 @@ taskCommand
   .option("--description <desc:string>", "New description")
   .option(
     "--status <status:string>",
-    "New status (pending, in_progress, completed, cancelled)",
+    "New status (todo, inprogress, inreview, done, cancelled)",
   )
   .option("--priority <priority:number>", "Task priority (1-5)")
   .option("--due-date <date:string>", "Due date (ISO format, empty to clear)")

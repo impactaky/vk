@@ -2,7 +2,12 @@ import { Command } from "@cliffy/command";
 import { Confirm } from "@cliffy/prompt";
 import { Table } from "@cliffy/table";
 import { ApiClient } from "../api/client.ts";
-import type { CreateAttempt, CreatePRRequest } from "../api/types.ts";
+import type {
+  AttachPRRequest,
+  CreateAttempt,
+  CreatePRRequest,
+  FollowUpRequest,
+} from "../api/types.ts";
 import { ProjectResolverError } from "../utils/project-resolver.ts";
 import { FzfCancelledError, FzfNotInstalledError } from "../utils/fzf.ts";
 import { applyFilters } from "../utils/filter.ts";
@@ -509,6 +514,225 @@ attemptCommand
       console.log(`Ahead:         ${status.ahead}`);
       console.log(`Behind:        ${status.behind}`);
       console.log(`Has Conflicts: ${status.has_conflicts}`);
+    } catch (error) {
+      if (
+        error instanceof ProjectResolverError ||
+        error instanceof FzfNotInstalledError ||
+        error instanceof FzfCancelledError
+      ) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      throw error;
+    }
+  });
+
+// Follow-up command - send message to running attempt
+attemptCommand
+  .command("follow-up")
+  .description("Send a follow-up message to a running attempt")
+  .arguments("[id:string]")
+  .option(
+    "--project <id:string>",
+    "Project ID (for fzf selection, auto-detected from git if omitted)",
+  )
+  .option("--message <message:string>", "Message to send to the executor", {
+    required: true,
+  })
+  .action(async (options, id) => {
+    try {
+      const client = await ApiClient.create();
+      const attemptId = await getAttemptIdWithAutoDetect(
+        client,
+        id,
+        options.project,
+      );
+
+      const request: FollowUpRequest = {
+        message: options.message,
+      };
+
+      await client.followUp(attemptId, request);
+      console.log(`Follow-up message sent successfully.`);
+    } catch (error) {
+      if (
+        error instanceof ProjectResolverError ||
+        error instanceof FzfNotInstalledError ||
+        error instanceof FzfCancelledError
+      ) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      throw error;
+    }
+  });
+
+// Force push command
+attemptCommand
+  .command("force-push")
+  .description("Force push attempt branch to remote")
+  .arguments("[id:string]")
+  .option(
+    "--project <id:string>",
+    "Project ID (for fzf selection, auto-detected from git if omitted)",
+  )
+  .option("--force", "Skip confirmation prompt")
+  .action(async (options, id) => {
+    try {
+      const client = await ApiClient.create();
+      const attemptId = await getAttemptIdWithAutoDetect(
+        client,
+        id,
+        options.project,
+      );
+
+      if (!options.force) {
+        const confirmed = await Confirm.prompt(
+          `Are you sure you want to force push? This may overwrite remote changes.`,
+        );
+        if (!confirmed) {
+          console.log("Force push cancelled.");
+          return;
+        }
+      }
+
+      await client.forcePushAttempt(attemptId);
+      console.log(`Branch force pushed successfully.`);
+    } catch (error) {
+      if (
+        error instanceof ProjectResolverError ||
+        error instanceof FzfNotInstalledError ||
+        error instanceof FzfCancelledError
+      ) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      throw error;
+    }
+  });
+
+// Abort conflicts command
+attemptCommand
+  .command("abort-conflicts")
+  .description("Abort git conflicts for an attempt")
+  .arguments("[id:string]")
+  .option(
+    "--project <id:string>",
+    "Project ID (for fzf selection, auto-detected from git if omitted)",
+  )
+  .action(async (options, id) => {
+    try {
+      const client = await ApiClient.create();
+      const attemptId = await getAttemptIdWithAutoDetect(
+        client,
+        id,
+        options.project,
+      );
+
+      await client.abortConflicts(attemptId);
+      console.log(`Conflicts aborted successfully.`);
+    } catch (error) {
+      if (
+        error instanceof ProjectResolverError ||
+        error instanceof FzfNotInstalledError ||
+        error instanceof FzfCancelledError
+      ) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      throw error;
+    }
+  });
+
+// Attach existing PR command
+attemptCommand
+  .command("attach-pr")
+  .description("Attach an existing GitHub PR to an attempt")
+  .arguments("[id:string]")
+  .option(
+    "--project <id:string>",
+    "Project ID (for fzf selection, auto-detected from git if omitted)",
+  )
+  .option("--pr-number <number:number>", "PR number to attach", {
+    required: true,
+  })
+  .option("--json", "Output as JSON")
+  .action(async (options, id) => {
+    try {
+      const client = await ApiClient.create();
+      const attemptId = await getAttemptIdWithAutoDetect(
+        client,
+        id,
+        options.project,
+      );
+
+      const request: AttachPRRequest = {
+        pr_number: options.prNumber,
+      };
+
+      const prUrl = await client.attachPR(attemptId, request);
+
+      if (options.json) {
+        console.log(JSON.stringify({ url: prUrl }, null, 2));
+        return;
+      }
+
+      console.log(`PR #${options.prNumber} attached successfully!`);
+      console.log(`URL: ${prUrl}`);
+    } catch (error) {
+      if (
+        error instanceof ProjectResolverError ||
+        error instanceof FzfNotInstalledError ||
+        error instanceof FzfCancelledError
+      ) {
+        console.error(`Error: ${error.message}`);
+        Deno.exit(1);
+      }
+      throw error;
+    }
+  });
+
+// PR comments command
+attemptCommand
+  .command("pr-comments")
+  .description("View comments on the PR associated with an attempt")
+  .arguments("[id:string]")
+  .option(
+    "--project <id:string>",
+    "Project ID (for fzf selection, auto-detected from git if omitted)",
+  )
+  .option("--json", "Output as JSON")
+  .action(async (options, id) => {
+    try {
+      const client = await ApiClient.create();
+      const attemptId = await getAttemptIdWithAutoDetect(
+        client,
+        id,
+        options.project,
+      );
+
+      const comments = await client.getPRComments(attemptId);
+
+      if (options.json) {
+        console.log(JSON.stringify(comments, null, 2));
+        return;
+      }
+
+      if (comments.length === 0) {
+        console.log("No comments found.");
+        return;
+      }
+
+      for (const comment of comments) {
+        console.log("---");
+        console.log(`Author: ${comment.user}`);
+        console.log(`Type:   ${comment.comment_type}`);
+        console.log(`Date:   ${comment.created_at}`);
+        if (comment.path) {
+          console.log(`File:   ${comment.path}${comment.line ? `:${comment.line}` : ""}`);
+        }
+        console.log(`\n${comment.body}\n`);
+      }
     } catch (error) {
       if (
         error instanceof ProjectResolverError ||
