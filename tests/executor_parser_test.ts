@@ -1,27 +1,5 @@
 import { assertEquals, assertThrows } from "@std/assert";
-import type { ExecutorProfileID } from "../src/api/types.ts";
-
-/**
- * Parse executor string in format "<name>:<variant>" into ExecutorProfileID
- * This is a copy of the function from src/commands/attempt.ts for testing purposes
- */
-function parseExecutorString(executorString: string): ExecutorProfileID {
-  const parts = executorString.split(":");
-  if (parts.length !== 2) {
-    throw new Error(
-      `Invalid executor format: "${executorString}". Expected format: <name>:<variant> (e.g., CLAUDE_CODE:DEFAULT)`,
-    );
-  }
-
-  const [executor, variant] = parts;
-  if (!executor || !variant) {
-    throw new Error(
-      `Invalid executor format: "${executorString}". Both name and variant must be non-empty.`,
-    );
-  }
-
-  return { executor, variant };
-}
+import { parseExecutorString } from "../src/utils/executor-parser.ts";
 
 Deno.test("parseExecutorString - valid format with uppercase", () => {
   const result = parseExecutorString("CLAUDE_CODE:DEFAULT");

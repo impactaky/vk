@@ -2,7 +2,12 @@ import { Command } from "@cliffy/command";
 import { Confirm, Input } from "@cliffy/prompt";
 import { Table } from "@cliffy/table";
 import { ApiClient } from "../api/client.ts";
-import type { CreateTask, TaskStatus, UpdateTask } from "../api/types.ts";
+import type {
+  CreateAttempt,
+  CreateTask,
+  TaskStatus,
+  UpdateTask,
+} from "../api/types.ts";
 import {
   getProjectId,
   ProjectResolverError,
@@ -14,6 +19,7 @@ import {
 import { FzfCancelledError, FzfNotInstalledError } from "../utils/fzf.ts";
 import { applyFilters } from "../utils/filter.ts";
 import { getTaskIdWithAutoDetect } from "../utils/attempt-resolver.ts";
+import { parseExecutorString } from "../utils/executor-parser.ts";
 
 export const taskCommand = new Command()
   .description("Manage tasks")
@@ -178,8 +184,23 @@ taskCommand
   .option("--labels <labels:string>", "Comma-separated labels")
   .option("--color <color:string>", "Hex color (e.g., #ff5733)")
   .option("--favorite", "Mark as favorite")
+  .option("--run", "Create an attempt and start execution immediately")
+  .option(
+    "--executor <executor:string>",
+    "Executor profile ID in format <name>:<variant> (e.g., CLAUDE_CODE:DEFAULT). Required when --run is specified.",
+  )
+  .option("--base-branch <branch:string>", "Base branch for attempt", {
+    default: "main",
+  })
+  .option("--target-branch <branch:string>", "Target branch for attempt")
   .action(async (options) => {
     try {
+      // Validate option combinations
+      if (options.run && !options.executor) {
+        console.error("Error: --executor is required when --run is specified");
+        Deno.exit(1);
+      }
+
       const client = await ApiClient.create();
       const projectId = await getProjectId(options.project, client);
 
@@ -226,6 +247,24 @@ taskCommand
 
       console.log(`Task created successfully!`);
       console.log(`ID: ${task.id}`);
+
+      // If --run is specified, create an attempt and start execution
+      if (options.run && options.executor) {
+        const executorProfileId = parseExecutorString(options.executor);
+
+        const createAttempt: CreateAttempt = {
+          task_id: task.id,
+          executor_profile_id: executorProfileId,
+          base_branch: options.baseBranch,
+          target_branch: options.targetBranch,
+        };
+
+        const attempt = await client.createAttempt(createAttempt);
+
+        console.log(`Attempt created successfully!`);
+        console.log(`Attempt ID: ${attempt.id}`);
+        console.log(`Branch: ${attempt.branch}`);
+      }
     } catch (error) {
       if (error instanceof ProjectResolverError) {
         console.error(`Error: ${error.message}`);
