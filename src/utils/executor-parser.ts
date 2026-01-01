@@ -32,7 +32,9 @@ export function parseExecutorString(executorString: string): ExecutorProfileID {
   // Validate executor name against supported agents
   if (!isValidExecutor(executor)) {
     throw new Error(
-      `Invalid executor name: "${executor}". Valid executors are: ${VALID_EXECUTORS.join(", ")}`,
+      `Invalid executor name: "${executor}". Valid executors are: ${
+        VALID_EXECUTORS.join(", ")
+      }`,
     );
   }
 

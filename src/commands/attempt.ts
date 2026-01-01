@@ -729,7 +729,9 @@ attemptCommand
         console.log(`Type:   ${comment.comment_type}`);
         console.log(`Date:   ${comment.created_at}`);
         if (comment.path) {
-          console.log(`File:   ${comment.path}${comment.line ? `:${comment.line}` : ""}`);
+          console.log(
+            `File:   ${comment.path}${comment.line ? `:${comment.line}` : ""}`,
+          );
         }
         console.log(`\n${comment.body}\n`);
       }
