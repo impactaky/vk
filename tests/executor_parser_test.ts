@@ -11,9 +11,12 @@ Deno.test("parseExecutorString - valid format with different variant", () => {
   assertEquals(result, { executor: "CLAUDE_CODE", variant: "AGGRESSIVE" });
 });
 
-Deno.test("parseExecutorString - valid format with lowercase", () => {
-  const result = parseExecutorString("custom_executor:standard");
-  assertEquals(result, { executor: "custom_executor", variant: "standard" });
+Deno.test("parseExecutorString - invalid executor name", () => {
+  assertThrows(
+    () => parseExecutorString("custom_executor:standard"),
+    Error,
+    'Invalid executor name: "custom_executor"',
+  );
 });
 
 Deno.test("parseExecutorString - invalid format without colon", () => {

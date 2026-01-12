@@ -59,7 +59,12 @@ export interface Task {
   updated_at: string;
 }
 
-export type TaskStatus = "pending" | "in_progress" | "completed" | "cancelled";
+export type TaskStatus =
+  | "todo"
+  | "inprogress"
+  | "inreview"
+  | "done"
+  | "cancelled";
 
 export interface TaskWithAttemptStatus extends Task {
   has_in_progress_attempt: boolean;
@@ -115,9 +120,33 @@ export type TaskAttemptStatus =
   | "ExecutorComplete"
   | "ExecutorFailed";
 
+// All supported coding agents in vibe-kanban
+export type BaseCodingAgent =
+  | "CLAUDE_CODE"
+  | "AMP"
+  | "GEMINI"
+  | "CODEX"
+  | "OPENCODE"
+  | "CURSOR_AGENT"
+  | "QWEN_CODE"
+  | "COPILOT"
+  | "DROID";
+
+export const VALID_EXECUTORS: BaseCodingAgent[] = [
+  "CLAUDE_CODE",
+  "AMP",
+  "GEMINI",
+  "CODEX",
+  "OPENCODE",
+  "CURSOR_AGENT",
+  "QWEN_CODE",
+  "COPILOT",
+  "DROID",
+];
+
 export interface ExecutorProfileID {
-  executor: string;
-  variant: string;
+  executor: BaseCodingAgent;
+  variant: string | null;
 }
 
 export interface CreateAttempt {
@@ -153,3 +182,38 @@ export interface MergeResult {
 
 // PR creation returns just the URL string
 export type PRResult = string;
+
+// Follow-up request for sending messages to running attempts
+export interface FollowUpRequest {
+  message: string;
+}
+
+// Attach existing PR to an attempt
+export interface AttachPRRequest {
+  pr_number: number;
+}
+
+// PR comment types
+export interface PRComment {
+  id: number;
+  body: string;
+  user: string;
+  created_at: string;
+  updated_at: string;
+  path?: string;
+  line?: number;
+  side?: string;
+}
+
+export interface UnifiedPRComment {
+  id: number;
+  body: string;
+  user: string;
+  created_at: string;
+  updated_at: string;
+  comment_type: "issue" | "review" | "review_thread";
+  path?: string;
+  line?: number;
+  side?: string;
+  in_reply_to_id?: number;
+}
