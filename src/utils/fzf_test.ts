@@ -33,7 +33,7 @@ Deno.test("formatTask formats task correctly", () => {
   };
 
   const result = formatTask(task);
-  assertEquals(result, "task-456\tFix bug\t[in_progress]");
+  assertEquals(result, "task-456\tFix bug\t[inprogress]");
 });
 
 Deno.test("formatAttempt formats attempt correctly", () => {
