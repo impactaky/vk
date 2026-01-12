@@ -24,7 +24,7 @@ Deno.test("formatTask formats task correctly", () => {
     id: "task-456",
     project_id: "proj-123",
     title: "Fix bug",
-    status: "in_progress",
+    status: "inprogress",
     has_in_progress_attempt: true,
     has_merged_attempt: false,
     last_attempt_failed: false,
