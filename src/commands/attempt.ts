@@ -8,14 +8,13 @@ import type {
   CreatePRRequest,
   FollowUpRequest,
 } from "../api/types.ts";
-import { ProjectResolverError } from "../utils/project-resolver.ts";
-import { FzfCancelledError, FzfNotInstalledError } from "../utils/fzf.ts";
 import { applyFilters } from "../utils/filter.ts";
 import {
   getAttemptIdWithAutoDetect,
   getTaskIdWithAutoDetect,
 } from "../utils/attempt-resolver.ts";
 import { parseExecutorString } from "../utils/executor-parser.ts";
+import { handleCliError } from "../utils/error-handler.ts";
 
 export const attemptCommand = new Command()
   .description("Manage task attempts")
@@ -84,17 +83,7 @@ attemptCommand
 
       table.render();
     } catch (error) {
-      if (error instanceof ProjectResolverError) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
-      if (
-        error instanceof FzfNotInstalledError ||
-        error instanceof FzfCancelledError
-      ) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -139,14 +128,7 @@ attemptCommand
       console.log(`Created:        ${attempt.created_at}`);
       console.log(`Updated:        ${attempt.updated_at}`);
     } catch (error) {
-      if (
-        error instanceof ProjectResolverError ||
-        error instanceof FzfNotInstalledError ||
-        error instanceof FzfCancelledError
-      ) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -185,10 +167,7 @@ attemptCommand
       console.log(`ID: ${attempt.id}`);
       console.log(`Branch: ${attempt.branch}`);
     } catch (error) {
-      if (error instanceof Error) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -225,14 +204,7 @@ attemptCommand
       await client.deleteAttempt(attemptId);
       console.log(`Attempt ${attemptId} deleted successfully.`);
     } catch (error) {
-      if (
-        error instanceof ProjectResolverError ||
-        error instanceof FzfNotInstalledError ||
-        error instanceof FzfCancelledError
-      ) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -277,14 +249,7 @@ attemptCommand
         );
       }
     } catch (error) {
-      if (
-        error instanceof ProjectResolverError ||
-        error instanceof FzfNotInstalledError ||
-        error instanceof FzfCancelledError
-      ) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -326,14 +291,7 @@ attemptCommand
         }
       }
     } catch (error) {
-      if (
-        error instanceof ProjectResolverError ||
-        error instanceof FzfNotInstalledError ||
-        error instanceof FzfCancelledError
-      ) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -358,14 +316,7 @@ attemptCommand
       await client.pushAttempt(attemptId);
       console.log(`Branch pushed successfully.`);
     } catch (error) {
-      if (
-        error instanceof ProjectResolverError ||
-        error instanceof FzfNotInstalledError ||
-        error instanceof FzfCancelledError
-      ) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -390,14 +341,7 @@ attemptCommand
       await client.rebaseAttempt(attemptId);
       console.log(`Branch rebased successfully.`);
     } catch (error) {
-      if (
-        error instanceof ProjectResolverError ||
-        error instanceof FzfNotInstalledError ||
-        error instanceof FzfCancelledError
-      ) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -422,14 +366,7 @@ attemptCommand
       await client.stopAttempt(attemptId);
       console.log(`Attempt execution stopped.`);
     } catch (error) {
-      if (
-        error instanceof ProjectResolverError ||
-        error instanceof FzfNotInstalledError ||
-        error instanceof FzfCancelledError
-      ) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -474,14 +411,7 @@ attemptCommand
       console.log(`PR created successfully!`);
       console.log(`URL: ${prUrl}`);
     } catch (error) {
-      if (
-        error instanceof ProjectResolverError ||
-        error instanceof FzfNotInstalledError ||
-        error instanceof FzfCancelledError
-      ) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -515,14 +445,7 @@ attemptCommand
       console.log(`Behind:        ${status.behind}`);
       console.log(`Has Conflicts: ${status.has_conflicts}`);
     } catch (error) {
-      if (
-        error instanceof ProjectResolverError ||
-        error instanceof FzfNotInstalledError ||
-        error instanceof FzfCancelledError
-      ) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -555,14 +478,7 @@ attemptCommand
       await client.followUp(attemptId, request);
       console.log(`Follow-up message sent successfully.`);
     } catch (error) {
-      if (
-        error instanceof ProjectResolverError ||
-        error instanceof FzfNotInstalledError ||
-        error instanceof FzfCancelledError
-      ) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -599,14 +515,7 @@ attemptCommand
       await client.forcePushAttempt(attemptId);
       console.log(`Branch force pushed successfully.`);
     } catch (error) {
-      if (
-        error instanceof ProjectResolverError ||
-        error instanceof FzfNotInstalledError ||
-        error instanceof FzfCancelledError
-      ) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -632,14 +541,7 @@ attemptCommand
       await client.abortConflicts(attemptId);
       console.log(`Conflicts aborted successfully.`);
     } catch (error) {
-      if (
-        error instanceof ProjectResolverError ||
-        error instanceof FzfNotInstalledError ||
-        error instanceof FzfCancelledError
-      ) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -680,14 +582,7 @@ attemptCommand
       console.log(`PR #${options.prNumber} attached successfully!`);
       console.log(`URL: ${prUrl}`);
     } catch (error) {
-      if (
-        error instanceof ProjectResolverError ||
-        error instanceof FzfNotInstalledError ||
-        error instanceof FzfCancelledError
-      ) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -736,14 +631,7 @@ attemptCommand
         console.log(`\n${comment.body}\n`);
       }
     } catch (error) {
-      if (
-        error instanceof ProjectResolverError ||
-        error instanceof FzfNotInstalledError ||
-        error instanceof FzfCancelledError
-      ) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });

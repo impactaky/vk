@@ -3,11 +3,9 @@ import { Confirm, Input } from "@cliffy/prompt";
 import { Table } from "@cliffy/table";
 import { ApiClient } from "../api/client.ts";
 import type { CreateProject, UpdateProject } from "../api/types.ts";
-import {
-  ProjectResolverError,
-  resolveProjectFromGit,
-} from "../utils/project-resolver.ts";
+import { resolveProjectFromGit } from "../utils/project-resolver.ts";
 import { applyFilters } from "../utils/filter.ts";
+import { handleCliError } from "../utils/error-handler.ts";
 
 export const projectCommand = new Command()
   .description("Manage projects")
@@ -111,10 +109,7 @@ projectCommand
       console.log(`Created:       ${project.created_at}`);
       console.log(`Updated:       ${project.updated_at}`);
     } catch (error) {
-      if (error instanceof ProjectResolverError) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -199,10 +194,7 @@ projectCommand
       const project = await client.updateProject(projectId, update);
       console.log(`Project ${project.id} updated.`);
     } catch (error) {
-      if (error instanceof ProjectResolverError) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -236,10 +228,7 @@ projectCommand
       await client.deleteProject(projectId);
       console.log(`Project ${projectId} deleted.`);
     } catch (error) {
-      if (error instanceof ProjectResolverError) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });

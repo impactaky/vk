@@ -8,18 +8,12 @@ import type {
   TaskStatus,
   UpdateTask,
 } from "../api/types.ts";
-import {
-  getProjectId,
-  ProjectResolverError,
-} from "../utils/project-resolver.ts";
-import {
-  MarkdownParseError,
-  parseTaskFromFile,
-} from "../utils/markdown-parser.ts";
-import { FzfCancelledError, FzfNotInstalledError } from "../utils/fzf.ts";
+import { getProjectId } from "../utils/project-resolver.ts";
+import { parseTaskFromFile } from "../utils/markdown-parser.ts";
 import { applyFilters } from "../utils/filter.ts";
 import { getTaskIdWithAutoDetect } from "../utils/attempt-resolver.ts";
 import { parseExecutorString } from "../utils/executor-parser.ts";
+import { handleCliError } from "../utils/error-handler.ts";
 
 export const taskCommand = new Command()
   .description("Manage tasks")
@@ -93,10 +87,7 @@ taskCommand
 
       table.render();
     } catch (error) {
-      if (error instanceof ProjectResolverError) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -156,17 +147,7 @@ taskCommand
       console.log(`Created:     ${task.created_at}`);
       console.log(`Updated:     ${task.updated_at}`);
     } catch (error) {
-      if (error instanceof ProjectResolverError) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
-      if (
-        error instanceof FzfNotInstalledError ||
-        error instanceof FzfCancelledError
-      ) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -269,14 +250,7 @@ taskCommand
         console.log(`Branch: ${attempt.branch}`);
       }
     } catch (error) {
-      if (error instanceof ProjectResolverError) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
-      if (error instanceof MarkdownParseError) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -351,17 +325,7 @@ taskCommand
 
       console.log(`Task ${task.id} updated.`);
     } catch (error) {
-      if (error instanceof ProjectResolverError) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
-      if (
-        error instanceof FzfNotInstalledError ||
-        error instanceof FzfCancelledError
-      ) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });
@@ -399,17 +363,7 @@ taskCommand
       await client.deleteTask(taskId);
       console.log(`Task ${taskId} deleted.`);
     } catch (error) {
-      if (error instanceof ProjectResolverError) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
-      if (
-        error instanceof FzfNotInstalledError ||
-        error instanceof FzfCancelledError
-      ) {
-        console.error(`Error: ${error.message}`);
-        Deno.exit(1);
-      }
+      handleCliError(error);
       throw error;
     }
   });

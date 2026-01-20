@@ -3,6 +3,7 @@
  */
 
 import type { ApiClient } from "../api/client.ts";
+import type { Project } from "../api/types.ts";
 import { extractRepoBasename, getCurrentRepoBasename } from "./git.ts";
 import {
   FzfCancelledError,
@@ -23,6 +24,31 @@ export class ProjectResolverError extends Error {
 }
 
 /**
+ * Try to select a project using fzf, with proper error handling
+ */
+async function selectProjectWithFzf(
+  projects: Project[],
+  fzfErrorMessage: string,
+): Promise<ResolvedProject> {
+  try {
+    const selectedId = await selectProject(projects);
+    const selected = projects.find((p) => p.id === selectedId);
+    if (!selected) {
+      throw new ProjectResolverError("Selected project not found.");
+    }
+    return { id: selected.id, name: selected.name };
+  } catch (error) {
+    if (error instanceof FzfNotInstalledError) {
+      throw new ProjectResolverError(fzfErrorMessage + " " + error.message);
+    }
+    if (error instanceof FzfCancelledError) {
+      throw new ProjectResolverError("Selection cancelled.");
+    }
+    throw error;
+  }
+}
+
+/**
  * Resolve project ID from current git repository
  * @param client API client instance
  * @returns The resolved project or throws ProjectResolverError
@@ -34,26 +60,10 @@ export async function resolveProjectFromGit(
   const projects = await client.listProjects();
 
   if (!currentBasename) {
-    // No git repo - try fzf selection
-    try {
-      const selectedId = await selectProject(projects);
-      const selected = projects.find((p) => p.id === selectedId);
-      if (!selected) {
-        throw new ProjectResolverError("Selected project not found.");
-      }
-      return { id: selected.id, name: selected.name };
-    } catch (error) {
-      if (error instanceof FzfNotInstalledError) {
-        throw new ProjectResolverError(
-          "Not in a git repository or no remote origin configured. " +
-            error.message,
-        );
-      }
-      if (error instanceof FzfCancelledError) {
-        throw new ProjectResolverError("Selection cancelled.");
-      }
-      throw error;
-    }
+    return selectProjectWithFzf(
+      projects,
+      "Not in a git repository or no remote origin configured.",
+    );
   }
 
   const matches = projects.filter((p) => {
@@ -62,33 +72,15 @@ export async function resolveProjectFromGit(
   });
 
   if (matches.length === 0) {
-    // No matching project - try fzf selection
-    try {
-      const selectedId = await selectProject(projects);
-      const selected = projects.find((p) => p.id === selectedId);
-      if (!selected) {
-        throw new ProjectResolverError("Selected project not found.");
-      }
-      return { id: selected.id, name: selected.name };
-    } catch (error) {
-      if (error instanceof FzfNotInstalledError) {
-        throw new ProjectResolverError(
-          `No project found matching repository "${currentBasename}". ` +
-            error.message,
-        );
-      }
-      if (error instanceof FzfCancelledError) {
-        throw new ProjectResolverError("Selection cancelled.");
-      }
-      throw error;
-    }
+    return selectProjectWithFzf(
+      projects,
+      `No project found matching repository "${currentBasename}".`,
+    );
   }
 
   if (matches.length > 1) {
     console.error(
-      `Warning: Multiple projects match "${currentBasename}". Using first match: ${
-        matches[0].name
-      }`,
+      `Warning: Multiple projects match "${currentBasename}". Using first match: ${matches[0].name}`,
     );
   }
 

@@ -16,20 +16,31 @@ export async function resolveAttemptFromBranch(
   client: ApiClient,
 ): Promise<TaskAttempt | null> {
   try {
-    // Get current branch
     const branchName = await getCurrentBranch();
     if (!branchName) {
       return null;
     }
 
-    // Search for attempts with matching branch name
     const attempts = await client.searchAttemptsByBranch(branchName);
-
-    // Return the first match (there should typically be only one)
-    return attempts.length > 0 ? attempts[0] : null;
+    return attempts[0] ?? null;
   } catch {
     return null;
   }
+}
+
+/**
+ * Select a task interactively using fzf
+ */
+async function selectTaskInteractively(
+  client: ApiClient,
+  projectId: string | undefined,
+): Promise<string> {
+  const resolvedProjectId = await getProjectId(projectId, client);
+  const tasks = await client.listTasks(resolvedProjectId);
+  if (tasks.length === 0) {
+    throw new Error("No tasks found in the project.");
+  }
+  return selectTask(tasks);
 }
 
 /**
@@ -44,32 +55,22 @@ export async function getAttemptIdWithAutoDetect(
   providedId: string | undefined,
   projectId?: string,
 ): Promise<string> {
-  // If ID is explicitly provided, use it
   if (providedId) {
     return providedId;
   }
 
-  // Try auto-detection from branch
   const attempt = await resolveAttemptFromBranch(client);
   if (attempt) {
     return attempt.id;
   }
 
-  // Fall back to interactive selection
-  // Need to select task first, then attempt
-  const resolvedProjectId = await getProjectId(projectId, client);
-  const tasks = await client.listTasks(resolvedProjectId);
-  if (tasks.length === 0) {
-    throw new Error("No tasks found in the project.");
-  }
-
-  const taskId = await selectTask(tasks);
+  const taskId = await selectTaskInteractively(client, projectId);
   const attempts = await client.listAttempts(taskId);
   if (attempts.length === 0) {
     throw new Error("No attempts found for the selected task.");
   }
 
-  return await selectAttempt(attempts);
+  return selectAttempt(attempts);
 }
 
 /**
@@ -84,23 +85,14 @@ export async function getTaskIdWithAutoDetect(
   providedId: string | undefined,
   projectId?: string,
 ): Promise<string> {
-  // If ID is explicitly provided, use it
   if (providedId) {
     return providedId;
   }
 
-  // Try auto-detection from current attempt's parent task
   const attempt = await resolveAttemptFromBranch(client);
   if (attempt) {
     return attempt.task_id;
   }
 
-  // Fall back to interactive selection
-  const resolvedProjectId = await getProjectId(projectId, client);
-  const tasks = await client.listTasks(resolvedProjectId);
-  if (tasks.length === 0) {
-    throw new Error("No tasks found in the project.");
-  }
-
-  return await selectTask(tasks);
+  return selectTaskInteractively(client, projectId);
 }
