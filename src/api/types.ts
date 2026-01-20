@@ -217,3 +217,43 @@ export interface UnifiedPRComment {
   side?: string;
   in_reply_to_id?: number;
 }
+
+// Repository types
+export interface Repo {
+  id: string;
+  path: string;
+  name: string;
+  display_name: string;
+  setup_script: string | null;
+  cleanup_script: string | null;
+  copy_files: string | null;
+  parallel_setup_script: boolean;
+  dev_server_script: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UpdateRepo {
+  display_name?: string | null;
+  setup_script?: string | null;
+  cleanup_script?: string | null;
+  copy_files?: string | null;
+  parallel_setup_script?: boolean | null;
+  dev_server_script?: string | null;
+}
+
+export interface RegisterRepoRequest {
+  path: string;
+  display_name: string | null;
+}
+
+export interface InitRepoRequest {
+  parent_path: string;
+  folder_name: string;
+}
+
+export interface GitBranch {
+  name: string;
+  is_current: boolean;
+  is_remote: boolean;
+}
