@@ -9,15 +9,20 @@ import type {
   CreatePRRequest,
   CreateTask,
   FollowUpRequest,
+  GitBranch,
+  InitRepoRequest,
   MergeResult,
   Project,
   PRResult,
+  RegisterRepoRequest,
   RenameBranchRequest,
+  Repo,
   Task,
   TaskAttempt,
   TaskWithAttemptStatus,
   UnifiedPRComment,
   UpdateProject,
+  UpdateRepo,
   UpdateTask,
 } from "./types.ts";
 
@@ -236,5 +241,39 @@ export class ApiClient {
   // Get PR comments for an attempt
   getPRComments(id: string): Promise<UnifiedPRComment[]> {
     return this.request<UnifiedPRComment[]>(`/task-attempts/${id}/pr/comments`);
+  }
+
+  // Repository endpoints
+  listRepos(): Promise<Repo[]> {
+    return this.request<Repo[]>("/repos");
+  }
+
+  getRepo(id: string): Promise<Repo> {
+    return this.request<Repo>(`/repos/${id}`);
+  }
+
+  updateRepo(id: string, update: UpdateRepo): Promise<Repo> {
+    return this.request<Repo>(`/repos/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(update),
+    });
+  }
+
+  registerRepo(request: RegisterRepoRequest): Promise<Repo> {
+    return this.request<Repo>("/repos", {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
+  }
+
+  initRepo(request: InitRepoRequest): Promise<Repo> {
+    return this.request<Repo>("/repos/init", {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
+  }
+
+  getRepoBranches(id: string): Promise<GitBranch[]> {
+    return this.request<GitBranch[]>(`/repos/${id}/branches`);
   }
 }
