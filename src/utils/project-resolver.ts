@@ -80,7 +80,9 @@ export async function resolveProjectFromGit(
 
   if (matches.length > 1) {
     console.error(
-      `Warning: Multiple projects match "${currentBasename}". Using first match: ${matches[0].name}`,
+      `Warning: Multiple projects match "${currentBasename}". Using first match: ${
+        matches[0].name
+      }`,
     );
   }
 
