@@ -1,0 +1,18 @@
+services:
+  vibe-kanban:
+    build:
+      context: .
+      dockerfile: Dockerfile.test-server
+    ports:
+      - "3000:3000"
+    volumes:
+      - vibe-kanban-data:/root/.local/share/vibe-kanban
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/projects"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  vibe-kanban-data:

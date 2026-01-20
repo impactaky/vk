@@ -28,3 +28,27 @@ jobs:
 
       - name: Run tests
         run: deno test --allow-net --allow-read --allow-write --allow-env
+
+  integration-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Start vibe-kanban server
+        run: |
+          npx vibe-kanban &
+          timeout 60 bash -c 'until curl -s http://localhost:3000/api/projects > /dev/null 2>&1; do sleep 1; done'
+
+      - name: Run integration tests
+        run: deno test --allow-net --allow-read --allow-write --allow-env tests/api_integration_test.ts
+        env:
+          VK_API_URL: http://localhost:3000
