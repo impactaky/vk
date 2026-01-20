@@ -45,7 +45,7 @@ jobs:
 
       - name: Start vibe-kanban server
         run: |
-          npx vibe-kanban &
+          PORT=3000 npx vibe-kanban &
           timeout 60 bash -c 'until curl -s http://localhost:3000/api/projects > /dev/null 2>&1; do sleep 1; done'
 
       - name: Run integration tests
