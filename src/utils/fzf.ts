@@ -4,6 +4,7 @@
 
 import type {
   Project,
+  Repo,
   TaskAttempt,
   TaskWithAttemptStatus,
 } from "../api/types.ts";
@@ -106,6 +107,13 @@ export function formatAttempt(attempt: TaskAttempt): string {
 }
 
 /**
+ * Format repository for fzf display
+ */
+export function formatRepository(repo: Repo): string {
+  return `${repo.id}\t${repo.name}\t${repo.path}`;
+}
+
+/**
  * Extract ID from fzf selection (first column)
  */
 function extractId(selection: string): string {
@@ -150,5 +158,18 @@ export async function selectAttempt(attempts: TaskAttempt[]): Promise<string> {
 
   const items = attempts.map(formatAttempt);
   const selected = await runFzf(items, "Select attempt:");
+  return extractId(selected);
+}
+
+/**
+ * Select a repository using fzf
+ */
+export async function selectRepository(repos: Repo[]): Promise<string> {
+  if (repos.length === 0) {
+    throw new Error("No repositories available.");
+  }
+
+  const items = repos.map(formatRepository);
+  const selected = await runFzf(items, "Select repository:");
   return extractId(selected);
 }

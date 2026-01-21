@@ -9,6 +9,7 @@ import type {
 } from "../api/types.ts";
 import { applyFilters } from "../utils/filter.ts";
 import { handleCliError } from "../utils/error-handler.ts";
+import { getRepositoryId } from "../utils/repository-resolver.ts";
 
 export const repositoryCommand = new Command()
   .description("Manage repositories")
@@ -72,12 +73,13 @@ repositoryCommand
 repositoryCommand
   .command("show")
   .description("Show repository details")
-  .arguments("<id:string>")
+  .arguments("[id:string]")
   .option("--json", "Output as JSON")
-  .action(async (options, id: string) => {
+  .action(async (options, id?: string) => {
     try {
       const client = await ApiClient.create();
-      const repo = await client.getRepo(id);
+      const repoId = await getRepositoryId(id, client);
+      const repo = await client.getRepo(repoId);
 
       if (options.json) {
         console.log(JSON.stringify(repo, null, 2));
@@ -190,7 +192,7 @@ repositoryCommand
 repositoryCommand
   .command("update")
   .description("Update repository properties")
-  .arguments("<id:string>")
+  .arguments("[id:string]")
   .option("--display-name <name:string>", "New display name")
   .option("--setup-script <script:string>", "Setup script command")
   .option("--cleanup-script <script:string>", "Cleanup script command")
@@ -198,7 +200,7 @@ repositoryCommand
   .option("--parallel-setup", "Enable parallel setup script")
   .option("--no-parallel-setup", "Disable parallel setup script")
   .option("--dev-server-script <script:string>", "Dev server script command")
-  .action(async (options, id: string) => {
+  .action(async (options, id?: string) => {
     try {
       const update: UpdateRepo = {};
 
@@ -227,7 +229,8 @@ repositoryCommand
       }
 
       const client = await ApiClient.create();
-      const repo = await client.updateRepo(id, update);
+      const repoId = await getRepositoryId(id, client);
+      const repo = await client.updateRepo(repoId, update);
       console.log(`Repository ${repo.id} updated.`);
     } catch (error) {
       handleCliError(error);
@@ -239,14 +242,15 @@ repositoryCommand
 repositoryCommand
   .command("branches")
   .description("List branches for a repository")
-  .arguments("<id:string>")
+  .arguments("[id:string]")
   .option("--remote", "Show only remote branches")
   .option("--local", "Show only local branches")
   .option("--json", "Output as JSON")
-  .action(async (options, id: string) => {
+  .action(async (options, id?: string) => {
     try {
       const client = await ApiClient.create();
-      let branches = await client.getRepoBranches(id);
+      const repoId = await getRepositoryId(id, client);
+      let branches = await client.getRepoBranches(repoId);
 
       // Filter by remote/local if specified
       if (options.remote) {
