@@ -111,14 +111,18 @@ export async function resolveRepositoryFromPath(
       }
       // Otherwise, warn and use first match (consistent with project-resolver)
       console.error(
-        `Warning: Multiple repositories match "${currentBasename}". Using first match: ${gitMatches[0].name}`,
+        `Warning: Multiple repositories match "${currentBasename}". Using first match: ${
+          gitMatches[0].name
+        }`,
       );
       return { id: gitMatches[0].id, name: gitMatches[0].name };
     }
   }
 
   // Strategy 2: Fall back to path-based matching (existing behavior)
-  const pathMatches = repos.filter((r) => isPathWithinRepo(currentPath, r.path));
+  const pathMatches = repos.filter((r) =>
+    isPathWithinRepo(currentPath, r.path)
+  );
 
   if (pathMatches.length > 0) {
     // Prefer most specific (longest path)

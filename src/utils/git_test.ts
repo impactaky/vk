@@ -68,7 +68,9 @@ Deno.test("getGitRemoteUrlFromPath - non-git directory returns null", async () =
 });
 
 Deno.test("getGitRemoteUrlFromPath - non-existent path returns null", async () => {
-  const url = await getGitRemoteUrlFromPath("/non/existent/path/that/does/not/exist");
+  const url = await getGitRemoteUrlFromPath(
+    "/non/existent/path/that/does/not/exist",
+  );
   assertEquals(url, null);
 });
 
@@ -89,6 +91,8 @@ Deno.test("getRepoBasenameFromPath - non-git directory returns null", async () =
 });
 
 Deno.test("getRepoBasenameFromPath - non-existent path returns null", async () => {
-  const basename = await getRepoBasenameFromPath("/non/existent/path/that/does/not/exist");
+  const basename = await getRepoBasenameFromPath(
+    "/non/existent/path/that/does/not/exist",
+  );
   assertEquals(basename, null);
 });
