@@ -9,6 +9,7 @@ import {
   FzfNotInstalledError,
   selectRepository,
 } from "./fzf.ts";
+import { getCurrentRepoBasename, getRepoBasenameFromPath } from "./git.ts";
 
 export interface ResolvedRepository {
   id: string;
@@ -67,6 +68,7 @@ function isPathWithinRepo(currentPath: string, repoPath: string): boolean {
 
 /**
  * Resolve repository ID from current working directory
+ * Uses git URL-based matching (preferred) with path-based fallback
  * @param client API client instance
  * @returns The resolved repository or throws RepositoryResolverError
  */
@@ -80,25 +82,55 @@ export async function resolveRepositoryFromPath(
     throw new RepositoryResolverError("No repositories registered.");
   }
 
-  // Find repositories that match the current path
-  const matches = repos.filter((r) => isPathWithinRepo(currentPath, r.path));
-
-  if (matches.length === 0) {
-    return selectRepositoryWithFzf(
-      repos,
-      `Current directory "${currentPath}" is not within any registered repository.`,
+  // Strategy 1: Try git URL-based matching (cross-machine compatible)
+  const currentBasename = await getCurrentRepoBasename();
+  if (currentBasename) {
+    // Fetch all repo basenames in parallel
+    const repoBasenames = await Promise.all(
+      repos.map(async (repo) => ({
+        repo,
+        basename: await getRepoBasenameFromPath(repo.path),
+      })),
     );
+
+    const gitMatches = repoBasenames
+      .filter(({ basename }) => basename === currentBasename)
+      .map(({ repo }) => repo);
+
+    if (gitMatches.length === 1) {
+      return { id: gitMatches[0].id, name: gitMatches[0].name };
+    }
+
+    if (gitMatches.length > 1) {
+      // Multiple matches: prefer the one that also matches by path
+      const pathMatch = gitMatches.find((r) =>
+        isPathWithinRepo(currentPath, r.path)
+      );
+      if (pathMatch) {
+        return { id: pathMatch.id, name: pathMatch.name };
+      }
+      // Otherwise, warn and use first match (consistent with project-resolver)
+      console.error(
+        `Warning: Multiple repositories match "${currentBasename}". Using first match: ${gitMatches[0].name}`,
+      );
+      return { id: gitMatches[0].id, name: gitMatches[0].name };
+    }
   }
 
-  // If multiple matches, prefer the most specific (longest path)
-  if (matches.length > 1) {
-    matches.sort((a, b) => b.path.length - a.path.length);
+  // Strategy 2: Fall back to path-based matching (existing behavior)
+  const pathMatches = repos.filter((r) => isPathWithinRepo(currentPath, r.path));
+
+  if (pathMatches.length > 0) {
+    // Prefer most specific (longest path)
+    pathMatches.sort((a, b) => b.path.length - a.path.length);
+    return { id: pathMatches[0].id, name: pathMatches[0].name };
   }
 
-  return {
-    id: matches[0].id,
-    name: matches[0].name,
-  };
+  // Strategy 3: Fall back to fzf selection
+  return selectRepositoryWithFzf(
+    repos,
+    `Current directory "${currentPath}" is not within any registered repository.`,
+  );
 }
 
 /**
