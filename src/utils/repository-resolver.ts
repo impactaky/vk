@@ -87,10 +87,18 @@ export async function resolveRepositoryFromPath(
   if (currentBasename) {
     // Fetch all repo basenames in parallel
     const repoBasenames = await Promise.all(
-      repos.map(async (repo) => ({
-        repo,
-        basename: await getRepoBasenameFromPath(repo.path),
-      })),
+      repos.map(async (repo) => {
+        // Try to get basename from git remote at repo.path
+        let basename = await getRepoBasenameFromPath(repo.path);
+
+        // Fallback: if path is not accessible, use repo.name as basename
+        // (repo.name is typically set to the git basename when registered)
+        if (!basename && repo.name) {
+          basename = repo.name;
+        }
+
+        return { repo, basename };
+      }),
     );
 
     const gitMatches = repoBasenames
