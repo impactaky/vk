@@ -12,10 +12,7 @@ import {
   getRepositoryId,
   RepositoryResolverError,
 } from "../src/utils/repository-resolver.ts";
-import {
-  formatRepository,
-  selectRepository,
-} from "../src/utils/fzf.ts";
+import { formatRepository, selectRepository } from "../src/utils/fzf.ts";
 import type { Repo } from "../src/api/types.ts";
 
 let serverAvailable: boolean | null = null;
@@ -187,8 +184,7 @@ Deno.test("Path matching: exact path match", () => {
 
   const normalizedCurrent = currentPath.replace(/\/+$/, "");
   const normalizedRepo = repoPath.replace(/\/+$/, "");
-  const isWithin =
-    normalizedCurrent === normalizedRepo ||
+  const isWithin = normalizedCurrent === normalizedRepo ||
     normalizedCurrent.startsWith(normalizedRepo + "/");
 
   assertEquals(isWithin, true);
@@ -200,8 +196,7 @@ Deno.test("Path matching: subdirectory match", () => {
 
   const normalizedCurrent = currentPath.replace(/\/+$/, "");
   const normalizedRepo = repoPath.replace(/\/+$/, "");
-  const isWithin =
-    normalizedCurrent === normalizedRepo ||
+  const isWithin = normalizedCurrent === normalizedRepo ||
     normalizedCurrent.startsWith(normalizedRepo + "/");
 
   assertEquals(isWithin, true);
@@ -213,8 +208,7 @@ Deno.test("Path matching: no match for different path", () => {
 
   const normalizedCurrent = currentPath.replace(/\/+$/, "");
   const normalizedRepo = repoPath.replace(/\/+$/, "");
-  const isWithin =
-    normalizedCurrent === normalizedRepo ||
+  const isWithin = normalizedCurrent === normalizedRepo ||
     normalizedCurrent.startsWith(normalizedRepo + "/");
 
   assertEquals(isWithin, false);
@@ -226,8 +220,7 @@ Deno.test("Path matching: no match for partial name", () => {
 
   const normalizedCurrent = currentPath.replace(/\/+$/, "");
   const normalizedRepo = repoPath.replace(/\/+$/, "");
-  const isWithin =
-    normalizedCurrent === normalizedRepo ||
+  const isWithin = normalizedCurrent === normalizedRepo ||
     normalizedCurrent.startsWith(normalizedRepo + "/");
 
   assertEquals(isWithin, false);
@@ -239,8 +232,7 @@ Deno.test("Path matching: handles trailing slashes", () => {
 
   const normalizedCurrent = currentPath.replace(/\/+$/, "");
   const normalizedRepo = repoPath.replace(/\/+$/, "");
-  const isWithin =
-    normalizedCurrent === normalizedRepo ||
+  const isWithin = normalizedCurrent === normalizedRepo ||
     normalizedCurrent.startsWith(normalizedRepo + "/");
 
   assertEquals(isWithin, true);
