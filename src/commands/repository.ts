@@ -75,10 +75,11 @@ repositoryCommand
   .description("Show repository details")
   .arguments("[id:string]")
   .option("--json", "Output as JSON")
+  .option("--debug", "Show debug output for repository resolution")
   .action(async (options, id?: string) => {
     try {
       const client = await ApiClient.create();
-      const repoId = await getRepositoryId(id, client);
+      const repoId = await getRepositoryId(id, client, options.debug);
       const repo = await client.getRepo(repoId);
 
       if (options.json) {
@@ -200,6 +201,7 @@ repositoryCommand
   .option("--parallel-setup", "Enable parallel setup script")
   .option("--no-parallel-setup", "Disable parallel setup script")
   .option("--dev-server-script <script:string>", "Dev server script command")
+  .option("--debug", "Show debug output for repository resolution")
   .action(async (options, id?: string) => {
     try {
       const update: UpdateRepo = {};
@@ -229,7 +231,7 @@ repositoryCommand
       }
 
       const client = await ApiClient.create();
-      const repoId = await getRepositoryId(id, client);
+      const repoId = await getRepositoryId(id, client, options.debug);
       const repo = await client.updateRepo(repoId, update);
       console.log(`Repository ${repo.id} updated.`);
     } catch (error) {
@@ -246,10 +248,11 @@ repositoryCommand
   .option("--remote", "Show only remote branches")
   .option("--local", "Show only local branches")
   .option("--json", "Output as JSON")
+  .option("--debug", "Show debug output for repository resolution")
   .action(async (options, id?: string) => {
     try {
       const client = await ApiClient.create();
-      const repoId = await getRepositoryId(id, client);
+      const repoId = await getRepositoryId(id, client, options.debug);
       let branches = await client.getRepoBranches(repoId);
 
       // Filter by remote/local if specified

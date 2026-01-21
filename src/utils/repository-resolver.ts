@@ -70,13 +70,18 @@ function isPathWithinRepo(currentPath: string, repoPath: string): boolean {
  * Resolve repository ID from current working directory
  * Uses git URL-based matching (preferred) with path-based fallback
  * @param client API client instance
+ * @param debug Whether to output debug information
  * @returns The resolved repository or throws RepositoryResolverError
  */
 export async function resolveRepositoryFromPath(
   client: ApiClient,
+  debug = false,
 ): Promise<ResolvedRepository> {
   const currentPath = Deno.cwd();
+  if (debug) console.error(`[DEBUG] Current path: ${currentPath}`);
+
   const repos = await client.listRepos();
+  if (debug) console.error(`[DEBUG] Registered repositories: ${repos.length}`);
 
   if (repos.length === 0) {
     throw new RepositoryResolverError("No repositories registered.");
@@ -84,17 +89,33 @@ export async function resolveRepositoryFromPath(
 
   // Strategy 1: Try git URL-based matching (cross-machine compatible)
   const currentBasename = await getCurrentRepoBasename();
+  if (debug) {
+    console.error(
+      `[DEBUG] Current git basename: ${currentBasename ?? "(none)"}`,
+    );
+  }
+
   if (currentBasename) {
     // Fetch all repo basenames in parallel
     const repoBasenames = await Promise.all(
       repos.map(async (repo) => {
         // Try to get basename from git remote at repo.path
-        let basename = await getRepoBasenameFromPath(repo.path);
+        const gitBasename = await getRepoBasenameFromPath(repo.path);
+        let basename = gitBasename;
 
         // Fallback: if path is not accessible, use repo.name as basename
         // (repo.name is typically set to the git basename when registered)
         if (!basename && repo.name) {
           basename = repo.name;
+        }
+
+        if (debug) {
+          console.error(`[DEBUG] Repo: ${repo.name} (id: ${repo.id})`);
+          console.error(`[DEBUG]   path: ${repo.path}`);
+          console.error(
+            `[DEBUG]   gitBasename: ${gitBasename ?? "(failed to get)"}`,
+          );
+          console.error(`[DEBUG]   finalBasename: ${basename ?? "(none)"}`);
         }
 
         return { repo, basename };
@@ -105,7 +126,16 @@ export async function resolveRepositoryFromPath(
       .filter(({ basename }) => basename === currentBasename)
       .map(({ repo }) => repo);
 
+    if (debug) {
+      console.error(`[DEBUG] Git URL matches: ${gitMatches.length}`);
+    }
+
     if (gitMatches.length === 1) {
+      if (debug) {
+        console.error(
+          `[DEBUG] Resolved via git URL match: ${gitMatches[0].name}`,
+        );
+      }
       return { id: gitMatches[0].id, name: gitMatches[0].name };
     }
 
@@ -115,6 +145,11 @@ export async function resolveRepositoryFromPath(
         isPathWithinRepo(currentPath, r.path)
       );
       if (pathMatch) {
+        if (debug) {
+          console.error(
+            `[DEBUG] Resolved via git URL + path match: ${pathMatch.name}`,
+          );
+        }
         return { id: pathMatch.id, name: pathMatch.name };
       }
       // Otherwise, warn and use first match (consistent with project-resolver)
@@ -127,15 +162,32 @@ export async function resolveRepositoryFromPath(
     }
   }
 
+  if (debug) {
+    console.error(`[DEBUG] No git URL match, trying path-based matching...`);
+  }
+
   // Strategy 2: Fall back to path-based matching (existing behavior)
   const pathMatches = repos.filter((r) =>
     isPathWithinRepo(currentPath, r.path)
   );
 
+  if (debug) {
+    console.error(`[DEBUG] Path matches: ${pathMatches.length}`);
+  }
+
   if (pathMatches.length > 0) {
     // Prefer most specific (longest path)
     pathMatches.sort((a, b) => b.path.length - a.path.length);
+    if (debug) {
+      console.error(
+        `[DEBUG] Resolved via path match: ${pathMatches[0].name}`,
+      );
+    }
     return { id: pathMatches[0].id, name: pathMatches[0].name };
+  }
+
+  if (debug) {
+    console.error(`[DEBUG] No match found, falling back to fzf selection`);
   }
 
   // Strategy 3: Fall back to fzf selection
@@ -149,16 +201,21 @@ export async function resolveRepositoryFromPath(
  * Get repository ID, either from explicit option or auto-resolved from path
  * @param explicitRepoId The explicitly provided repository ID (if any)
  * @param client API client instance
+ * @param debug Whether to output debug information
  * @returns The repository ID to use
  */
 export async function getRepositoryId(
   explicitRepoId: string | undefined,
   client: ApiClient,
+  debug = false,
 ): Promise<string> {
   if (explicitRepoId) {
+    if (debug) {
+      console.error(`[DEBUG] Using explicit repository ID: ${explicitRepoId}`);
+    }
     return explicitRepoId;
   }
 
-  const resolved = await resolveRepositoryFromPath(client);
+  const resolved = await resolveRepositoryFromPath(client, debug);
   return resolved.id;
 }
