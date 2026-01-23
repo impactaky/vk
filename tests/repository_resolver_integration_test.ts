@@ -263,3 +263,53 @@ Deno.test("Path matching: selects most specific (longest) path", () => {
   assertEquals(matches.length, 3);
   assertEquals(matches[0].id, "nested"); // Most specific should be first
 });
+
+// Tests for repository resolution by name
+Deno.test("getRepositoryId: resolves by name when single match exists", async () => {
+  if (!(await checkServerAndSkipIfUnavailable())) return;
+
+  const client = new ApiClient(apiUrl);
+  const repos = await client.listRepos();
+
+  if (repos.length === 0) {
+    console.log("Skipping test: no repositories registered");
+    return;
+  }
+
+  // Use the first repository's name to resolve
+  const targetRepo = repos[0];
+  const result = await getRepositoryId(targetRepo.name, client);
+  assertEquals(result, targetRepo.id);
+});
+
+Deno.test("getRepositoryId: ID match takes priority over name match", async () => {
+  if (!(await checkServerAndSkipIfUnavailable())) return;
+
+  const client = new ApiClient(apiUrl);
+  const repos = await client.listRepos();
+
+  if (repos.length === 0) {
+    console.log("Skipping test: no repositories registered");
+    return;
+  }
+
+  // When we pass an exact ID, it should return that ID
+  const targetRepo = repos[0];
+  const result = await getRepositoryId(targetRepo.id, client);
+  assertEquals(result, targetRepo.id);
+});
+
+Deno.test("getRepositoryId: throws error when no repository matches ID or name", async () => {
+  if (!(await checkServerAndSkipIfUnavailable())) return;
+
+  const client = new ApiClient(apiUrl);
+  const nonExistentIdOrName = "nonexistent-repo-" + Date.now();
+
+  await assertRejects(
+    async () => {
+      await getRepositoryId(nonExistentIdOrName, client);
+    },
+    RepositoryResolverError,
+    `Repository not found: "${nonExistentIdOrName}"`,
+  );
+});
