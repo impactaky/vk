@@ -269,34 +269,44 @@ Deno.test("getRepositoryId: resolves by name when single match exists", async ()
   if (!(await checkServerAndSkipIfUnavailable())) return;
 
   const client = new ApiClient(apiUrl);
-  const repos = await client.listRepos();
 
-  if (repos.length === 0) {
-    console.log("Skipping test: no repositories registered");
-    return;
+  // Create a test repository
+  const testPath = `/tmp/test-repo-${Date.now()}`;
+  const testRepo = await client.registerRepo({
+    path: testPath,
+    display_name: "Test Repo for Name Resolution",
+  });
+
+  try {
+    // Test resolving by name
+    const result = await getRepositoryId(testRepo.name, client);
+    assertEquals(result, testRepo.id);
+  } finally {
+    // Cleanup
+    await apiCall(`/repos/${testRepo.id}`, { method: "DELETE" });
   }
-
-  // Use the first repository's name to resolve
-  const targetRepo = repos[0];
-  const result = await getRepositoryId(targetRepo.name, client);
-  assertEquals(result, targetRepo.id);
 });
 
 Deno.test("getRepositoryId: ID match takes priority over name match", async () => {
   if (!(await checkServerAndSkipIfUnavailable())) return;
 
   const client = new ApiClient(apiUrl);
-  const repos = await client.listRepos();
 
-  if (repos.length === 0) {
-    console.log("Skipping test: no repositories registered");
-    return;
+  // Create a test repository
+  const testPath = `/tmp/test-repo-${Date.now()}-id-priority`;
+  const testRepo = await client.registerRepo({
+    path: testPath,
+    display_name: "Test Repo for ID Priority",
+  });
+
+  try {
+    // When we pass an exact ID, it should return that ID
+    const result = await getRepositoryId(testRepo.id, client);
+    assertEquals(result, testRepo.id);
+  } finally {
+    // Cleanup
+    await apiCall(`/repos/${testRepo.id}`, { method: "DELETE" });
   }
-
-  // When we pass an exact ID, it should return that ID
-  const targetRepo = repos[0];
-  const result = await getRepositoryId(targetRepo.id, client);
-  assertEquals(result, targetRepo.id);
 });
 
 Deno.test("getRepositoryId: throws error when no repository matches ID or name", async () => {
