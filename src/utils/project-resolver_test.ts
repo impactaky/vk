@@ -39,3 +39,11 @@ Deno.test("isPathWithinRepo - trailing slash on repo path", () => {
 Deno.test("isPathWithinRepo - multiple trailing slashes", () => {
   assertEquals(isPathWithinRepo("/home/user/project///", "/home/user/project//"), true);
 });
+
+Deno.test("isPathWithinRepo - null repo path returns false", () => {
+  assertEquals(isPathWithinRepo("/home/user/project", null), false);
+});
+
+Deno.test("isPathWithinRepo - undefined repo path returns false", () => {
+  assertEquals(isPathWithinRepo("/home/user/project", undefined), false);
+});

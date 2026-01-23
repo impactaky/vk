@@ -35,8 +35,13 @@ export class ProjectResolverError extends Error {
  */
 export function isPathWithinRepo(
   currentPath: string,
-  repoPath: string,
+  repoPath: string | undefined | null,
 ): boolean {
+  // Handle null/undefined repoPath
+  if (!repoPath) {
+    return false;
+  }
+
   // Normalize paths by removing trailing slashes
   const normalizedCurrent = currentPath.replace(/\/+$/, "");
   const normalizedRepo = repoPath.replace(/\/+$/, "");
@@ -75,7 +80,10 @@ export async function tryResolveRepository(
     const repoBasenames = await Promise.all(
       repos.map(async (repo) => {
         // Try to get basename from git remote at repo.path
-        let basename = await getRepoBasenameFromPath(repo.path);
+        let basename: string | null = null;
+        if (repo.path) {
+          basename = await getRepoBasenameFromPath(repo.path);
+        }
 
         // Fallback: if path is not accessible, use repo.name as basename
         // (repo.name is typically set to the git basename when registered)
@@ -115,7 +123,7 @@ export async function tryResolveRepository(
 
   if (pathMatches.length > 0) {
     // Prefer most specific (longest path)
-    pathMatches.sort((a, b) => b.path.length - a.path.length);
+    pathMatches.sort((a, b) => (b.path?.length ?? 0) - (a.path?.length ?? 0));
     return { id: pathMatches[0].id, name: pathMatches[0].name };
   }
 
