@@ -263,3 +263,63 @@ Deno.test("Path matching: selects most specific (longest) path", () => {
   assertEquals(matches.length, 3);
   assertEquals(matches[0].id, "nested"); // Most specific should be first
 });
+
+// Tests for repository resolution by name
+Deno.test("getRepositoryId: resolves by name when single match exists", async () => {
+  if (!(await checkServerAndSkipIfUnavailable())) return;
+
+  const client = new ApiClient(apiUrl);
+
+  // Create a test repository
+  const testPath = `/tmp/test-repo-${Date.now()}`;
+  const testRepo = await client.registerRepo({
+    path: testPath,
+    display_name: "Test Repo for Name Resolution",
+  });
+
+  try {
+    // Test resolving by name
+    const result = await getRepositoryId(testRepo.name, client);
+    assertEquals(result, testRepo.id);
+  } finally {
+    // Cleanup
+    await apiCall(`/repos/${testRepo.id}`, { method: "DELETE" });
+  }
+});
+
+Deno.test("getRepositoryId: ID match takes priority over name match", async () => {
+  if (!(await checkServerAndSkipIfUnavailable())) return;
+
+  const client = new ApiClient(apiUrl);
+
+  // Create a test repository
+  const testPath = `/tmp/test-repo-${Date.now()}-id-priority`;
+  const testRepo = await client.registerRepo({
+    path: testPath,
+    display_name: "Test Repo for ID Priority",
+  });
+
+  try {
+    // When we pass an exact ID, it should return that ID
+    const result = await getRepositoryId(testRepo.id, client);
+    assertEquals(result, testRepo.id);
+  } finally {
+    // Cleanup
+    await apiCall(`/repos/${testRepo.id}`, { method: "DELETE" });
+  }
+});
+
+Deno.test("getRepositoryId: throws error when no repository matches ID or name", async () => {
+  if (!(await checkServerAndSkipIfUnavailable())) return;
+
+  const client = new ApiClient(apiUrl);
+  const nonExistentIdOrName = "nonexistent-repo-" + Date.now();
+
+  await assertRejects(
+    async () => {
+      await getRepositoryId(nonExistentIdOrName, client);
+    },
+    RepositoryResolverError,
+    `Repository not found: "${nonExistentIdOrName}"`,
+  );
+});

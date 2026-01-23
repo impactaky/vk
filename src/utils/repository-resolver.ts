@@ -146,17 +146,53 @@ export async function resolveRepositoryFromPath(
 }
 
 /**
+ * Resolve repository by ID or name from all registered repositories
+ * @param idOrName The repository ID or name to resolve
+ * @param client API client instance
+ * @returns The resolved repository ID
+ */
+async function resolveRepositoryByIdOrName(
+  idOrName: string,
+  client: ApiClient,
+): Promise<string> {
+  const repos = await client.listRepos();
+
+  // Strategy 1: Exact ID match
+  const idMatch = repos.find((r) => r.id === idOrName);
+  if (idMatch) {
+    return idMatch.id;
+  }
+
+  // Strategy 2: Name match
+  const nameMatches = repos.filter((r) => r.name === idOrName);
+  if (nameMatches.length === 1) {
+    return nameMatches[0].id;
+  }
+  if (nameMatches.length > 1) {
+    throw new RepositoryResolverError(
+      `Multiple repositories found with name "${idOrName}". Use repository ID instead:\n` +
+        nameMatches.map((r) => `  - ${r.id} (${r.path})`).join("\n"),
+    );
+  }
+
+  // No match found
+  throw new RepositoryResolverError(
+    `Repository not found: "${idOrName}". Use 'vk repository list' to see available repositories.`,
+  );
+}
+
+/**
  * Get repository ID, either from explicit option or auto-resolved from path
- * @param explicitRepoId The explicitly provided repository ID (if any)
+ * @param explicitRepoIdOrName The explicitly provided repository ID or name (if any)
  * @param client API client instance
  * @returns The repository ID to use
  */
 export async function getRepositoryId(
-  explicitRepoId: string | undefined,
+  explicitRepoIdOrName: string | undefined,
   client: ApiClient,
 ): Promise<string> {
-  if (explicitRepoId) {
-    return explicitRepoId;
+  if (explicitRepoIdOrName) {
+    return await resolveRepositoryByIdOrName(explicitRepoIdOrName, client);
   }
 
   const resolved = await resolveRepositoryFromPath(client);
