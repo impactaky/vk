@@ -7,6 +7,8 @@ services:
     command: npx -y vibe-kanban
     ports:
       - "3000:3000"
+    volumes:
+      - shared-test-data:/shared
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/projects', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 10s
@@ -22,7 +24,11 @@ services:
     working_dir: /app
     volumes:
       - .:/app
+      - shared-test-data:/shared
     depends_on:
       vibe-kanban:
         condition: service_healthy
+
+volumes:
+  shared-test-data:
 
