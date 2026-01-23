@@ -9,24 +9,9 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { getTestApiUrl, isServerAvailable } from "./helpers/test-server.ts";
+import { getTestApiUrl } from "./helpers/test-server.ts";
 
-let serverAvailable: boolean | null = null;
-let apiUrl: string;
-
-async function checkServerAndSkipIfUnavailable(): Promise<boolean> {
-  if (serverAvailable === null) {
-    apiUrl = getTestApiUrl();
-    serverAvailable = await isServerAvailable(apiUrl);
-    if (!serverAvailable) {
-      console.warn(
-        `\nWARNING: Server at ${apiUrl} is not available. Test skipped.\n` +
-          "Start the server with: docker compose up\n",
-      );
-    }
-  }
-  return serverAvailable;
-}
+const apiUrl = getTestApiUrl();
 
 // Helper to make raw API calls (bypassing ApiClient to test actual API)
 async function apiCall<T>(
@@ -45,18 +30,14 @@ async function apiCall<T>(
 
 // Project Tests using raw API calls
 Deno.test("API: List projects", async () => {
-  if (!(await checkServerAndSkipIfUnavailable())) return;
-
-  const result = await apiCall<unknown[]>("/projects");
+    const result = await apiCall<unknown[]>("/projects");
   assertEquals(result.success, true);
   assertExists(result.data);
   assertEquals(Array.isArray(result.data), true);
 });
 
 Deno.test("API: Create and delete project", async () => {
-  if (!(await checkServerAndSkipIfUnavailable())) return;
-
-  // Create project with minimal required fields
+    // Create project with minimal required fields
   const createResult = await apiCall<{ id: string; name: string }>(
     "/projects",
     {
@@ -80,9 +61,7 @@ Deno.test("API: Create and delete project", async () => {
 });
 
 Deno.test("API: Get project by ID", async () => {
-  if (!(await checkServerAndSkipIfUnavailable())) return;
-
-  // Create a project first
+    // Create a project first
   const createResult = await apiCall<{ id: string; name: string }>(
     "/projects",
     {
@@ -107,9 +86,7 @@ Deno.test("API: Get project by ID", async () => {
 
 // Repository Tests
 Deno.test("API: List repositories", async () => {
-  if (!(await checkServerAndSkipIfUnavailable())) return;
-
-  const result = await apiCall<unknown[]>("/repos");
+    const result = await apiCall<unknown[]>("/repos");
   assertEquals(result.success, true);
   assertExists(result.data);
   assertEquals(Array.isArray(result.data), true);
@@ -117,9 +94,7 @@ Deno.test("API: List repositories", async () => {
 
 // Task Tests (requires a project with a repository)
 Deno.test("API: List tasks for project", async () => {
-  if (!(await checkServerAndSkipIfUnavailable())) return;
-
-  // Get list of existing projects
+    // Get list of existing projects
   const projectsResult = await apiCall<{ id: string }[]>("/projects");
   assertEquals(projectsResult.success, true);
 
@@ -136,9 +111,7 @@ Deno.test("API: List tasks for project", async () => {
 
 // Task Attempts Tests
 Deno.test("API: List all task attempts", async () => {
-  if (!(await checkServerAndSkipIfUnavailable())) return;
-
-  const result = await apiCall<unknown[]>("/task-attempts");
+    const result = await apiCall<unknown[]>("/task-attempts");
   assertEquals(result.success, true);
   assertExists(result.data);
   assertEquals(Array.isArray(result.data), true);

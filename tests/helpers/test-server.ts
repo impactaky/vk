@@ -44,22 +44,6 @@ export async function waitForServer(
   );
 }
 
-/**
- * Check if the server is currently available.
- */
-export async function isServerAvailable(
-  apiUrl: string = getTestApiUrl(),
-): Promise<boolean> {
-  try {
-    const response = await fetch(`${apiUrl}/api/projects`);
-    // Consume the response body to avoid resource leaks
-    await response.body?.cancel();
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
-
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

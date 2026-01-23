@@ -1,12 +1,11 @@
 services:
   vibe-kanban:
-    build:
-      context: .
-      dockerfile: Dockerfile.test-server
+    image: node:20-slim
+    environment:
+      - PORT=3000
+    command: npx -y vibe-kanban
     ports:
       - "3000:3000"
-    volumes:
-      - vibe-kanban-data:/root/.local/share/vibe-kanban
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/projects"]
       interval: 10s
@@ -14,5 +13,11 @@ services:
       retries: 5
       start_period: 30s
 
-volumes:
-  vibe-kanban-data:
+  vk:
+    image: denoland/deno:latest
+    command: deno test --allow-net --allow-read --allow-write --allow-env
+    working_dir: /app
+    volumes:
+      - .:/app
+    depends_on:
+      - vibe-kanban

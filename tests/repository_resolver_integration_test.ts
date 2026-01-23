@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
-import { getTestApiUrl, isServerAvailable } from "./helpers/test-server.ts";
+import { getTestApiUrl } from "./helpers/test-server.ts";
 import { ApiClient } from "../src/api/client.ts";
 import {
   getRepositoryId,
@@ -15,22 +15,7 @@ import {
 import { formatRepository, selectRepository } from "../src/utils/fzf.ts";
 import type { Repo } from "../src/api/types.ts";
 
-let serverAvailable: boolean | null = null;
-let apiUrl: string;
-
-async function checkServerAndSkipIfUnavailable(): Promise<boolean> {
-  if (serverAvailable === null) {
-    apiUrl = getTestApiUrl();
-    serverAvailable = await isServerAvailable(apiUrl);
-    if (!serverAvailable) {
-      console.warn(
-        `\nWARNING: Server at ${apiUrl} is not available. Test skipped.\n` +
-          "Start the server with: docker compose up\n",
-      );
-    }
-  }
-  return serverAvailable;
-}
+const apiUrl = getTestApiUrl();
 
 // Helper to make raw API calls
 async function apiCall<T>(
@@ -99,9 +84,7 @@ Deno.test("selectRepository: throws error for empty array", async () => {
 
 // Tests for getRepositoryId function
 Deno.test("getRepositoryId: returns explicit ID when provided", async () => {
-  if (!(await checkServerAndSkipIfUnavailable())) return;
-
-  const client = new ApiClient(apiUrl);
+    const client = new ApiClient(apiUrl);
   const explicitId = "explicit-repo-id";
 
   const result = await getRepositoryId(explicitId, client);
@@ -109,9 +92,7 @@ Deno.test("getRepositoryId: returns explicit ID when provided", async () => {
 });
 
 Deno.test("getRepositoryId: throws when no repos and no explicit ID", async () => {
-  if (!(await checkServerAndSkipIfUnavailable())) return;
-
-  // Get list of existing repos to check if any exist
+    // Get list of existing repos to check if any exist
   const reposResult = await apiCall<Repo[]>("/repos");
   if (reposResult.data && reposResult.data.length > 0) {
     // Skip this test if repos exist - we can't test "no repos" scenario
@@ -132,9 +113,7 @@ Deno.test("getRepositoryId: throws when no repos and no explicit ID", async () =
 
 // Integration test for repository auto-detection with actual server
 Deno.test("Repository auto-detection: resolves from matching path", async () => {
-  if (!(await checkServerAndSkipIfUnavailable())) return;
-
-  // Get current working directory
+    // Get current working directory
   const currentPath = Deno.cwd();
 
   // Check if there's a repository that matches current path
@@ -266,9 +245,7 @@ Deno.test("Path matching: selects most specific (longest) path", () => {
 
 // Tests for repository resolution by name
 Deno.test("getRepositoryId: resolves by name when single match exists", async () => {
-  if (!(await checkServerAndSkipIfUnavailable())) return;
-
-  const client = new ApiClient(apiUrl);
+    const client = new ApiClient(apiUrl);
 
   // Create a test repository
   const testPath = `/tmp/test-repo-${Date.now()}`;
@@ -288,9 +265,7 @@ Deno.test("getRepositoryId: resolves by name when single match exists", async ()
 });
 
 Deno.test("getRepositoryId: ID match takes priority over name match", async () => {
-  if (!(await checkServerAndSkipIfUnavailable())) return;
-
-  const client = new ApiClient(apiUrl);
+    const client = new ApiClient(apiUrl);
 
   // Create a test repository
   const testPath = `/tmp/test-repo-${Date.now()}-id-priority`;
@@ -310,9 +285,7 @@ Deno.test("getRepositoryId: ID match takes priority over name match", async () =
 });
 
 Deno.test("getRepositoryId: throws error when no repository matches ID or name", async () => {
-  if (!(await checkServerAndSkipIfUnavailable())) return;
-
-  const client = new ApiClient(apiUrl);
+    const client = new ApiClient(apiUrl);
   const nonExistentIdOrName = "nonexistent-repo-" + Date.now();
 
   await assertRejects(
