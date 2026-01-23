@@ -18,8 +18,6 @@ projectCommand
   .command("list")
   .description("List all projects")
   .option("--name <name:string>", "Filter by project name")
-  .option("--archived <archived:boolean>", "Filter by archived status")
-  .option("--color <color:string>", "Filter by hex color")
   .option("--json", "Output as JSON")
   .action(async (options) => {
     const client = await ApiClient.create();
@@ -29,12 +27,6 @@ projectCommand
     const filters: Record<string, unknown> = {};
     if (options.name !== undefined) {
       filters.name = options.name;
-    }
-    if (options.archived !== undefined) {
-      filters.is_archived = options.archived;
-    }
-    if (options.color !== undefined) {
-      filters.hex_color = options.color;
     }
 
     // Apply filters
@@ -51,12 +43,11 @@ projectCommand
     }
 
     const table = new Table()
-      .header(["ID", "Name", "Git Repo Path", "Archived"])
+      .header(["ID", "Name", "Default Working Dir"])
       .body(projects.map((p) => [
         p.id,
         p.name,
-        p.git_repo_path,
-        p.is_archived ? "Yes" : "No",
+        p.default_agent_working_dir || "-",
       ]));
 
     table.render();
@@ -85,29 +76,14 @@ projectCommand
         return;
       }
 
-      console.log(`ID:            ${project.id}`);
-      console.log(`Name:          ${project.name}`);
-      console.log(`Git Repo Path: ${project.git_repo_path}`);
-      if (project.description) {
-        console.log(`Description:   ${project.description}`);
-      }
-      if (project.hex_color) {
-        console.log(`Color:         ${project.hex_color}`);
-      }
-      if (project.is_archived) {
-        console.log(`Archived:      Yes`);
-      }
-      if (project.setup_script) {
-        console.log(`Setup Script:  ${project.setup_script}`);
-      }
-      if (project.dev_script) {
-        console.log(`Dev Script:    ${project.dev_script}`);
-      }
-      if (project.cleanup_script) {
-        console.log(`Cleanup Script: ${project.cleanup_script}`);
-      }
-      console.log(`Created:       ${project.created_at}`);
-      console.log(`Updated:       ${project.updated_at}`);
+      console.log(`ID:                  ${project.id}`);
+      console.log(`Name:                ${project.name}`);
+      console.log(
+        `Default Working Dir: ${project.default_agent_working_dir || "-"}`,
+      );
+      console.log(`Remote Project ID:   ${project.remote_project_id || "-"}`);
+      console.log(`Created:             ${project.created_at}`);
+      console.log(`Updated:             ${project.updated_at}`);
     } catch (error) {
       handleCliError(error);
       throw error;
@@ -119,29 +95,26 @@ projectCommand
   .command("create")
   .description("Create a new project")
   .option("--name <name:string>", "Project name")
-  .option("--path <path:string>", "Git repository path")
-  .option("--use-existing", "Use existing git repository")
-  .option("--description <desc:string>", "Project description")
-  .option("--color <color:string>", "Hex color (e.g., #3498db)")
+  .option(
+    "--repo <id:string>",
+    "Repository ID to associate (can be specified multiple times)",
+    { collect: true },
+  )
   .action(async (options) => {
     let name = options.name;
-    let gitRepoPath = options.path;
-    const useExistingRepo = options.useExisting ?? true;
 
     if (!name) {
       name = await Input.prompt("Project name:");
     }
 
-    if (!gitRepoPath) {
-      gitRepoPath = await Input.prompt("Git repository path:");
-    }
+    const repoIds: string[] = options.repo || [];
 
     const createProject: CreateProject = {
       name,
-      git_repo_path: gitRepoPath,
-      description: options.description,
-      hex_color: options.color,
-      use_existing_repo: useExistingRepo,
+      repositories: repoIds.map((repoId, index) => ({
+        repo_id: repoId,
+        is_main: index === 0, // First repo is main by default
+      })),
     };
 
     const client = await ApiClient.create();
@@ -157,10 +130,6 @@ projectCommand
   .description("Update a project")
   .arguments("[id:string]")
   .option("--name <name:string>", "New project name")
-  .option("--description <desc:string>", "New description")
-  .option("--color <color:string>", "Hex color (e.g., #3498db)")
-  .option("--archived", "Archive the project")
-  .option("--no-archived", "Unarchive the project")
   .action(async (options, id?: string) => {
     try {
       const client = await ApiClient.create();
@@ -175,15 +144,6 @@ projectCommand
 
       if (options.name) {
         update.name = options.name;
-      }
-      if (options.description !== undefined) {
-        update.description = options.description;
-      }
-      if (options.color !== undefined) {
-        update.hex_color = options.color;
-      }
-      if (options.archived !== undefined) {
-        update.is_archived = options.archived;
       }
 
       if (Object.keys(update).length === 0) {
@@ -227,6 +187,104 @@ projectCommand
 
       await client.deleteProject(projectId);
       console.log(`Project ${projectId} deleted.`);
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+// List project repositories
+projectCommand
+  .command("repos")
+  .description("List repositories associated with this project")
+  .arguments("[id:string]")
+  .option("--json", "Output as JSON")
+  .action(async (options, id?: string) => {
+    try {
+      const client = await ApiClient.create();
+      let projectId = id;
+
+      if (!projectId) {
+        const resolved = await resolveProjectFromGit(client);
+        projectId = resolved.id;
+      }
+
+      const repos = await client.listProjectRepos(projectId);
+
+      if (options.json) {
+        console.log(JSON.stringify(repos, null, 2));
+        return;
+      }
+
+      if (repos.length === 0) {
+        console.log("No repositories found.");
+        return;
+      }
+
+      const table = new Table()
+        .header(["Repo ID", "Is Main", "Created At"])
+        .body(repos.map((r) => [
+          r.repo_id,
+          r.is_main ? "Yes" : "No",
+          r.created_at,
+        ]));
+
+      table.render();
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+// Add repository to project
+projectCommand
+  .command("add-repo")
+  .description("Add a repository to this project")
+  .arguments("[id:string]")
+  .option("--repo <id:string>", "Repository ID to add", { required: true })
+  .option("--main", "Set as main repository")
+  .action(async (options, id?: string) => {
+    try {
+      const client = await ApiClient.create();
+      let projectId = id;
+
+      if (!projectId) {
+        const resolved = await resolveProjectFromGit(client);
+        projectId = resolved.id;
+      }
+
+      const repo = await client.addProjectRepo(
+        projectId,
+        options.repo,
+        options.main ?? false,
+      );
+
+      console.log(`Repository ${repo.repo_id} added to project.`);
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+// Remove repository from project
+projectCommand
+  .command("remove-repo")
+  .description("Remove a repository from this project")
+  .arguments("[id:string]")
+  .option("--repo <id:string>", "Repository ID to remove", { required: true })
+  .action(async (options, id?: string) => {
+    try {
+      const client = await ApiClient.create();
+      let projectId = id;
+
+      if (!projectId) {
+        const resolved = await resolveProjectFromGit(client);
+        projectId = resolved.id;
+      }
+
+      await client.removeProjectRepo(projectId, options.repo);
+
+      console.log(`Repository ${options.repo} removed from project.`);
     } catch (error) {
       handleCliError(error);
       throw error;

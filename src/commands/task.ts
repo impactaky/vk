@@ -3,8 +3,8 @@ import { Confirm, Input } from "@cliffy/prompt";
 import { Table } from "@cliffy/table";
 import { ApiClient } from "../api/client.ts";
 import type {
-  CreateAttempt,
   CreateTask,
+  CreateWorkspace,
   TaskStatus,
   UpdateTask,
 } from "../api/types.ts";
@@ -33,11 +33,6 @@ taskCommand
     "--status <status:string>",
     "Filter by task status (todo, inprogress, inreview, done, cancelled)",
   )
-  .option("--priority <priority:number>", "Filter by priority")
-  .option("--executor <executor:string>", "Filter by executor")
-  .option("--label <label:string>", "Filter by label")
-  .option("--favorite <favorite:boolean>", "Filter by favorite status")
-  .option("--color <color:string>", "Filter by hex color")
   .option("--json", "Output as JSON")
   .action(async (options) => {
     try {
@@ -49,21 +44,6 @@ taskCommand
       const filters: Record<string, unknown> = {};
       if (options.status !== undefined) {
         filters.status = options.status;
-      }
-      if (options.priority !== undefined) {
-        filters.priority = options.priority;
-      }
-      if (options.executor !== undefined) {
-        filters.executor = options.executor;
-      }
-      if (options.label !== undefined) {
-        filters.labels = options.label;
-      }
-      if (options.favorite !== undefined) {
-        filters.is_favorite = options.favorite;
-      }
-      if (options.color !== undefined) {
-        filters.hex_color = options.color;
       }
 
       // Apply filters
@@ -80,9 +60,9 @@ taskCommand
       }
 
       const table = new Table()
-        .header(["ID", "Title", "Status", "Executor"])
+        .header(["ID", "Title", "Status"])
         .body(
-          tasks.map((t) => [t.id, t.title, t.status, t.executor || "-"]),
+          tasks.map((t) => [t.id, t.title, t.status]),
         );
 
       table.render();
@@ -119,33 +99,21 @@ taskCommand
         return;
       }
 
-      console.log(`ID:          ${task.id}`);
-      console.log(`Project ID:  ${task.project_id}`);
-      console.log(`Title:       ${task.title}`);
-      console.log(`Status:      ${task.status}`);
+      console.log(`ID:                  ${task.id}`);
+      console.log(`Project ID:          ${task.project_id}`);
+      console.log(`Title:               ${task.title}`);
+      console.log(`Status:              ${task.status}`);
       if (task.description) {
-        console.log(`Description: ${task.description}`);
+        console.log(`Description:         ${task.description}`);
       }
-      if (task.priority !== undefined) {
-        console.log(`Priority:    ${task.priority}`);
+      if (task.parent_workspace_id) {
+        console.log(`Parent Workspace ID: ${task.parent_workspace_id}`);
       }
-      if (task.due_date) {
-        console.log(`Due Date:    ${task.due_date}`);
+      if (task.shared_task_id) {
+        console.log(`Shared Task ID:      ${task.shared_task_id}`);
       }
-      if (task.labels && task.labels.length > 0) {
-        console.log(`Labels:      ${task.labels.join(", ")}`);
-      }
-      if (task.percent_done !== undefined) {
-        console.log(`Progress:    ${task.percent_done}%`);
-      }
-      if (task.hex_color) {
-        console.log(`Color:       ${task.hex_color}`);
-      }
-      if (task.is_favorite) {
-        console.log(`Favorite:    Yes`);
-      }
-      console.log(`Created:     ${task.created_at}`);
-      console.log(`Updated:     ${task.updated_at}`);
+      console.log(`Created:             ${task.created_at}`);
+      console.log(`Updated:             ${task.updated_at}`);
     } catch (error) {
       handleCliError(error);
       throw error;
@@ -163,20 +131,14 @@ taskCommand
   .option("--title <title:string>", "Task title")
   .option("--description <desc:string>", "Task description")
   .option("--from <file:file>", "Create task from markdown file")
-  .option("--priority <priority:number>", "Task priority (1-5)")
-  .option("--due-date <date:string>", "Due date (ISO format)")
-  .option("--labels <labels:string>", "Comma-separated labels")
-  .option("--color <color:string>", "Hex color (e.g., #ff5733)")
-  .option("--favorite", "Mark as favorite")
-  .option("--run", "Create an attempt and start execution immediately")
+  .option("--run", "Create a workspace and start execution immediately")
   .option(
     "--executor <executor:string>",
     "Executor profile ID in format <name>:<variant> (e.g., CLAUDE_CODE:DEFAULT). Required when --run is specified.",
   )
-  .option("--base-branch <branch:string>", "Base branch for attempt", {
+  .option("--base-branch <branch:string>", "Base branch for workspace", {
     default: "main",
   })
-  .option("--target-branch <branch:string>", "Target branch for attempt")
   .action(async (options) => {
     try {
       // Validate option combinations
@@ -220,11 +182,6 @@ taskCommand
         project_id: projectId,
         title,
         description: description || undefined,
-        priority: options.priority,
-        due_date: options.dueDate,
-        labels: options.labels?.split(",").map((l: string) => l.trim()),
-        hex_color: options.color,
-        is_favorite: options.favorite,
       };
 
       const task = await client.createTask(createTask);
@@ -232,22 +189,21 @@ taskCommand
       console.log(`Task created successfully!`);
       console.log(`ID: ${task.id}`);
 
-      // If --run is specified, create an attempt and start execution
+      // If --run is specified, create a workspace and start execution
       if (options.run && options.executor) {
         const executorProfileId = parseExecutorString(options.executor);
 
-        const createAttempt: CreateAttempt = {
+        const createWorkspace: CreateWorkspace = {
           task_id: task.id,
           executor_profile_id: executorProfileId,
           base_branch: options.baseBranch,
-          target_branch: options.targetBranch,
         };
 
-        const attempt = await client.createAttempt(createAttempt);
+        const workspace = await client.createWorkspace(createWorkspace);
 
-        console.log(`Attempt created successfully!`);
-        console.log(`Attempt ID: ${attempt.id}`);
-        console.log(`Branch: ${attempt.branch}`);
+        console.log(`Workspace created successfully!`);
+        console.log(`Workspace ID: ${workspace.id}`);
+        console.log(`Branch: ${workspace.branch}`);
       }
     } catch (error) {
       handleCliError(error);
@@ -270,12 +226,6 @@ taskCommand
     "--status <status:string>",
     "New status (todo, inprogress, inreview, done, cancelled)",
   )
-  .option("--priority <priority:number>", "Task priority (1-5)")
-  .option("--due-date <date:string>", "Due date (ISO format, empty to clear)")
-  .option("--labels <labels:string>", "Comma-separated labels")
-  .option("--percent-done <percent:number>", "Completion percentage (0-100)")
-  .option("--color <color:string>", "Hex color (e.g., #ff5733)")
-  .option("--favorite", "Toggle favorite status")
   .action(async (options, id) => {
     try {
       const update: UpdateTask = {};
@@ -284,28 +234,10 @@ taskCommand
         update.title = options.title;
       }
       if (options.description !== undefined) {
-        update.description = options.description;
+        update.description = options.description || null;
       }
       if (options.status) {
         update.status = options.status as TaskStatus;
-      }
-      if (options.priority !== undefined) {
-        update.priority = options.priority;
-      }
-      if (options.dueDate !== undefined) {
-        update.due_date = options.dueDate || undefined;
-      }
-      if (options.labels !== undefined) {
-        update.labels = options.labels.split(",").map((l: string) => l.trim());
-      }
-      if (options.percentDone !== undefined) {
-        update.percent_done = options.percentDone;
-      }
-      if (options.color !== undefined) {
-        update.hex_color = options.color;
-      }
-      if (options.favorite !== undefined) {
-        update.is_favorite = options.favorite;
       }
 
       if (Object.keys(update).length === 0) {

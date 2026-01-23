@@ -4,9 +4,10 @@ import { Table } from "@cliffy/table";
 import { ApiClient } from "../api/client.ts";
 import type {
   AttachPRRequest,
-  CreateAttempt,
   CreatePRRequest,
+  CreateWorkspace,
   FollowUpRequest,
+  UpdateWorkspace,
 } from "../api/types.ts";
 import { applyFilters } from "../utils/filter.ts";
 import {
@@ -17,15 +18,15 @@ import { parseExecutorString } from "../utils/executor-parser.ts";
 import { handleCliError } from "../utils/error-handler.ts";
 
 export const attemptCommand = new Command()
-  .description("Manage task attempts")
+  .description("Manage workspaces (task attempts)")
   .action(function () {
     this.showHelp();
   });
 
-// List attempts
+// List workspaces
 attemptCommand
   .command("list")
-  .description("List attempts for a task")
+  .description("List workspaces for a task")
   .option(
     "--task <id:string>",
     "Task ID (auto-detected from current branch if omitted)",
@@ -34,9 +35,7 @@ attemptCommand
     "--project <id:string>",
     "Project ID (for fzf selection, auto-detected from git if omitted)",
   )
-  .option("--executor <executor:string>", "Filter by executor")
   .option("--branch <branch:string>", "Filter by branch name")
-  .option("--target-branch <branch:string>", "Filter by target branch")
   .option("--json", "Output as JSON")
   .action(async (options) => {
     try {
@@ -48,37 +47,37 @@ attemptCommand
         options.project,
       );
 
-      let attempts = await client.listAttempts(taskId);
+      let workspaces = await client.listWorkspaces(taskId);
 
       // Build filter object from provided options
       const filters: Record<string, unknown> = {};
-      if (options.executor !== undefined) {
-        filters.executor = options.executor;
-      }
       if (options.branch !== undefined) {
         filters.branch = options.branch;
       }
-      if (options.targetBranch !== undefined) {
-        filters.target_branch = options.targetBranch;
-      }
 
       // Apply filters
-      attempts = applyFilters(attempts, filters);
+      workspaces = applyFilters(workspaces, filters);
 
       if (options.json) {
-        console.log(JSON.stringify(attempts, null, 2));
+        console.log(JSON.stringify(workspaces, null, 2));
         return;
       }
 
-      if (attempts.length === 0) {
-        console.log("No attempts found.");
+      if (workspaces.length === 0) {
+        console.log("No workspaces found.");
         return;
       }
 
       const table = new Table()
-        .header(["ID", "Branch", "Executor", "Target Branch"])
+        .header(["ID", "Branch", "Name", "Archived", "Pinned"])
         .body(
-          attempts.map((a) => [a.id, a.branch, a.executor, a.target_branch]),
+          workspaces.map((w) => [
+            w.id,
+            w.branch,
+            w.name || "-",
+            w.archived ? "Yes" : "No",
+            w.pinned ? "Yes" : "No",
+          ]),
         );
 
       table.render();
@@ -88,10 +87,10 @@ attemptCommand
     }
   });
 
-// Show attempt
+// Show workspace
 attemptCommand
   .command("show")
-  .description("Show attempt details")
+  .description("Show workspace details")
   .arguments("[id:string]")
   .option(
     "--project <id:string>",
@@ -101,42 +100,43 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptIdWithAutoDetect(
+      const workspaceId = await getAttemptIdWithAutoDetect(
         client,
         id,
         options.project,
       );
-      const attempt = await client.getAttempt(attemptId);
+      const workspace = await client.getWorkspace(workspaceId);
 
       if (options.json) {
-        console.log(JSON.stringify(attempt, null, 2));
+        console.log(JSON.stringify(workspace, null, 2));
         return;
       }
 
-      console.log(`ID:             ${attempt.id}`);
-      console.log(`Task ID:        ${attempt.task_id}`);
-      console.log(`Branch:         ${attempt.branch}`);
-      console.log(`Target Branch:  ${attempt.target_branch}`);
-      console.log(`Executor:       ${attempt.executor}`);
-      if (attempt.container_ref) {
-        console.log(`Container Ref:  ${attempt.container_ref}`);
+      console.log(`ID:              ${workspace.id}`);
+      console.log(`Task ID:         ${workspace.task_id}`);
+      console.log(`Branch:          ${workspace.branch}`);
+      console.log(`Name:            ${workspace.name || "-"}`);
+      console.log(`Working Dir:     ${workspace.agent_working_dir || "-"}`);
+      console.log(`Archived:        ${workspace.archived ? "Yes" : "No"}`);
+      console.log(`Pinned:          ${workspace.pinned ? "Yes" : "No"}`);
+      if (workspace.container_ref) {
+        console.log(`Container Ref:   ${workspace.container_ref}`);
       }
-      console.log(`Worktree Deleted: ${attempt.worktree_deleted}`);
-      if (attempt.setup_completed_at) {
-        console.log(`Setup Completed: ${attempt.setup_completed_at}`);
+      if (workspace.setup_completed_at) {
+        console.log(`Setup Completed: ${workspace.setup_completed_at}`);
       }
-      console.log(`Created:        ${attempt.created_at}`);
-      console.log(`Updated:        ${attempt.updated_at}`);
+      console.log(`Created:         ${workspace.created_at}`);
+      console.log(`Updated:         ${workspace.updated_at}`);
     } catch (error) {
       handleCliError(error);
       throw error;
     }
   });
 
-// Create attempt
+// Create workspace
 attemptCommand
   .command("create")
-  .description("Create a new attempt for a task")
+  .description("Create a new workspace for a task")
   .option("--task <id:string>", "Task ID", { required: true })
   .option(
     "--executor <executor:string>",
@@ -146,7 +146,6 @@ attemptCommand
     },
   )
   .option("--base-branch <branch:string>", "Base branch", { default: "main" })
-  .option("--target-branch <branch:string>", "Target branch")
   .action(async (options) => {
     try {
       const client = await ApiClient.create();
@@ -154,28 +153,27 @@ attemptCommand
       // Parse executor string into profile ID
       const executorProfileId = parseExecutorString(options.executor);
 
-      const createAttempt: CreateAttempt = {
+      const createWorkspace: CreateWorkspace = {
         task_id: options.task,
         executor_profile_id: executorProfileId,
         base_branch: options.baseBranch,
-        target_branch: options.targetBranch,
       };
 
-      const attempt = await client.createAttempt(createAttempt);
+      const workspace = await client.createWorkspace(createWorkspace);
 
-      console.log(`Attempt created successfully!`);
-      console.log(`ID: ${attempt.id}`);
-      console.log(`Branch: ${attempt.branch}`);
+      console.log(`Workspace created successfully!`);
+      console.log(`ID: ${workspace.id}`);
+      console.log(`Branch: ${workspace.branch}`);
     } catch (error) {
       handleCliError(error);
       throw error;
     }
   });
 
-// Delete attempt
+// Delete workspace
 attemptCommand
   .command("delete")
-  .description("Delete an attempt")
+  .description("Delete a workspace")
   .arguments("[id:string]")
   .option(
     "--project <id:string>",
@@ -185,7 +183,7 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptIdWithAutoDetect(
+      const workspaceId = await getAttemptIdWithAutoDetect(
         client,
         id,
         options.project,
@@ -193,7 +191,7 @@ attemptCommand
 
       if (!options.force) {
         const confirmed = await Confirm.prompt(
-          `Are you sure you want to delete attempt ${attemptId}?`,
+          `Are you sure you want to delete workspace ${workspaceId}?`,
         );
         if (!confirmed) {
           console.log("Deletion cancelled.");
@@ -201,51 +199,66 @@ attemptCommand
         }
       }
 
-      await client.deleteAttempt(attemptId);
-      console.log(`Attempt ${attemptId} deleted successfully.`);
+      await client.deleteWorkspace(workspaceId);
+      console.log(`Workspace ${workspaceId} deleted successfully.`);
     } catch (error) {
       handleCliError(error);
       throw error;
     }
   });
 
-// Update attempt
+// Update workspace
 attemptCommand
   .command("update")
-  .description("Update attempt properties")
+  .description("Update workspace properties")
   .arguments("[id:string]")
   .option(
     "--project <id:string>",
     "Project ID (for fzf selection, auto-detected from git if omitted)",
   )
-  .option("--target-branch <branch:string>", "New target branch")
+  .option("--name <name:string>", "New workspace name")
+  .option("--archived", "Archive the workspace")
+  .option("--no-archived", "Unarchive the workspace")
+  .option("--pinned", "Pin the workspace")
+  .option("--no-pinned", "Unpin the workspace")
   .option("--branch <name:string>", "New branch name")
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptIdWithAutoDetect(
+      const workspaceId = await getAttemptIdWithAutoDetect(
         client,
         id,
         options.project,
       );
 
-      if (options.targetBranch) {
-        const attempt = await client.changeTargetBranch(attemptId, {
-          target_branch: options.targetBranch,
-        });
-        console.log(`Target branch updated to: ${attempt.target_branch}`);
+      // Handle workspace property updates
+      const update: UpdateWorkspace = {};
+      if (options.name !== undefined) {
+        update.name = options.name || null;
+      }
+      if (options.archived !== undefined) {
+        update.archived = options.archived;
+      }
+      if (options.pinned !== undefined) {
+        update.pinned = options.pinned;
       }
 
+      if (Object.keys(update).length > 0) {
+        const workspace = await client.updateWorkspace(workspaceId, update);
+        console.log(`Workspace ${workspace.id} updated.`);
+      }
+
+      // Handle branch rename separately
       if (options.branch) {
-        const attempt = await client.renameBranch(attemptId, {
+        const workspace = await client.renameBranch(workspaceId, {
           new_branch_name: options.branch,
         });
-        console.log(`Branch renamed to: ${attempt.branch}`);
+        console.log(`Branch renamed to: ${workspace.branch}`);
       }
 
-      if (!options.targetBranch && !options.branch) {
+      if (Object.keys(update).length === 0 && !options.branch) {
         console.log(
-          "No update options specified. Use --target-branch or --branch.",
+          "No update options specified. Use --name, --archived, --pinned, or --branch.",
         );
       }
     } catch (error) {
@@ -254,10 +267,10 @@ attemptCommand
     }
   });
 
-// Merge attempt
+// List workspace repositories
 attemptCommand
-  .command("merge")
-  .description("Merge attempt branch into target branch")
+  .command("repos")
+  .description("List repositories associated with this workspace")
   .arguments("[id:string]")
   .option(
     "--project <id:string>",
@@ -267,12 +280,58 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptIdWithAutoDetect(
+      const workspaceId = await getAttemptIdWithAutoDetect(
         client,
         id,
         options.project,
       );
-      const result = await client.mergeAttempt(attemptId);
+
+      const repos = await client.getWorkspaceRepos(workspaceId);
+
+      if (options.json) {
+        console.log(JSON.stringify(repos, null, 2));
+        return;
+      }
+
+      if (repos.length === 0) {
+        console.log("No repositories found.");
+        return;
+      }
+
+      const table = new Table()
+        .header(["Repo ID", "Branch", "Worktree Path"])
+        .body(repos.map((r) => [
+          r.repo_id,
+          r.branch,
+          r.worktree_path || "-",
+        ]));
+
+      table.render();
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+// Merge workspace
+attemptCommand
+  .command("merge")
+  .description("Merge workspace branch into target branch")
+  .arguments("[id:string]")
+  .option(
+    "--project <id:string>",
+    "Project ID (for fzf selection, auto-detected from git if omitted)",
+  )
+  .option("--json", "Output as JSON")
+  .action(async (options, id) => {
+    try {
+      const client = await ApiClient.create();
+      const workspaceId = await getAttemptIdWithAutoDetect(
+        client,
+        id,
+        options.project,
+      );
+      const result = await client.mergeWorkspace(workspaceId);
 
       if (options.json) {
         console.log(JSON.stringify(result, null, 2));
@@ -296,10 +355,10 @@ attemptCommand
     }
   });
 
-// Push attempt
+// Push workspace
 attemptCommand
   .command("push")
-  .description("Push attempt branch to remote")
+  .description("Push workspace branch to remote")
   .arguments("[id:string]")
   .option(
     "--project <id:string>",
@@ -308,12 +367,12 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptIdWithAutoDetect(
+      const workspaceId = await getAttemptIdWithAutoDetect(
         client,
         id,
         options.project,
       );
-      await client.pushAttempt(attemptId);
+      await client.pushWorkspace(workspaceId);
       console.log(`Branch pushed successfully.`);
     } catch (error) {
       handleCliError(error);
@@ -321,10 +380,10 @@ attemptCommand
     }
   });
 
-// Rebase attempt
+// Rebase workspace
 attemptCommand
   .command("rebase")
-  .description("Rebase attempt branch onto target branch")
+  .description("Rebase workspace branch onto target branch")
   .arguments("[id:string]")
   .option(
     "--project <id:string>",
@@ -333,12 +392,12 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptIdWithAutoDetect(
+      const workspaceId = await getAttemptIdWithAutoDetect(
         client,
         id,
         options.project,
       );
-      await client.rebaseAttempt(attemptId);
+      await client.rebaseWorkspace(workspaceId);
       console.log(`Branch rebased successfully.`);
     } catch (error) {
       handleCliError(error);
@@ -346,10 +405,10 @@ attemptCommand
     }
   });
 
-// Stop attempt
+// Stop workspace
 attemptCommand
   .command("stop")
-  .description("Stop attempt execution")
+  .description("Stop workspace execution")
   .arguments("[id:string]")
   .option(
     "--project <id:string>",
@@ -358,13 +417,13 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptIdWithAutoDetect(
+      const workspaceId = await getAttemptIdWithAutoDetect(
         client,
         id,
         options.project,
       );
-      await client.stopAttempt(attemptId);
-      console.log(`Attempt execution stopped.`);
+      await client.stopWorkspace(workspaceId);
+      console.log(`Workspace execution stopped.`);
     } catch (error) {
       handleCliError(error);
       throw error;
@@ -374,7 +433,7 @@ attemptCommand
 // Create PR
 attemptCommand
   .command("pr")
-  .description("Create a GitHub PR for the attempt")
+  .description("Create a GitHub PR for the workspace")
   .arguments("[id:string]")
   .option(
     "--project <id:string>",
@@ -386,22 +445,22 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptIdWithAutoDetect(
+      const workspaceId = await getAttemptIdWithAutoDetect(
         client,
         id,
         options.project,
       );
 
-      // Get attempt to find task_id, then get task for defaults
-      const attempt = await client.getAttempt(attemptId);
-      const task = await client.getTask(attempt.task_id);
+      // Get workspace to find task_id, then get task for defaults
+      const workspace = await client.getWorkspace(workspaceId);
+      const task = await client.getTask(workspace.task_id);
 
       const request: CreatePRRequest = {
         title: options.title || task.title,
         body: options.body || task.description || "",
       };
 
-      const prUrl = await client.createPR(attemptId, request);
+      const prUrl = await client.createPR(workspaceId, request);
 
       if (options.json) {
         console.log(JSON.stringify({ url: prUrl }, null, 2));
@@ -419,7 +478,7 @@ attemptCommand
 // Branch status
 attemptCommand
   .command("branch-status")
-  .description("Show branch status for an attempt")
+  .description("Show branch status for a workspace")
   .arguments("[id:string]")
   .option(
     "--project <id:string>",
@@ -429,12 +488,12 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptIdWithAutoDetect(
+      const workspaceId = await getAttemptIdWithAutoDetect(
         client,
         id,
         options.project,
       );
-      const status = await client.getBranchStatus(attemptId);
+      const status = await client.getBranchStatus(workspaceId);
 
       if (options.json) {
         console.log(JSON.stringify(status, null, 2));
@@ -450,10 +509,10 @@ attemptCommand
     }
   });
 
-// Follow-up command - send message to running attempt
+// Follow-up command - send message to running workspace
 attemptCommand
   .command("follow-up")
-  .description("Send a follow-up message to a running attempt")
+  .description("Send a follow-up message to a running workspace")
   .arguments("[id:string]")
   .option(
     "--project <id:string>",
@@ -465,7 +524,7 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptIdWithAutoDetect(
+      const workspaceId = await getAttemptIdWithAutoDetect(
         client,
         id,
         options.project,
@@ -475,7 +534,7 @@ attemptCommand
         message: options.message,
       };
 
-      await client.followUp(attemptId, request);
+      await client.followUp(workspaceId, request);
       console.log(`Follow-up message sent successfully.`);
     } catch (error) {
       handleCliError(error);
@@ -486,7 +545,7 @@ attemptCommand
 // Force push command
 attemptCommand
   .command("force-push")
-  .description("Force push attempt branch to remote")
+  .description("Force push workspace branch to remote")
   .arguments("[id:string]")
   .option(
     "--project <id:string>",
@@ -496,7 +555,7 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptIdWithAutoDetect(
+      const workspaceId = await getAttemptIdWithAutoDetect(
         client,
         id,
         options.project,
@@ -512,7 +571,7 @@ attemptCommand
         }
       }
 
-      await client.forcePushAttempt(attemptId);
+      await client.forcePushWorkspace(workspaceId);
       console.log(`Branch force pushed successfully.`);
     } catch (error) {
       handleCliError(error);
@@ -523,7 +582,7 @@ attemptCommand
 // Abort conflicts command
 attemptCommand
   .command("abort-conflicts")
-  .description("Abort git conflicts for an attempt")
+  .description("Abort git conflicts for a workspace")
   .arguments("[id:string]")
   .option(
     "--project <id:string>",
@@ -532,13 +591,13 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptIdWithAutoDetect(
+      const workspaceId = await getAttemptIdWithAutoDetect(
         client,
         id,
         options.project,
       );
 
-      await client.abortConflicts(attemptId);
+      await client.abortConflicts(workspaceId);
       console.log(`Conflicts aborted successfully.`);
     } catch (error) {
       handleCliError(error);
@@ -549,7 +608,7 @@ attemptCommand
 // Attach existing PR command
 attemptCommand
   .command("attach-pr")
-  .description("Attach an existing GitHub PR to an attempt")
+  .description("Attach an existing GitHub PR to a workspace")
   .arguments("[id:string]")
   .option(
     "--project <id:string>",
@@ -562,7 +621,7 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptIdWithAutoDetect(
+      const workspaceId = await getAttemptIdWithAutoDetect(
         client,
         id,
         options.project,
@@ -572,7 +631,7 @@ attemptCommand
         pr_number: options.prNumber,
       };
 
-      const prUrl = await client.attachPR(attemptId, request);
+      const prUrl = await client.attachPR(workspaceId, request);
 
       if (options.json) {
         console.log(JSON.stringify({ url: prUrl }, null, 2));
@@ -590,7 +649,7 @@ attemptCommand
 // PR comments command
 attemptCommand
   .command("pr-comments")
-  .description("View comments on the PR associated with an attempt")
+  .description("View comments on the PR associated with a workspace")
   .arguments("[id:string]")
   .option(
     "--project <id:string>",
@@ -600,13 +659,13 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const attemptId = await getAttemptIdWithAutoDetect(
+      const workspaceId = await getAttemptIdWithAutoDetect(
         client,
         id,
         options.project,
       );
 
-      const comments = await client.getPRComments(attemptId);
+      const comments = await client.getPRComments(workspaceId);
 
       if (options.json) {
         console.log(JSON.stringify(comments, null, 2));

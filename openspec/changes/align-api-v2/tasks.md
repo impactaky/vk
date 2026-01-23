@@ -6,77 +6,77 @@ Tasks are ordered by dependency - complete earlier tasks before later ones.
 
 ### Phase 1: Type Definitions
 
-- [ ] **T1**: Update `src/api/types.ts` - Project type
+- [x] **T1**: Update `src/api/types.ts` - Project type
   - Remove: `git_repo_path`, `description`, `hex_color`, `is_archived`, scripts
   - Add: `default_agent_working_dir: string | null`
   - Update: `remote_project_id: string | null`
 
-- [ ] **T2**: Update `src/api/types.ts` - CreateProject type
+- [x] **T2**: Update `src/api/types.ts` - CreateProject type
   - Replace fields with `repositories: CreateProjectRepo[]`
   - Add `CreateProjectRepo` interface
 
-- [ ] **T3**: Update `src/api/types.ts` - UpdateProject type
+- [x] **T3**: Update `src/api/types.ts` - UpdateProject type
   - Keep only `name?: string | null`
 
-- [ ] **T4**: Update `src/api/types.ts` - Task type
+- [x] **T4**: Update `src/api/types.ts` - Task type
   - Remove: `priority`, `due_date`, `labels`, `percent_done`, `hex_color`, `is_favorite`
   - Rename: `parent_task_attempt` → `parent_workspace_id`
 
-- [ ] **T5**: Update `src/api/types.ts` - CreateTask/UpdateTask types
+- [x] **T5**: Update `src/api/types.ts` - CreateTask/UpdateTask types
   - Remove obsolete fields
 
-- [ ] **T6**: Rename TaskAttempt to Workspace in `src/api/types.ts`
+- [x] **T6**: Rename TaskAttempt to Workspace in `src/api/types.ts`
   - Remove: `target_branch`, `executor`, `worktree_deleted`
   - Add: `agent_working_dir`, `archived`, `pinned`, `name`
   - Add `UpdateWorkspace` interface
 
-- [ ] **T7**: Add new types: `ProjectRepo`, `WorkspaceRepo`, `CreateProjectRepo`
+- [x] **T7**: Add new types: `ProjectRepo`, `WorkspaceRepo`, `CreateProjectRepo`
 
 ### Phase 2: API Client
 
-- [ ] **T8**: Update `src/api/client.ts` imports for renamed types
+- [x] **T8**: Update `src/api/client.ts` imports for renamed types
 
-- [ ] **T9**: Rename attempt methods to workspace methods (keep `/task-attempts` endpoint)
+- [x] **T9**: Rename attempt methods to workspace methods (keep `/task-attempts` endpoint)
 
-- [ ] **T10**: Add `updateWorkspace()` method
+- [x] **T10**: Add `updateWorkspace()` method
 
-- [ ] **T11**: Add project repository methods: `listProjectRepos()`, `addProjectRepo()`, `removeProjectRepo()`
+- [x] **T11**: Add project repository methods: `listProjectRepos()`, `addProjectRepo()`, `removeProjectRepo()`
 
-- [ ] **T12**: Add `getWorkspaceRepos()` method
+- [x] **T12**: Add `getWorkspaceRepos()` method
 
-- [ ] **T13**: Remove `changeTargetBranch()` method
+- [x] **T13**: Remove `changeTargetBranch()` method
 
 ### Phase 3: Utilities
 
-- [ ] **T14**: Update `src/utils/fzf.ts` - formatProject, formatWorkspace
+- [x] **T14**: Update `src/utils/fzf.ts` - formatProject, formatWorkspace
 
-- [ ] **T15**: Update `src/utils/project-resolver.ts` for multi-repository projects
+- [x] **T15**: Update `src/utils/project-resolver.ts` for multi-repository projects
 
-- [ ] **T16**: Update `src/utils/attempt-resolver.ts` type references
+- [x] **T16**: Update `src/utils/attempt-resolver.ts` type references
 
 ### Phase 4: Commands
 
-- [ ] **T17**: Update `src/commands/project.ts`
+- [x] **T17**: Update `src/commands/project.ts`
   - Remove obsolete options from list, create, update
   - Update display fields
   - Add repository subcommands
 
-- [ ] **T18**: Update `src/commands/task.ts`
+- [x] **T18**: Update `src/commands/task.ts`
   - Remove obsolete options and filters
   - Update display fields
 
-- [ ] **T19**: Update `src/commands/attempt.ts`
+- [x] **T19**: Update `src/commands/attempt.ts`
   - Rename TaskAttempt references to Workspace
   - Update options and display fields
   - Add repos subcommand
 
 ### Phase 5: Tests
 
-- [ ] **T20**: Update test files for new type schemas
+- [x] **T20**: Update test files for new type schemas
 
 ### Phase 6: Specs
 
-- [ ] **T21**: Update cli-commands spec to reflect removed fields and new structure
+- [x] **T21**: Update cli-commands spec to reflect removed fields and new structure
 
 ## Validation
 

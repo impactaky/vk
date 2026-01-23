@@ -6,55 +6,47 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
+// Project types - updated to match latest API
 export interface Project {
   id: string;
   name: string;
-  git_repo_path: string;
-  description?: string;
-  hex_color?: string;
-  is_archived?: boolean;
-  setup_script?: string;
-  dev_script?: string;
-  cleanup_script?: string;
-  copy_files?: string[];
-  remote_project_id?: string;
+  default_agent_working_dir: string | null;
+  remote_project_id: string | null;
   created_at: string;
   updated_at: string;
 }
 
+export interface CreateProjectRepo {
+  repo_id: string;
+  is_main: boolean;
+}
+
 export interface CreateProject {
   name: string;
-  git_repo_path: string;
-  description?: string;
-  hex_color?: string;
-  setup_script?: string;
-  dev_script?: string;
-  cleanup_script?: string;
-  copy_files?: string[];
-  use_existing_repo: boolean;
+  repositories: CreateProjectRepo[];
 }
 
 export interface UpdateProject {
-  name?: string;
-  description?: string;
-  hex_color?: string;
-  is_archived?: boolean;
+  name?: string | null;
 }
 
+// Project-Repository relationship
+export interface ProjectRepo {
+  project_id: string;
+  repo_id: string;
+  is_main: boolean;
+  created_at: string;
+}
+
+// Task types - updated to match latest API
 export interface Task {
   id: string;
   project_id: string;
   title: string;
-  description?: string;
+  description: string | null;
   status: TaskStatus;
-  priority?: number;
-  due_date?: string;
-  labels?: string[];
-  percent_done?: number;
-  hex_color?: string;
-  is_favorite?: boolean;
-  shared_task_id?: string;
-  parent_task_attempt?: string;
+  parent_workspace_id: string | null;
+  shared_task_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -66,53 +58,56 @@ export type TaskStatus =
   | "done"
   | "cancelled";
 
-export interface TaskWithAttemptStatus extends Task {
-  has_in_progress_attempt: boolean;
-  has_merged_attempt: boolean;
-  last_attempt_failed: boolean;
-  executor?: string;
+export interface TaskWithWorkspaceStatus extends Task {
+  has_in_progress_workspace: boolean;
+  has_merged_workspace: boolean;
+  last_workspace_failed: boolean;
 }
 
 export interface CreateTask {
   project_id: string;
   title: string;
   description?: string;
-  priority?: number;
-  due_date?: string;
-  labels?: string[];
-  hex_color?: string;
-  is_favorite?: boolean;
-  image_ids?: string[];
 }
 
 export interface UpdateTask {
   title?: string;
-  description?: string;
+  description?: string | null;
   status?: TaskStatus;
-  priority?: number;
-  due_date?: string;
-  labels?: string[];
-  percent_done?: number;
-  hex_color?: string;
-  is_favorite?: boolean;
-  parent_task_attempt?: string;
-  image_ids?: string[];
+  parent_workspace_id?: string | null;
 }
 
-export interface TaskAttempt {
+// Workspace types (formerly TaskAttempt) - updated to match latest API
+export interface Workspace {
   id: string;
   task_id: string;
-  container_ref?: string;
+  container_ref: string | null;
   branch: string;
-  target_branch: string;
-  executor: string;
-  worktree_deleted: boolean;
-  setup_completed_at?: string;
+  agent_working_dir: string | null;
+  setup_completed_at: string | null;
   created_at: string;
   updated_at: string;
+  archived: boolean;
+  pinned: boolean;
+  name: string | null;
 }
 
-export type TaskAttemptStatus =
+export interface UpdateWorkspace {
+  name?: string | null;
+  archived?: boolean;
+  pinned?: boolean;
+}
+
+// Workspace-Repository relationship
+export interface WorkspaceRepo {
+  workspace_id: string;
+  repo_id: string;
+  worktree_path: string | null;
+  branch: string;
+  created_at: string;
+}
+
+export type WorkspaceStatus =
   | "SetupRunning"
   | "SetupComplete"
   | "SetupFailed"
@@ -149,15 +144,10 @@ export interface ExecutorProfileID {
   variant: string | null;
 }
 
-export interface CreateAttempt {
+export interface CreateWorkspace {
   task_id: string;
   executor_profile_id: ExecutorProfileID;
   base_branch: string;
-  target_branch?: string;
-}
-
-export interface ChangeTargetBranchRequest {
-  target_branch: string;
 }
 
 export interface RenameBranchRequest {
@@ -183,12 +173,12 @@ export interface MergeResult {
 // PR creation returns just the URL string
 export type PRResult = string;
 
-// Follow-up request for sending messages to running attempts
+// Follow-up request for sending messages to running workspaces
 export interface FollowUpRequest {
   message: string;
 }
 
-// Attach existing PR to an attempt
+// Attach existing PR to a workspace
 export interface AttachPRRequest {
   pr_number: number;
 }
