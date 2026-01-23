@@ -73,6 +73,50 @@ export async function getCurrentRepoBasename(): Promise<string | null> {
 }
 
 /**
+ * Get the remote origin URL of a git repository at a specific path
+ * @param repoPath The path to the git repository
+ * @returns The remote URL or null if not a git repo or no origin
+ */
+export async function getGitRemoteUrlFromPath(
+  repoPath: string,
+): Promise<string | null> {
+  try {
+    const command = new Deno.Command("git", {
+      args: ["remote", "get-url", "origin"],
+      cwd: repoPath,
+      stdout: "piped",
+      stderr: "piped",
+    });
+
+    const { code, stdout } = await command.output();
+
+    if (code !== 0) {
+      return null;
+    }
+
+    const url = new TextDecoder().decode(stdout).trim();
+    return url || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Get the basename of a git repository at a specific path
+ * @param repoPath The path to the git repository
+ * @returns The repo basename or null if not a git repo
+ */
+export async function getRepoBasenameFromPath(
+  repoPath: string,
+): Promise<string | null> {
+  const url = await getGitRemoteUrlFromPath(repoPath);
+  if (!url) {
+    return null;
+  }
+  return extractRepoBasename(url);
+}
+
+/**
  * Get the current git branch name
  * @returns The current branch name or null if not in a git repo
  */
