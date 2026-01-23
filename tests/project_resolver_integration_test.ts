@@ -8,11 +8,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { getTestApiUrl, isServerAvailable } from "./helpers/test-server.ts";
 import { ApiClient } from "../src/api/client.ts";
-import {
-  getProjectId,
-  isPathWithinRepo,
-  tryResolveRepository,
-} from "../src/utils/project-resolver.ts";
+import { getProjectId } from "../src/utils/project-resolver.ts";
 import type { Project, Repo } from "../src/api/types.ts";
 
 let serverAvailable: boolean | null = null;
@@ -47,126 +43,15 @@ async function apiCall<T>(
   return await response.json();
 }
 
-// Tests for isPathWithinRepo function
-Deno.test("isPathWithinRepo: exact match", () => {
-  assertEquals(isPathWithinRepo("/home/user/project", "/home/user/project"), true);
-});
-
-Deno.test("isPathWithinRepo: subdirectory match", () => {
-  assertEquals(isPathWithinRepo("/home/user/project/src", "/home/user/project"), true);
-});
-
-Deno.test("isPathWithinRepo: no match for different path", () => {
-  assertEquals(isPathWithinRepo("/home/user/other", "/home/user/project"), false);
-});
-
-Deno.test("isPathWithinRepo: no match for similar prefix", () => {
-  assertEquals(isPathWithinRepo("/home/user/project-extended", "/home/user/project"), false);
-});
-
-// Tests for tryResolveRepository function
-Deno.test("tryResolveRepository: returns null for empty repos array", async () => {
-  const result = await tryResolveRepository([]);
-  assertEquals(result, null);
-});
-
-// Helper to create mock Repo objects for testing
-function createMockRepo(overrides: Partial<Repo>): Repo {
-  return {
-    id: "mock-repo-id",
-    path: "/mock/path",
-    name: "mock-repo",
-    display_name: "Mock Repo",
-    setup_script: null,
-    cleanup_script: null,
-    copy_files: null,
-    parallel_setup_script: false,
-    dev_server_script: null,
-    created_at: "2024-01-01T00:00:00Z",
-    updated_at: "2024-01-01T00:00:00Z",
-    ...overrides,
-  };
+// Helper function to check if a path is within a repo path (for test assertions)
+function isPathWithinRepo(currentPath: string, repoPath: string): boolean {
+  const normalizedCurrent = currentPath.replace(/\/+$/, "");
+  const normalizedRepo = repoPath.replace(/\/+$/, "");
+  return (
+    normalizedCurrent === normalizedRepo ||
+    normalizedCurrent.startsWith(normalizedRepo + "/")
+  );
 }
-
-Deno.test("tryResolveRepository: matches by path when current directory is within repo", async () => {
-  const currentPath = Deno.cwd();
-
-  // Create a mock repo that contains the current path
-  const mockRepo = createMockRepo({
-    id: "path-match-repo",
-    path: currentPath,
-    name: "current-dir-repo",
-  });
-
-  const result = await tryResolveRepository([mockRepo]);
-
-  // Should match by path since current directory is within this repo
-  if (result) {
-    assertEquals(result.id, "path-match-repo");
-    assertEquals(result.name, "current-dir-repo");
-  } else {
-    // If git basename matching took precedence with no match, path should still work
-    // This can happen if we're in a git repo with different basename
-    console.log("Note: Path matching may have been skipped due to git basename mismatch");
-  }
-});
-
-Deno.test("tryResolveRepository: returns null when no repo matches current path or git", async () => {
-  // Create repos that definitely don't match current directory
-  const mockRepos = [
-    createMockRepo({
-      id: "nonexistent-1",
-      path: "/definitely/not/a/real/path/1",
-      name: "nonexistent-repo-1",
-    }),
-    createMockRepo({
-      id: "nonexistent-2",
-      path: "/definitely/not/a/real/path/2",
-      name: "nonexistent-repo-2",
-    }),
-  ];
-
-  const result = await tryResolveRepository(mockRepos);
-
-  // Should return null since none of the repos match current path or git basename
-  // (unless by chance the git basename matches, which is unlikely)
-  if (result === null) {
-    assertEquals(result, null);
-  } else {
-    // If a match was found, it means the git basename happened to match
-    console.log(`Note: Found unexpected match via git basename: ${result.name}`);
-  }
-});
-
-Deno.test("tryResolveRepository: prefers most specific path when multiple repos match", async () => {
-  const currentPath = Deno.cwd();
-
-  // Create parent and child path repos
-  const parentPath = currentPath.split("/").slice(0, -1).join("/");
-
-  const mockRepos = [
-    createMockRepo({
-      id: "parent-repo",
-      path: parentPath,
-      name: "parent-repo",
-    }),
-    createMockRepo({
-      id: "current-repo",
-      path: currentPath,
-      name: "current-repo",
-    }),
-  ];
-
-  const result = await tryResolveRepository(mockRepos);
-
-  // Should prefer the more specific (longer) path
-  if (result && result.id === "current-repo") {
-    assertEquals(result.id, "current-repo");
-  } else if (result && result.id === "parent-repo") {
-    // This can happen if git basename matching took precedence
-    console.log("Note: Parent repo matched, likely via git basename");
-  }
-});
 
 // Tests for getProjectId function
 Deno.test("getProjectId: returns explicit ID when provided", async () => {
