@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
-import { getTestApiUrl } from "./helpers/test-server.ts";
+import { config } from "./helpers/test-server.ts";
 import { ApiClient } from "../src/api/client.ts";
 import {
   getRepositoryId,
@@ -15,14 +15,12 @@ import {
 import { formatRepository, selectRepository } from "../src/utils/fzf.ts";
 import type { Repo } from "../src/api/types.ts";
 
-const apiUrl = getTestApiUrl();
-
 // Helper to make raw API calls
 async function apiCall<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<{ success: boolean; data?: T; error?: string }> {
-  const response = await fetch(`${apiUrl}/api${path}`, {
+  const response = await fetch(`${config.apiUrl}/api${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -84,7 +82,7 @@ Deno.test("selectRepository: throws error for empty array", async () => {
 
 // Tests for getRepositoryId function
 Deno.test("getRepositoryId: returns explicit ID when provided", async () => {
-    const client = new ApiClient(apiUrl);
+    const client = new ApiClient(config.apiUrl);
   const explicitId = "explicit-repo-id";
 
   const result = await getRepositoryId(explicitId, client);
@@ -100,7 +98,7 @@ Deno.test("getRepositoryId: throws when no repos and no explicit ID", async () =
     return;
   }
 
-  const client = new ApiClient(apiUrl);
+  const client = new ApiClient(config.apiUrl);
 
   await assertRejects(
     async () => {
@@ -138,7 +136,7 @@ Deno.test("Repository auto-detection: resolves from matching path", async () => 
   }
 
   // Test that getRepositoryId resolves to the matching repo
-  const client = new ApiClient(apiUrl);
+  const client = new ApiClient(config.apiUrl);
   const resolvedId = await getRepositoryId(undefined, client);
 
   // The resolved ID should be from a repo that contains current path
@@ -245,7 +243,7 @@ Deno.test("Path matching: selects most specific (longest) path", () => {
 
 // Tests for repository resolution by name
 Deno.test("getRepositoryId: resolves by name when single match exists", async () => {
-    const client = new ApiClient(apiUrl);
+    const client = new ApiClient(config.apiUrl);
 
   // Create a test repository
   const testPath = `/tmp/test-repo-${Date.now()}`;
@@ -265,7 +263,7 @@ Deno.test("getRepositoryId: resolves by name when single match exists", async ()
 });
 
 Deno.test("getRepositoryId: ID match takes priority over name match", async () => {
-    const client = new ApiClient(apiUrl);
+    const client = new ApiClient(config.apiUrl);
 
   // Create a test repository
   const testPath = `/tmp/test-repo-${Date.now()}-id-priority`;
@@ -285,7 +283,7 @@ Deno.test("getRepositoryId: ID match takes priority over name match", async () =
 });
 
 Deno.test("getRepositoryId: throws error when no repository matches ID or name", async () => {
-    const client = new ApiClient(apiUrl);
+    const client = new ApiClient(config.apiUrl);
   const nonExistentIdOrName = "nonexistent-repo-" + Date.now();
 
   await assertRejects(

@@ -9,16 +9,14 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { getTestApiUrl } from "./helpers/test-server.ts";
-
-const apiUrl = getTestApiUrl();
+import { config } from "./helpers/test-server.ts";
 
 // Helper to make raw API calls (bypassing ApiClient to test actual API)
 async function apiCall<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<{ success: boolean; data?: T; error?: string }> {
-  const response = await fetch(`${apiUrl}/api${path}`, {
+  const response = await fetch(`${config.apiUrl}/api${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",

@@ -3,23 +3,22 @@
  * Provides utilities to wait for the vibe-kanban server to be ready.
  */
 
-const DEFAULT_API_URL = "http://localhost:3000";
+import { loadConfig } from "../../src/api/config.ts";
+
 const DEFAULT_TIMEOUT_MS = 30000;
 const POLL_INTERVAL_MS = 500;
 
 /**
- * Get the API URL from environment or use default.
+ * Test configuration loaded from vk config.
  */
-export function getTestApiUrl(): string {
-  return Deno.env.get("VK_API_URL") || DEFAULT_API_URL;
-}
+export const config = await loadConfig();
 
 /**
  * Wait for the vibe-kanban server to be ready by polling the projects endpoint.
  * Throws an error if the server is not ready within the timeout period.
  */
 export async function waitForServer(
-  apiUrl: string = getTestApiUrl(),
+  apiUrl: string = config.apiUrl,
   timeoutMs: number = DEFAULT_TIMEOUT_MS,
 ): Promise<void> {
   const startTime = Date.now();
