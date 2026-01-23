@@ -67,8 +67,10 @@ export async function resolveProjectFromGit(
   }
 
   const matches = projects.filter((p) => {
-    const projectBasename = extractRepoBasename(p.git_repo_path);
-    return projectBasename === currentBasename;
+    return p.repositories.some((repo) => {
+      const repoBasename = extractRepoBasename(repo.path);
+      return repoBasename === currentBasename;
+    });
   });
 
   if (matches.length === 0) {

@@ -6,13 +6,13 @@ Deno.test("Integration - Project filtering by name", () => {
     {
       id: "1",
       name: "Frontend",
-      git_repo_path: "/repos/frontend",
+      repositories: [{ id: "r1", path: "/repos/frontend", name: "frontend" }],
       is_archived: false,
     },
     {
       id: "2",
       name: "Backend",
-      git_repo_path: "/repos/backend",
+      repositories: [{ id: "r2", path: "/repos/backend", name: "backend" }],
       is_archived: false,
     },
   ];
@@ -27,13 +27,13 @@ Deno.test("Integration - Project filtering by archived status", () => {
     {
       id: "1",
       name: "Active",
-      git_repo_path: "/repos/active",
+      repositories: [{ id: "r1", path: "/repos/active", name: "active" }],
       is_archived: false,
     },
     {
       id: "2",
       name: "Archived",
-      git_repo_path: "/repos/archived",
+      repositories: [{ id: "r2", path: "/repos/archived", name: "archived" }],
       is_archived: true,
     },
   ];
@@ -48,21 +48,21 @@ Deno.test("Integration - Project filtering with multiple conditions", () => {
     {
       id: "1",
       name: "Frontend",
-      git_repo_path: "/repos/frontend",
+      repositories: [{ id: "r1", path: "/repos/frontend", name: "frontend" }],
       is_archived: false,
       hex_color: "#3498db",
     },
     {
       id: "2",
       name: "Frontend",
-      git_repo_path: "/repos/frontend2",
+      repositories: [{ id: "r2", path: "/repos/frontend2", name: "frontend2" }],
       is_archived: true,
       hex_color: "#3498db",
     },
     {
       id: "3",
       name: "Backend",
-      git_repo_path: "/repos/backend",
+      repositories: [{ id: "r3", path: "/repos/backend", name: "backend" }],
       is_archived: false,
       hex_color: "#e74c3c",
     },

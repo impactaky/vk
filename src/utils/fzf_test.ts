@@ -6,17 +6,44 @@ import type {
   TaskWithAttemptStatus,
 } from "../api/types.ts";
 
-Deno.test("formatProject formats project correctly", () => {
+Deno.test("formatProject formats project with repositories correctly", () => {
   const project: Project = {
     id: "proj-123",
     name: "Test Project",
-    git_repo_path: "/path/to/repo",
+    repositories: [
+      {
+        id: "repo-1",
+        path: "/path/to/repo",
+        name: "repo",
+        display_name: "Test Repo",
+        setup_script: null,
+        cleanup_script: null,
+        copy_files: null,
+        parallel_setup_script: false,
+        dev_server_script: null,
+        created_at: "2024-01-01T00:00:00Z",
+        updated_at: "2024-01-01T00:00:00Z",
+      },
+    ],
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",
   };
 
   const result = formatProject(project);
   assertEquals(result, "proj-123\tTest Project\t/path/to/repo");
+});
+
+Deno.test("formatProject formats project without repositories correctly", () => {
+  const project: Project = {
+    id: "proj-123",
+    name: "Test Project",
+    repositories: [],
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+  };
+
+  const result = formatProject(project);
+  assertEquals(result, "proj-123\tTest Project\t(no repositories)");
 });
 
 Deno.test("formatTask formats task correctly", () => {

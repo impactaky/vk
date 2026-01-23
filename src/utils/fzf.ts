@@ -89,7 +89,10 @@ async function runFzf(items: string[], prompt?: string): Promise<string> {
  * Format project for fzf display
  */
 export function formatProject(project: Project): string {
-  return `${project.id}\t${project.name}\t${project.git_repo_path}`;
+  const repoInfo = project.repositories.length > 0
+    ? project.repositories[0].path
+    : "(no repositories)";
+  return `${project.id}\t${project.name}\t${repoInfo}`;
 }
 
 /**

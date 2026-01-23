@@ -9,7 +9,7 @@ export interface ApiResponse<T> {
 export interface Project {
   id: string;
   name: string;
-  git_repo_path: string;
+  repositories: Repo[];
   description?: string;
   hex_color?: string;
   is_archived?: boolean;
@@ -24,14 +24,9 @@ export interface Project {
 
 export interface CreateProject {
   name: string;
-  git_repo_path: string;
+  repositories: string[];
   description?: string;
   hex_color?: string;
-  setup_script?: string;
-  dev_script?: string;
-  cleanup_script?: string;
-  copy_files?: string[];
-  use_existing_repo: boolean;
 }
 
 export interface UpdateProject {

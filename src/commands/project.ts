@@ -51,11 +51,11 @@ projectCommand
     }
 
     const table = new Table()
-      .header(["ID", "Name", "Git Repo Path", "Archived"])
+      .header(["ID", "Name", "Repositories", "Archived"])
       .body(projects.map((p) => [
         p.id,
         p.name,
-        p.git_repo_path,
+        String(p.repositories.length),
         p.is_archived ? "Yes" : "No",
       ]));
 
@@ -87,7 +87,14 @@ projectCommand
 
       console.log(`ID:            ${project.id}`);
       console.log(`Name:          ${project.name}`);
-      console.log(`Git Repo Path: ${project.git_repo_path}`);
+      if (project.repositories.length > 0) {
+        console.log(`Repositories:`);
+        for (const repo of project.repositories) {
+          console.log(`  - ${repo.name} (${repo.path})`);
+        }
+      } else {
+        console.log(`Repositories:  (none)`);
+      }
       if (project.description) {
         console.log(`Description:   ${project.description}`);
       }
@@ -119,29 +126,27 @@ projectCommand
   .command("create")
   .description("Create a new project")
   .option("--name <name:string>", "Project name")
-  .option("--path <path:string>", "Git repository path")
-  .option("--use-existing", "Use existing git repository")
+  .option(
+    "--repository <id:string>",
+    "Repository ID to associate (can be repeated)",
+    { collect: true },
+  )
   .option("--description <desc:string>", "Project description")
   .option("--color <color:string>", "Hex color (e.g., #3498db)")
   .action(async (options) => {
     let name = options.name;
-    let gitRepoPath = options.path;
-    const useExistingRepo = options.useExisting ?? true;
 
     if (!name) {
       name = await Input.prompt("Project name:");
     }
 
-    if (!gitRepoPath) {
-      gitRepoPath = await Input.prompt("Git repository path:");
-    }
+    const repositories = options.repository ?? [];
 
     const createProject: CreateProject = {
       name,
-      git_repo_path: gitRepoPath,
+      repositories,
       description: options.description,
       hex_color: options.color,
-      use_existing_repo: useExistingRepo,
     };
 
     const client = await ApiClient.create();
