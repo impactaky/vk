@@ -13,14 +13,23 @@ function getConfigPath(): string {
 
 export async function loadConfig(): Promise<Config> {
   const configPath = getConfigPath();
+  let config: Config;
   try {
     const content = await Deno.readTextFile(configPath);
-    return JSON.parse(content);
+    config = JSON.parse(content);
   } catch {
-    return {
+    config = {
       apiUrl: "http://localhost:3000",
     };
   }
+
+  // Environment variable overrides config file
+  const envApiUrl = Deno.env.get("VK_API_URL");
+  if (envApiUrl) {
+    config.apiUrl = envApiUrl;
+  }
+
+  return config;
 }
 
 export async function saveConfig(config: Config): Promise<void> {

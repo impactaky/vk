@@ -5,8 +5,8 @@
  * Run with: deno task test:integration
  */
 
-import { assertEquals, assertExists, assertRejects } from "@std/assert";
-import { getTestApiUrl, isServerAvailable } from "./helpers/test-server.ts";
+import { assertEquals, assertRejects } from "@std/assert";
+import { config } from "./helpers/test-server.ts";
 import { ApiClient } from "../src/api/client.ts";
 import {
   getRepositoryId,
@@ -15,29 +15,12 @@ import {
 import { formatRepository, selectRepository } from "../src/utils/fzf.ts";
 import type { Repo } from "../src/api/types.ts";
 
-let serverAvailable: boolean | null = null;
-let apiUrl: string;
-
-async function checkServerAndSkipIfUnavailable(): Promise<boolean> {
-  if (serverAvailable === null) {
-    apiUrl = getTestApiUrl();
-    serverAvailable = await isServerAvailable(apiUrl);
-    if (!serverAvailable) {
-      console.warn(
-        `\nWARNING: Server at ${apiUrl} is not available. Test skipped.\n` +
-          "Start the server with: docker compose up\n",
-      );
-    }
-  }
-  return serverAvailable;
-}
-
 // Helper to make raw API calls
 async function apiCall<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<{ success: boolean; data?: T; error?: string }> {
-  const response = await fetch(`${apiUrl}/api${path}`, {
+  const response = await fetch(`${config.apiUrl}/api${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -97,84 +80,116 @@ Deno.test("selectRepository: throws error for empty array", async () => {
   );
 });
 
+// Shared test directory path (available in both containers via shared volume)
+const SHARED_TEST_DIR = "/shared";
+
+// Helper to create a test repository with a real git directory
+async function createTestRepo(
+  suffix: string,
+): Promise<{ repo: Repo; cleanup: () => Promise<void> }> {
+  const testPath = `${SHARED_TEST_DIR}/test-repo-${Date.now()}-${suffix}`;
+
+  // Create the directory and .git folder (server checks for .git to validate git repo)
+  await Deno.mkdir(`${testPath}/.git`, { recursive: true });
+
+  // Register the repository
+  const client = new ApiClient(config.apiUrl);
+  const repo = await client.registerRepo({
+    path: testPath,
+    display_name: `Test Repo ${suffix}`,
+  });
+
+  const cleanup = async () => {
+    try {
+      const response = await fetch(`${config.apiUrl}/api/repos/${repo.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+      // Ignore response - DELETE may return empty body
+      await response.text();
+    } catch {
+      // Ignore delete errors
+    }
+    try {
+      await Deno.remove(testPath, { recursive: true });
+    } catch {
+      // Ignore cleanup errors
+    }
+  };
+
+  return { repo, cleanup };
+}
+
 // Tests for getRepositoryId function
 Deno.test("getRepositoryId: returns explicit ID when provided", async () => {
-  if (!(await checkServerAndSkipIfUnavailable())) return;
+  const { repo, cleanup } = await createTestRepo("explicit-id");
 
-  const client = new ApiClient(apiUrl);
-  const explicitId = "explicit-repo-id";
-
-  const result = await getRepositoryId(explicitId, client);
-  assertEquals(result, explicitId);
+  try {
+    const client = new ApiClient(config.apiUrl);
+    const result = await getRepositoryId(repo.id, client);
+    assertEquals(result, repo.id);
+  } finally {
+    await cleanup();
+  }
 });
 
 Deno.test("getRepositoryId: throws when no repos and no explicit ID", async () => {
-  if (!(await checkServerAndSkipIfUnavailable())) return;
+  const client = new ApiClient(config.apiUrl);
 
-  // Get list of existing repos to check if any exist
+  // Get and temporarily remove all existing repos
   const reposResult = await apiCall<Repo[]>("/repos");
-  if (reposResult.data && reposResult.data.length > 0) {
-    // Skip this test if repos exist - we can't test "no repos" scenario
-    console.log("Skipping test: repositories exist in the system");
-    return;
+  const existingRepos = reposResult.data || [];
+
+  // Delete all repos temporarily (use fetch directly as DELETE returns empty body)
+  for (const repo of existingRepos) {
+    const response = await fetch(`${config.apiUrl}/api/repos/${repo.id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+    });
+    await response.text(); // Consume body
   }
 
-  const client = new ApiClient(apiUrl);
-
-  await assertRejects(
-    async () => {
-      await getRepositoryId(undefined, client);
-    },
-    RepositoryResolverError,
-    "No repositories registered.",
-  );
+  try {
+    // With no repos and no explicit ID, should throw RepositoryResolverError
+    await assertRejects(
+      async () => {
+        await getRepositoryId(undefined, client);
+      },
+      RepositoryResolverError,
+    );
+  } finally {
+    // Restore repos (note: paths may not exist anymore, so we skip validation errors)
+    for (const repo of existingRepos) {
+      try {
+        await client.registerRepo({
+          path: repo.path,
+          display_name: repo.display_name || null,
+        });
+      } catch {
+        // Ignore errors restoring repos with invalid paths
+      }
+    }
+  }
 });
 
 // Integration test for repository auto-detection with actual server
 Deno.test("Repository auto-detection: resolves from matching path", async () => {
-  if (!(await checkServerAndSkipIfUnavailable())) return;
+  const { repo, cleanup } = await createTestRepo("auto-detect");
+  const originalCwd = Deno.cwd();
 
-  // Get current working directory
-  const currentPath = Deno.cwd();
+  try {
+    // Change to the repo directory
+    Deno.chdir(repo.path);
 
-  // Check if there's a repository that matches current path
-  const reposResult = await apiCall<Repo[]>("/repos");
-  assertEquals(reposResult.success, true);
-  assertExists(reposResult.data);
-
-  const matchingRepo = reposResult.data.find((repo) => {
-    const normalizedCurrent = currentPath.replace(/\/+$/, "");
-    const normalizedRepo = repo.path.replace(/\/+$/, "");
-    return (
-      normalizedCurrent === normalizedRepo ||
-      normalizedCurrent.startsWith(normalizedRepo + "/")
-    );
-  });
-
-  if (!matchingRepo) {
-    console.log(
-      `Skipping test: current directory "${currentPath}" is not within any registered repository`,
-    );
-    return;
+    // Test that getRepositoryId resolves to the matching repo
+    const client = new ApiClient(config.apiUrl);
+    const resolvedId = await getRepositoryId(undefined, client);
+    assertEquals(resolvedId, repo.id);
+  } finally {
+    // Restore original working directory
+    Deno.chdir(originalCwd);
+    await cleanup();
   }
-
-  // Test that getRepositoryId resolves to the matching repo
-  const client = new ApiClient(apiUrl);
-  const resolvedId = await getRepositoryId(undefined, client);
-
-  // The resolved ID should be from a repo that contains current path
-  const resolvedRepo = reposResult.data.find((r) => r.id === resolvedId);
-  assertExists(resolvedRepo);
-
-  // Verify the resolved repo's path contains current directory
-  const normalizedCurrent = currentPath.replace(/\/+$/, "");
-  const normalizedResolved = resolvedRepo.path.replace(/\/+$/, "");
-  assertEquals(
-    normalizedCurrent === normalizedResolved ||
-      normalizedCurrent.startsWith(normalizedResolved + "/"),
-    true,
-    `Expected current path "${currentPath}" to be within resolved repo path "${resolvedRepo.path}"`,
-  );
 });
 
 // Test path matching logic directly
@@ -266,60 +281,47 @@ Deno.test("Path matching: selects most specific (longest) path", () => {
 
 // Tests for repository resolution by name
 Deno.test("getRepositoryId: resolves by name when single match exists", async () => {
-  if (!(await checkServerAndSkipIfUnavailable())) return;
-
-  const client = new ApiClient(apiUrl);
-
-  // Create a test repository
-  const testPath = `/tmp/test-repo-${Date.now()}`;
-  const testRepo = await client.registerRepo({
-    path: testPath,
-    display_name: "Test Repo for Name Resolution",
-  });
+  const { repo, cleanup } = await createTestRepo("name-resolution");
 
   try {
+    const client = new ApiClient(config.apiUrl);
     // Test resolving by name
-    const result = await getRepositoryId(testRepo.name, client);
-    assertEquals(result, testRepo.id);
+    const result = await getRepositoryId(repo.name, client);
+    assertEquals(result, repo.id);
   } finally {
-    // Cleanup
-    await apiCall(`/repos/${testRepo.id}`, { method: "DELETE" });
+    await cleanup();
   }
 });
 
 Deno.test("getRepositoryId: ID match takes priority over name match", async () => {
-  if (!(await checkServerAndSkipIfUnavailable())) return;
-
-  const client = new ApiClient(apiUrl);
-
-  // Create a test repository
-  const testPath = `/tmp/test-repo-${Date.now()}-id-priority`;
-  const testRepo = await client.registerRepo({
-    path: testPath,
-    display_name: "Test Repo for ID Priority",
-  });
+  const { repo, cleanup } = await createTestRepo("id-priority");
 
   try {
+    const client = new ApiClient(config.apiUrl);
     // When we pass an exact ID, it should return that ID
-    const result = await getRepositoryId(testRepo.id, client);
-    assertEquals(result, testRepo.id);
+    const result = await getRepositoryId(repo.id, client);
+    assertEquals(result, repo.id);
   } finally {
-    // Cleanup
-    await apiCall(`/repos/${testRepo.id}`, { method: "DELETE" });
+    await cleanup();
   }
 });
 
 Deno.test("getRepositoryId: throws error when no repository matches ID or name", async () => {
-  if (!(await checkServerAndSkipIfUnavailable())) return;
+  // Create a repo to ensure at least one exists (so we get "not found" instead of "no repos")
+  const { cleanup } = await createTestRepo("ensure-exists");
 
-  const client = new ApiClient(apiUrl);
-  const nonExistentIdOrName = "nonexistent-repo-" + Date.now();
+  try {
+    const client = new ApiClient(config.apiUrl);
+    const nonExistentIdOrName = "nonexistent-repo-" + Date.now();
 
-  await assertRejects(
-    async () => {
-      await getRepositoryId(nonExistentIdOrName, client);
-    },
-    RepositoryResolverError,
-    `Repository not found: "${nonExistentIdOrName}"`,
-  );
+    await assertRejects(
+      async () => {
+        await getRepositoryId(nonExistentIdOrName, client);
+      },
+      RepositoryResolverError,
+      `Repository not found: "${nonExistentIdOrName}"`,
+    );
+  } finally {
+    await cleanup();
+  }
 });

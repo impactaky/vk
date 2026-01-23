@@ -1,18 +1,34 @@
 services:
   vibe-kanban:
-    build:
-      context: .
-      dockerfile: Dockerfile.test-server
+    image: node:20-slim
+    environment:
+      - PORT=3000
+      - HOST=0.0.0.0
+    command: npx -y vibe-kanban
     ports:
       - "3000:3000"
     volumes:
-      - vibe-kanban-data:/root/.local/share/vibe-kanban
+      - shared-test-data:/shared
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/projects"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/projects', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
 
+  vk:
+    image: denoland/deno:latest
+    environment:
+      - VK_API_URL=http://vibe-kanban:3000
+    command: deno test --allow-net --allow-read --allow-write --allow-env
+    working_dir: /app
+    volumes:
+      - .:/app
+      - shared-test-data:/shared
+    depends_on:
+      vibe-kanban:
+        condition: service_healthy
+
 volumes:
-  vibe-kanban-data:
+  shared-test-data:
+
