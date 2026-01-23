@@ -3,11 +3,12 @@ services:
     image: node:20-slim
     environment:
       - PORT=3000
+      - HOST=0.0.0.0
     command: npx -y vibe-kanban
     ports:
       - "3000:3000"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/projects"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/projects', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -22,4 +23,6 @@ services:
     volumes:
       - .:/app
     depends_on:
-      - vibe-kanban
+      vibe-kanban:
+        condition: service_healthy
+
