@@ -1,8 +1,9 @@
 ---
-name: Test
-description: Run unit tests and optionally integration tests (mirrors CI checks)
-user_invocable: true
+name: test
+description: Run unit tests and integration tests for Deno projects (mirrors CI checks). Use when the user wants to run tests, verify functionality, check for regressions, or validate code changes with commands like "/test", "run tests", "run unit tests", or "run integration tests".
 ---
+
+# Test
 
 Run tests based on the CI workflow:
 
