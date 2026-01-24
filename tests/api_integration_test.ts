@@ -15,7 +15,15 @@ import { config } from "./helpers/test-server.ts";
 async function apiCall<T>(
   path: string,
   options: RequestInit = {},
-): Promise<{ success: boolean; data?: T; error?: string; status?: number; rawText?: string }> {
+): Promise<
+  {
+    success: boolean;
+    data?: T;
+    error?: string;
+    status?: number;
+    rawText?: string;
+  }
+> {
   const response = await fetch(`${config.apiUrl}/api${path}`, {
     ...options,
     headers: {
@@ -27,7 +35,12 @@ async function apiCall<T>(
   try {
     return await JSON.parse(text);
   } catch {
-    return { success: false, error: text, status: response.status, rawText: text };
+    return {
+      success: false,
+      error: text,
+      status: response.status,
+      rawText: text,
+    };
   }
 }
 
@@ -162,7 +175,11 @@ Deno.test("API: Add repository to project", async () => {
       },
     );
     console.log("Add repo result:", JSON.stringify(addResult, null, 2));
-    assertEquals(addResult.success, true, `Failed to add repo: ${addResult.error || addResult.rawText}`);
+    assertEquals(
+      addResult.success,
+      true,
+      `Failed to add repo: ${addResult.error || addResult.rawText}`,
+    );
     assertExists(addResult.data);
 
     // Verify the repository was added
@@ -213,8 +230,15 @@ Deno.test("API: Add repository to project with custom display_name", async () =>
         }),
       },
     );
-    console.log("Add repo with custom name result:", JSON.stringify(addResult, null, 2));
-    assertEquals(addResult.success, true, `Failed to add repo: ${addResult.error || addResult.rawText}`);
+    console.log(
+      "Add repo with custom name result:",
+      JSON.stringify(addResult, null, 2),
+    );
+    assertEquals(
+      addResult.success,
+      true,
+      `Failed to add repo: ${addResult.error || addResult.rawText}`,
+    );
     assertExists(addResult.data);
   } finally {
     // Cleanup: delete the project and test directory

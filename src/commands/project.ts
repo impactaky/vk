@@ -227,8 +227,12 @@ projectCommand
   .command("add-repo")
   .description("Add a repository to this project")
   .arguments("[id:string]")
-  .option("--path <path:string>", "Path to the git repository", { required: true })
-  .option("--display-name <name:string>", "Display name for the repository", { required: true })
+  .option("--path <path:string>", "Path to the git repository", {
+    required: true,
+  })
+  .option("--display-name <name:string>", "Display name for the repository", {
+    required: true,
+  })
   .action(async (options, id?: string) => {
     try {
       const client = await ApiClient.create();
