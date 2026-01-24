@@ -68,13 +68,13 @@ export async function resolveProjectFromGit(
   }
 
   // For each project, check its associated repositories
+  // Note: listProjectRepos returns Repo[] (full repository objects)
   const matches: Project[] = [];
 
   for (const project of projects) {
     try {
-      const projectRepos = await client.listProjectRepos(project.id);
-      for (const pr of projectRepos) {
-        const repo = await client.getRepo(pr.repo_id);
+      const repos = await client.listProjectRepos(project.id);
+      for (const repo of repos) {
         const repoBasename = extractRepoBasename(repo.path);
         if (repoBasename === currentBasename) {
           matches.push(project);

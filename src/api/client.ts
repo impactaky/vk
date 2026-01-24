@@ -12,7 +12,6 @@ import type {
   InitRepoRequest,
   MergeResult,
   Project,
-  ProjectRepo,
   PRResult,
   RegisterRepoRequest,
   RenameBranchRequest,
@@ -96,16 +95,17 @@ export class ApiClient {
   }
 
   // Project repository management
-  listProjectRepos(projectId: string): Promise<ProjectRepo[]> {
-    return this.request<ProjectRepo[]>(`/projects/${projectId}/repositories`);
+  // Note: API returns Repo[] (full repository objects), not ProjectRepo[]
+  listProjectRepos(projectId: string): Promise<Repo[]> {
+    return this.request<Repo[]>(`/projects/${projectId}/repositories`);
   }
 
   addProjectRepo(
     projectId: string,
     repoId: string,
     isMain: boolean,
-  ): Promise<ProjectRepo> {
-    return this.request<ProjectRepo>(`/projects/${projectId}/repositories`, {
+  ): Promise<Repo> {
+    return this.request<Repo>(`/projects/${projectId}/repositories`, {
       method: "POST",
       body: JSON.stringify({ repo_id: repoId, is_main: isMain }),
     });
