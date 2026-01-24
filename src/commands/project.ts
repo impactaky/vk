@@ -222,11 +222,11 @@ projectCommand
       }
 
       const table = new Table()
-        .header(["Repo ID", "Is Main", "Created At"])
+        .header(["ID", "Name", "Path"])
         .body(repos.map((r) => [
-          r.repo_id,
-          r.is_main ? "Yes" : "No",
-          r.created_at,
+          r.id,
+          r.name,
+          r.path,
         ]));
 
       table.render();
@@ -259,7 +259,7 @@ projectCommand
         options.main ?? false,
       );
 
-      console.log(`Repository ${repo.repo_id} added to project.`);
+      console.log(`Repository ${repo.id} added to project.`);
     } catch (error) {
       handleCliError(error);
       throw error;
