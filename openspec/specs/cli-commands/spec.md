@@ -848,6 +848,21 @@ The CLI MUST accept project name as an alternative to project ID when explicitly
 - **AND** the user runs `vk project update my-project --name "new-name"`
 - **THEN** the CLI resolves the project by name and updates it
 
+#### Scenario: List project repos by name
+- **WHEN** a project with name "my-project" exists
+- **AND** the user runs `vk project repos my-project`
+- **THEN** the CLI resolves the project by name and lists its repositories
+
+#### Scenario: Add repo to project by name
+- **WHEN** a project with name "my-project" exists
+- **AND** the user runs `vk project add-repo my-project --repo repo-123`
+- **THEN** the CLI resolves the project by name and adds the repository
+
+#### Scenario: Remove repo from project by name
+- **WHEN** a project with name "my-project" exists
+- **AND** the user runs `vk project remove-repo my-project --repo repo-123`
+- **THEN** the CLI resolves the project by name and removes the repository
+
 ### Requirement: Attempt Follow-Up Command
 The CLI MUST provide a command to send follow-up messages to running attempts.
 
