@@ -91,8 +91,13 @@ projectCommand
   .description("Create a new project")
   .option("--name <name:string>", "Project name")
   .option(
-    "--repo <id:string>",
-    "Repository ID to associate (can be specified multiple times)",
+    "--repo-path <path:string>",
+    "Git repository path to associate (can be specified multiple times)",
+    { collect: true },
+  )
+  .option(
+    "--repo-name <name:string>",
+    "Display name for repository (can be specified multiple times, matches --repo-path order)",
     { collect: true },
   )
   .action(async (options) => {
@@ -102,13 +107,14 @@ projectCommand
       name = await Input.prompt("Project name:");
     }
 
-    const repoIds: string[] = options.repo || [];
+    const repoPaths: string[] = options.repoPath || [];
+    const repoNames: string[] = options.repoName || [];
 
     const createProject: CreateProject = {
       name,
-      repositories: repoIds.map((repoId, index) => ({
-        repo_id: repoId,
-        is_main: index === 0, // First repo is main by default
+      repositories: repoPaths.map((path, index) => ({
+        display_name: repoNames[index] || path.split("/").pop() || path,
+        git_repo_path: path,
       })),
     };
 
@@ -221,9 +227,8 @@ projectCommand
   .command("add-repo")
   .description("Add a repository to this project")
   .arguments("[id:string]")
-  .option("--repo <id:string>", "Repository ID to add", { required: true })
-  .option("--main", "Set as main repository")
-  .option("--display-name <name:string>", "Display name for the repository")
+  .option("--path <path:string>", "Path to the git repository", { required: true })
+  .option("--display-name <name:string>", "Display name for the repository", { required: true })
   .action(async (options, id?: string) => {
     try {
       const client = await ApiClient.create();
@@ -231,9 +236,8 @@ projectCommand
 
       const repo = await client.addProjectRepo(
         projectId,
-        options.repo,
-        options.main ?? false,
-        options.displayName ?? null,
+        options.displayName,
+        options.path,
       );
 
       console.log(`Repository ${repo.id} added to project.`);

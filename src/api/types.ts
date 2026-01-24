@@ -17,8 +17,8 @@ export interface Project {
 }
 
 export interface CreateProjectRepo {
-  repo_id: string;
-  is_main: boolean;
+  display_name: string;
+  git_repo_path: string;
 }
 
 export interface CreateProject {

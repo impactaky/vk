@@ -102,13 +102,12 @@ export class ApiClient {
 
   addProjectRepo(
     projectId: string,
-    repoId: string,
-    isMain: boolean,
-    displayName: string | null = null,
+    displayName: string,
+    gitRepoPath: string,
   ): Promise<Repo> {
     return this.request<Repo>(`/projects/${projectId}/repositories`, {
       method: "POST",
-      body: JSON.stringify({ repo_id: repoId, is_main: isMain, display_name: displayName }),
+      body: JSON.stringify({ display_name: displayName, git_repo_path: gitRepoPath }),
     });
   }
 

@@ -1,7 +1,7 @@
 # Change: Fix project add-repo API request payload
 
 ## Why
-The `vk project add-repo` command fails with a 422 error because the API request payload is missing the required `display_name` field. The backend expects `{ repo_id, is_main, display_name }` but the CLI only sends `{ repo_id, is_main }`.
+The `vk project add-repo` command fails with a 422 error because the CLI was sending an incorrect API request payload. The backend expects `{ display_name: string, git_repo_path: string }` but the CLI was sending `{ repo_id, is_main }`.
 
 Error message:
 ```
@@ -9,10 +9,12 @@ Error: API error (422): Failed to deserialize the JSON body into the target type
 ```
 
 ## What Changes
-- Update `addProjectRepo` method in `src/api/client.ts` to accept optional `displayName` parameter (defaults to `null`)
-- Add `--display-name` option to `add-repo` command in `src/commands/project.ts`
-- This fixes the bug and allows users to optionally specify a custom display name when adding a repository to a project
+- Update `CreateProjectRepo` type to match backend API contract: `{ display_name: string, git_repo_path: string }`
+- Update `addProjectRepo` method in `src/api/client.ts` to accept `displayName` and `gitRepoPath` parameters
+- Update `add-repo` command in `src/commands/project.ts` to use `--path` and `--display-name` options
+- Update `project create` command to use `--repo-path` and `--repo-name` options instead of `--repo`
+- Add integration tests for add-repo API
 
 ## Impact
-- Affected specs: cli-commands (adds `--display-name` option to `add-repo` command)
-- Affected code: `src/api/client.ts`, `src/commands/project.ts`
+- Affected specs: cli-commands (changes CLI options for `add-repo` and `project create` commands)
+- Affected code: `src/api/client.ts`, `src/api/types.ts`, `src/commands/project.ts`, `tests/api_integration_test.ts`
