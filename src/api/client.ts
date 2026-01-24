@@ -107,7 +107,7 @@ export class ApiClient {
   ): Promise<Repo> {
     return this.request<Repo>(`/projects/${projectId}/repositories`, {
       method: "POST",
-      body: JSON.stringify({ repo_id: repoId, is_main: isMain }),
+      body: JSON.stringify({ repo_id: repoId, is_main: isMain, display_name: null }),
     });
   }
 
