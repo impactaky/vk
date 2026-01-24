@@ -104,10 +104,11 @@ export class ApiClient {
     projectId: string,
     repoId: string,
     isMain: boolean,
+    displayName: string | null = null,
   ): Promise<Repo> {
     return this.request<Repo>(`/projects/${projectId}/repositories`, {
       method: "POST",
-      body: JSON.stringify({ repo_id: repoId, is_main: isMain, display_name: null }),
+      body: JSON.stringify({ repo_id: repoId, is_main: isMain, display_name: displayName }),
     });
   }
 

@@ -223,6 +223,7 @@ projectCommand
   .arguments("[id:string]")
   .option("--repo <id:string>", "Repository ID to add", { required: true })
   .option("--main", "Set as main repository")
+  .option("--display-name <name:string>", "Display name for the repository")
   .action(async (options, id?: string) => {
     try {
       const client = await ApiClient.create();
@@ -232,6 +233,7 @@ projectCommand
         projectId,
         options.repo,
         options.main ?? false,
+        options.displayName ?? null,
       );
 
       console.log(`Repository ${repo.id} added to project.`);
