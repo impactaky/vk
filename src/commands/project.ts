@@ -3,7 +3,7 @@ import { Confirm, Input } from "@cliffy/prompt";
 import { Table } from "@cliffy/table";
 import { ApiClient } from "../api/client.ts";
 import type { CreateProject, UpdateProject } from "../api/types.ts";
-import { resolveProjectFromGit } from "../utils/project-resolver.ts";
+import { getProjectId } from "../utils/project-resolver.ts";
 import { applyFilters } from "../utils/filter.ts";
 import { handleCliError } from "../utils/error-handler.ts";
 
@@ -62,12 +62,7 @@ projectCommand
   .action(async (options, id?: string) => {
     try {
       const client = await ApiClient.create();
-      let projectId = id;
-
-      if (!projectId) {
-        const resolved = await resolveProjectFromGit(client);
-        projectId = resolved.id;
-      }
+      const projectId = await getProjectId(id, client);
 
       const project = await client.getProject(projectId);
 
@@ -133,12 +128,7 @@ projectCommand
   .action(async (options, id?: string) => {
     try {
       const client = await ApiClient.create();
-      let projectId = id;
-
-      if (!projectId) {
-        const resolved = await resolveProjectFromGit(client);
-        projectId = resolved.id;
-      }
+      const projectId = await getProjectId(id, client);
 
       const update: UpdateProject = {};
 
@@ -168,12 +158,7 @@ projectCommand
   .action(async (options, id?: string) => {
     try {
       const client = await ApiClient.create();
-      let projectId = id;
-
-      if (!projectId) {
-        const resolved = await resolveProjectFromGit(client);
-        projectId = resolved.id;
-      }
+      const projectId = await getProjectId(id, client);
 
       if (!options.force) {
         const confirmed = await Confirm.prompt(
@@ -202,12 +187,7 @@ projectCommand
   .action(async (options, id?: string) => {
     try {
       const client = await ApiClient.create();
-      let projectId = id;
-
-      if (!projectId) {
-        const resolved = await resolveProjectFromGit(client);
-        projectId = resolved.id;
-      }
+      const projectId = await getProjectId(id, client);
 
       const repos = await client.listProjectRepos(projectId);
 
@@ -246,12 +226,7 @@ projectCommand
   .action(async (options, id?: string) => {
     try {
       const client = await ApiClient.create();
-      let projectId = id;
-
-      if (!projectId) {
-        const resolved = await resolveProjectFromGit(client);
-        projectId = resolved.id;
-      }
+      const projectId = await getProjectId(id, client);
 
       const repo = await client.addProjectRepo(
         projectId,
@@ -275,12 +250,7 @@ projectCommand
   .action(async (options, id?: string) => {
     try {
       const client = await ApiClient.create();
-      let projectId = id;
-
-      if (!projectId) {
-        const resolved = await resolveProjectFromGit(client);
-        projectId = resolved.id;
-      }
+      const projectId = await getProjectId(id, client);
 
       await client.removeProjectRepo(projectId, options.repo);
 
