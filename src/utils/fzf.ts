@@ -5,8 +5,8 @@
 import type {
   Project,
   Repo,
-  TaskAttempt,
-  TaskWithAttemptStatus,
+  TaskWithWorkspaceStatus,
+  Workspace,
 } from "../api/types.ts";
 
 export class FzfNotInstalledError extends Error {
@@ -89,21 +89,23 @@ async function runFzf(items: string[], prompt?: string): Promise<string> {
  * Format project for fzf display
  */
 export function formatProject(project: Project): string {
-  return `${project.id}\t${project.name}\t${project.git_repo_path}`;
+  return `${project.id}\t${project.name}\t${
+    project.default_agent_working_dir || "-"
+  }`;
 }
 
 /**
  * Format task for fzf display
  */
-export function formatTask(task: TaskWithAttemptStatus): string {
+export function formatTask(task: TaskWithWorkspaceStatus): string {
   return `${task.id}\t${task.title}\t[${task.status}]`;
 }
 
 /**
- * Format attempt for fzf display
+ * Format workspace for fzf display
  */
-export function formatAttempt(attempt: TaskAttempt): string {
-  return `${attempt.id}\t${attempt.branch}\t${attempt.executor}`;
+export function formatWorkspace(workspace: Workspace): string {
+  return `${workspace.id}\t${workspace.branch}\t${workspace.name || "-"}`;
 }
 
 /**
@@ -137,7 +139,7 @@ export async function selectProject(projects: Project[]): Promise<string> {
  * Select a task using fzf
  */
 export async function selectTask(
-  tasks: TaskWithAttemptStatus[],
+  tasks: TaskWithWorkspaceStatus[],
 ): Promise<string> {
   if (tasks.length === 0) {
     throw new Error("No tasks available.");
@@ -149,15 +151,17 @@ export async function selectTask(
 }
 
 /**
- * Select an attempt using fzf
+ * Select a workspace using fzf
  */
-export async function selectAttempt(attempts: TaskAttempt[]): Promise<string> {
-  if (attempts.length === 0) {
-    throw new Error("No attempts available.");
+export async function selectWorkspace(
+  workspaces: Workspace[],
+): Promise<string> {
+  if (workspaces.length === 0) {
+    throw new Error("No workspaces available.");
   }
 
-  const items = attempts.map(formatAttempt);
-  const selected = await runFzf(items, "Select attempt:");
+  const items = workspaces.map(formatWorkspace);
+  const selected = await runFzf(items, "Select workspace:");
   return extractId(selected);
 }
 

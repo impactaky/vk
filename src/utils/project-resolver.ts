@@ -50,6 +50,7 @@ async function selectProjectWithFzf(
 
 /**
  * Resolve project ID from current git repository
+ * Projects are now multi-repository, so we need to check each project's repositories.
  * @param client API client instance
  * @returns The resolved project or throws ProjectResolverError
  */
@@ -66,10 +67,25 @@ export async function resolveProjectFromGit(
     );
   }
 
-  const matches = projects.filter((p) => {
-    const projectBasename = extractRepoBasename(p.git_repo_path);
-    return projectBasename === currentBasename;
-  });
+  // For each project, check its associated repositories
+  const matches: Project[] = [];
+
+  for (const project of projects) {
+    try {
+      const projectRepos = await client.listProjectRepos(project.id);
+      for (const pr of projectRepos) {
+        const repo = await client.getRepo(pr.repo_id);
+        const repoBasename = extractRepoBasename(repo.path);
+        if (repoBasename === currentBasename) {
+          matches.push(project);
+          break; // Found a match for this project, no need to check more repos
+        }
+      }
+    } catch {
+      // Skip projects where we can't fetch repositories
+      continue;
+    }
+  }
 
   if (matches.length === 0) {
     return selectProjectWithFzf(

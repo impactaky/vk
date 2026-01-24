@@ -3,27 +3,29 @@ import type {
   ApiResponse,
   AttachPRRequest,
   BranchStatus,
-  ChangeTargetBranchRequest,
-  CreateAttempt,
   CreateProject,
   CreatePRRequest,
   CreateTask,
+  CreateWorkspace,
   FollowUpRequest,
   GitBranch,
   InitRepoRequest,
   MergeResult,
   Project,
+  ProjectRepo,
   PRResult,
   RegisterRepoRequest,
   RenameBranchRequest,
   Repo,
   Task,
-  TaskAttempt,
-  TaskWithAttemptStatus,
+  TaskWithWorkspaceStatus,
   UnifiedPRComment,
   UpdateProject,
   UpdateRepo,
   UpdateTask,
+  UpdateWorkspace,
+  Workspace,
+  WorkspaceRepo,
 } from "./types.ts";
 
 export class ApiClient {
@@ -93,9 +95,34 @@ export class ApiClient {
     });
   }
 
+  // Project repository management
+  listProjectRepos(projectId: string): Promise<ProjectRepo[]> {
+    return this.request<ProjectRepo[]>(`/projects/${projectId}/repositories`);
+  }
+
+  addProjectRepo(
+    projectId: string,
+    repoId: string,
+    isMain: boolean,
+  ): Promise<ProjectRepo> {
+    return this.request<ProjectRepo>(`/projects/${projectId}/repositories`, {
+      method: "POST",
+      body: JSON.stringify({ repo_id: repoId, is_main: isMain }),
+    });
+  }
+
+  removeProjectRepo(projectId: string, repoId: string): Promise<void> {
+    return this.request<void>(
+      `/projects/${projectId}/repositories/${repoId}`,
+      {
+        method: "DELETE",
+      },
+    );
+  }
+
   // Task endpoints
-  listTasks(projectId: string): Promise<TaskWithAttemptStatus[]> {
-    return this.request<TaskWithAttemptStatus[]>(
+  listTasks(projectId: string): Promise<TaskWithWorkspaceStatus[]> {
+    return this.request<TaskWithWorkspaceStatus[]>(
       `/tasks?project_id=${projectId}`,
     );
   }
@@ -124,74 +151,74 @@ export class ApiClient {
     });
   }
 
-  // Attempt endpoints
-  listAttempts(taskId: string): Promise<TaskAttempt[]> {
-    return this.request<TaskAttempt[]>(`/task-attempts?task_id=${taskId}`);
+  // Workspace endpoints (formerly attempt, endpoint still uses /task-attempts)
+  listWorkspaces(taskId: string): Promise<Workspace[]> {
+    return this.request<Workspace[]>(`/task-attempts?task_id=${taskId}`);
   }
 
-  getAttempt(id: string): Promise<TaskAttempt> {
-    return this.request<TaskAttempt>(`/task-attempts/${id}`);
+  getWorkspace(id: string): Promise<Workspace> {
+    return this.request<Workspace>(`/task-attempts/${id}`);
   }
 
-  async searchAttemptsByBranch(branchName: string): Promise<TaskAttempt[]> {
+  async searchWorkspacesByBranch(branchName: string): Promise<Workspace[]> {
     // The API doesn't support filtering by branch directly
-    // Fetch all attempts and filter client-side
-    const allAttempts = await this.request<TaskAttempt[]>(`/task-attempts`);
-    return allAttempts.filter((attempt) => attempt.branch === branchName);
+    // Fetch all workspaces and filter client-side
+    const allWorkspaces = await this.request<Workspace[]>(`/task-attempts`);
+    return allWorkspaces.filter((workspace) => workspace.branch === branchName);
   }
 
-  createAttempt(attempt: CreateAttempt): Promise<TaskAttempt> {
-    return this.request<TaskAttempt>("/task-attempts", {
+  createWorkspace(workspace: CreateWorkspace): Promise<Workspace> {
+    return this.request<Workspace>("/task-attempts", {
       method: "POST",
-      body: JSON.stringify(attempt),
+      body: JSON.stringify(workspace),
     });
   }
 
-  deleteAttempt(id: string): Promise<void> {
+  updateWorkspace(id: string, update: UpdateWorkspace): Promise<Workspace> {
+    return this.request<Workspace>(`/task-attempts/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(update),
+    });
+  }
+
+  deleteWorkspace(id: string): Promise<void> {
     return this.request<void>(`/task-attempts/${id}`, {
       method: "DELETE",
     });
   }
 
-  changeTargetBranch(
-    id: string,
-    request: ChangeTargetBranchRequest,
-  ): Promise<TaskAttempt> {
-    return this.request<TaskAttempt>(
-      `/task-attempts/${id}/change-target-branch`,
-      {
-        method: "POST",
-        body: JSON.stringify(request),
-      },
+  getWorkspaceRepos(workspaceId: string): Promise<WorkspaceRepo[]> {
+    return this.request<WorkspaceRepo[]>(
+      `/task-attempts/${workspaceId}/repos`,
     );
   }
 
-  renameBranch(id: string, request: RenameBranchRequest): Promise<TaskAttempt> {
-    return this.request<TaskAttempt>(`/task-attempts/${id}/rename-branch`, {
+  renameBranch(id: string, request: RenameBranchRequest): Promise<Workspace> {
+    return this.request<Workspace>(`/task-attempts/${id}/rename-branch`, {
       method: "POST",
       body: JSON.stringify(request),
     });
   }
 
-  mergeAttempt(id: string): Promise<MergeResult> {
+  mergeWorkspace(id: string): Promise<MergeResult> {
     return this.request<MergeResult>(`/task-attempts/${id}/merge`, {
       method: "POST",
     });
   }
 
-  pushAttempt(id: string): Promise<void> {
+  pushWorkspace(id: string): Promise<void> {
     return this.request<void>(`/task-attempts/${id}/push`, {
       method: "POST",
     });
   }
 
-  rebaseAttempt(id: string): Promise<void> {
+  rebaseWorkspace(id: string): Promise<void> {
     return this.request<void>(`/task-attempts/${id}/rebase`, {
       method: "POST",
     });
   }
 
-  stopAttempt(id: string): Promise<void> {
+  stopWorkspace(id: string): Promise<void> {
     return this.request<void>(`/task-attempts/${id}/stop`, {
       method: "POST",
     });
@@ -208,21 +235,21 @@ export class ApiClient {
     return this.request<BranchStatus>(`/task-attempts/${id}/branch-status`);
   }
 
-  // Force push attempt branch to remote
-  forcePushAttempt(id: string): Promise<void> {
+  // Force push workspace branch to remote
+  forcePushWorkspace(id: string): Promise<void> {
     return this.request<void>(`/task-attempts/${id}/push/force`, {
       method: "POST",
     });
   }
 
-  // Abort git conflicts for an attempt
+  // Abort git conflicts for a workspace
   abortConflicts(id: string): Promise<void> {
     return this.request<void>(`/task-attempts/${id}/conflicts/abort`, {
       method: "POST",
     });
   }
 
-  // Send follow-up message to a running attempt
+  // Send follow-up message to a running workspace
   followUp(id: string, request: FollowUpRequest): Promise<void> {
     return this.request<void>(`/task-attempts/${id}/follow-up`, {
       method: "POST",
@@ -230,7 +257,7 @@ export class ApiClient {
     });
   }
 
-  // Attach an existing PR to an attempt
+  // Attach an existing PR to a workspace
   attachPR(id: string, request: AttachPRRequest): Promise<PRResult> {
     return this.request<PRResult>(`/task-attempts/${id}/pr/attach`, {
       method: "POST",
@@ -238,7 +265,7 @@ export class ApiClient {
     });
   }
 
-  // Get PR comments for an attempt
+  // Get PR comments for a workspace
   getPRComments(id: string): Promise<UnifiedPRComment[]> {
     return this.request<UnifiedPRComment[]>(`/task-attempts/${id}/pr/comments`);
   }

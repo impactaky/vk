@@ -1,28 +1,28 @@
 /**
- * Attempt resolver utility for auto-detecting attempt IDs from branch names
+ * Workspace resolver utility for auto-detecting workspace IDs from branch names
  */
 
 import type { ApiClient } from "../api/client.ts";
-import type { TaskAttempt } from "../api/types.ts";
+import type { Workspace } from "../api/types.ts";
 import { getCurrentBranch } from "./git.ts";
-import { selectAttempt, selectTask } from "./fzf.ts";
+import { selectTask, selectWorkspace } from "./fzf.ts";
 import { getProjectId } from "./project-resolver.ts";
 
 /**
- * Resolve attempt from current branch name
- * @returns The matching attempt or null if not found
+ * Resolve workspace from current branch name
+ * @returns The matching workspace or null if not found
  */
-export async function resolveAttemptFromBranch(
+export async function resolveWorkspaceFromBranch(
   client: ApiClient,
-): Promise<TaskAttempt | null> {
+): Promise<Workspace | null> {
   try {
     const branchName = await getCurrentBranch();
     if (!branchName) {
       return null;
     }
 
-    const attempts = await client.searchAttemptsByBranch(branchName);
-    return attempts[0] ?? null;
+    const workspaces = await client.searchWorkspacesByBranch(branchName);
+    return workspaces[0] ?? null;
   } catch {
     return null;
   }
@@ -44,11 +44,11 @@ async function selectTaskInteractively(
 }
 
 /**
- * Get attempt ID with auto-detection support
+ * Get workspace ID with auto-detection support
  * @param client API client
- * @param providedId Explicitly provided attempt ID
+ * @param providedId Explicitly provided workspace ID
  * @param projectId Optional project ID for fallback selection
- * @returns The attempt ID
+ * @returns The workspace ID
  */
 export async function getAttemptIdWithAutoDetect(
   client: ApiClient,
@@ -59,22 +59,22 @@ export async function getAttemptIdWithAutoDetect(
     return providedId;
   }
 
-  const attempt = await resolveAttemptFromBranch(client);
-  if (attempt) {
-    return attempt.id;
+  const workspace = await resolveWorkspaceFromBranch(client);
+  if (workspace) {
+    return workspace.id;
   }
 
   const taskId = await selectTaskInteractively(client, projectId);
-  const attempts = await client.listAttempts(taskId);
-  if (attempts.length === 0) {
-    throw new Error("No attempts found for the selected task.");
+  const workspaces = await client.listWorkspaces(taskId);
+  if (workspaces.length === 0) {
+    throw new Error("No workspaces found for the selected task.");
   }
 
-  return selectAttempt(attempts);
+  return selectWorkspace(workspaces);
 }
 
 /**
- * Get task ID with auto-detection from current attempt's parent task
+ * Get task ID with auto-detection from current workspace's parent task
  * @param client API client
  * @param providedId Explicitly provided task ID
  * @param projectId Optional project ID for fallback selection
@@ -89,9 +89,9 @@ export async function getTaskIdWithAutoDetect(
     return providedId;
   }
 
-  const attempt = await resolveAttemptFromBranch(client);
-  if (attempt) {
-    return attempt.task_id;
+  const workspace = await resolveWorkspaceFromBranch(client);
+  if (workspace) {
+    return workspace.task_id;
   }
 
   return selectTaskInteractively(client, projectId);
