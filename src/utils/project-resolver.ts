@@ -109,17 +109,58 @@ export async function resolveProjectFromGit(
 }
 
 /**
+ * Resolve project by ID or name from all registered projects
+ * Falls back to fzf selection if no exact match found
+ * @param idOrName The project ID or name to resolve
+ * @param client API client instance
+ * @returns The resolved project ID
+ */
+async function resolveProjectByIdOrName(
+  idOrName: string,
+  client: ApiClient,
+): Promise<string> {
+  const projects = await client.listProjects();
+
+  // Strategy 1: Exact ID match
+  const idMatch = projects.find((p) => p.id === idOrName);
+  if (idMatch) {
+    return idMatch.id;
+  }
+
+  // Strategy 2: Name match
+  const nameMatches = projects.filter((p) => p.name === idOrName);
+  if (nameMatches.length === 1) {
+    return nameMatches[0].id;
+  }
+  if (nameMatches.length > 1) {
+    // Multiple name matches - show fzf menu with only these matches
+    const selected = await selectProjectWithFzf(
+      nameMatches,
+      `Multiple projects found with name "${idOrName}".`,
+    );
+    return selected.id;
+  }
+
+  // No match found - fall back to fzf menu with all projects
+  const selected = await selectProjectWithFzf(
+    projects,
+    `Project not found: "${idOrName}".`,
+  );
+  return selected.id;
+}
+
+/**
  * Get project ID, either from explicit option or auto-resolved from git
- * @param explicitProjectId The explicitly provided project ID (if any)
+ * @param explicitProjectIdOrName The explicitly provided project ID or name (if any)
  * @param client API client instance
  * @returns The project ID to use
  */
 export async function getProjectId(
-  explicitProjectId: string | undefined,
+  explicitProjectIdOrName: string | undefined,
   client: ApiClient,
 ): Promise<string> {
-  if (explicitProjectId) {
-    return explicitProjectId;
+  if (explicitProjectIdOrName) {
+    return await resolveProjectByIdOrName(explicitProjectIdOrName, client);
   }
 
   const resolved = await resolveProjectFromGit(client);
