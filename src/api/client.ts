@@ -59,7 +59,7 @@ export class ApiClient {
 
     const result: ApiResponse<T> = await response.json();
     if (!result.success) {
-      throw new Error(result.error || "Unknown API error");
+      throw new Error(result.error || result.message || "Unknown API error");
     }
 
     return result.data as T;

@@ -120,15 +120,20 @@ Deno.test("API: List all task attempts", async () => {
   assertEquals(Array.isArray(result.data), true);
 });
 
+// Shared test directory path (available in both containers via shared volume)
+const SHARED_TEST_DIR = "/shared";
+
+// Helper to create a test repository directory with .git folder
+async function createTestRepoDir(suffix: string): Promise<string> {
+  const testPath = `${SHARED_TEST_DIR}/test-repo-api-${Date.now()}-${suffix}`;
+  await Deno.mkdir(`${testPath}/.git`, { recursive: true });
+  return testPath;
+}
+
 // Project Repository Tests
 Deno.test("API: Add repository to project", async () => {
-  // First, get list of existing repositories to find a valid path
-  const reposResult = await apiCall<{ id: string; name: string; path: string }[]>("/repos");
-  assertEquals(reposResult.success, true);
-  assertExists(reposResult.data, "No repositories available - register at least one repository before running tests");
-  assertEquals(reposResult.data.length > 0, true, "No repositories available - register at least one repository before running tests");
-
-  const existingRepoPath = reposResult.data[0].path;
+  // Create a test repo directory with .git folder
+  const testRepoPath = await createTestRepoDir("add-repo");
 
   // Create a test project
   const createResult = await apiCall<{ id: string; name: string }>(
@@ -152,7 +157,7 @@ Deno.test("API: Add repository to project", async () => {
         method: "POST",
         body: JSON.stringify({
           display_name: "Test Repository",
-          git_repo_path: existingRepoPath,
+          git_repo_path: testRepoPath,
         }),
       },
     );
@@ -168,19 +173,19 @@ Deno.test("API: Add repository to project", async () => {
     assertExists(listResult.data);
     assertEquals(listResult.data.length >= 1, true);
   } finally {
-    // Cleanup: delete the project
+    // Cleanup: delete the project and test directory
     await apiCall(`/projects/${projectId}`, { method: "DELETE" });
+    try {
+      await Deno.remove(testRepoPath, { recursive: true });
+    } catch {
+      // Ignore cleanup errors
+    }
   }
 });
 
 Deno.test("API: Add repository to project with custom display_name", async () => {
-  // First, get list of existing repositories to find a valid path
-  const reposResult = await apiCall<{ id: string; name: string; path: string }[]>("/repos");
-  assertEquals(reposResult.success, true);
-  assertExists(reposResult.data, "No repositories available - register at least one repository before running tests");
-  assertEquals(reposResult.data.length > 0, true, "No repositories available - register at least one repository before running tests");
-
-  const existingRepoPath = reposResult.data[0].path;
+  // Create a test repo directory with .git folder
+  const testRepoPath = await createTestRepoDir("custom-name");
 
   // Create a test project
   const createResult = await apiCall<{ id: string; name: string }>(
@@ -204,7 +209,7 @@ Deno.test("API: Add repository to project with custom display_name", async () =>
         method: "POST",
         body: JSON.stringify({
           display_name: "My Custom Display Name",
-          git_repo_path: existingRepoPath,
+          git_repo_path: testRepoPath,
         }),
       },
     );
@@ -212,7 +217,12 @@ Deno.test("API: Add repository to project with custom display_name", async () =>
     assertEquals(addResult.success, true, `Failed to add repo: ${addResult.error || addResult.rawText}`);
     assertExists(addResult.data);
   } finally {
-    // Cleanup: delete the project
+    // Cleanup: delete the project and test directory
     await apiCall(`/projects/${projectId}`, { method: "DELETE" });
+    try {
+      await Deno.remove(testRepoPath, { recursive: true });
+    } catch {
+      // Ignore cleanup errors
+    }
   }
 });
