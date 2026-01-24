@@ -18,7 +18,8 @@ const SHARED_TEST_DIR = "/shared";
 async function createTestProject(
   suffix: string,
 ): Promise<{ project: Project; cleanup: () => Promise<void> }> {
-  const testPath = `${SHARED_TEST_DIR}/test-project-repo-${Date.now()}-${suffix}`;
+  const testPath =
+    `${SHARED_TEST_DIR}/test-project-repo-${Date.now()}-${suffix}`;
 
   // Create the directory and .git folder (server checks for .git to validate git repo)
   await Deno.mkdir(`${testPath}/.git`, { recursive: true });
