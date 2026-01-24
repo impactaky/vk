@@ -125,11 +125,8 @@ Deno.test("API: Add repository to project", async () => {
   // First, get list of existing repositories to find a valid path
   const reposResult = await apiCall<{ id: string; name: string; path: string }[]>("/repos");
   assertEquals(reposResult.success, true);
-
-  if (!reposResult.data || reposResult.data.length === 0) {
-    console.log("Skipping test: no repositories available");
-    return;
-  }
+  assertExists(reposResult.data, "No repositories available - register at least one repository before running tests");
+  assertEquals(reposResult.data.length > 0, true, "No repositories available - register at least one repository before running tests");
 
   const existingRepoPath = reposResult.data[0].path;
 
@@ -180,11 +177,8 @@ Deno.test("API: Add repository to project with custom display_name", async () =>
   // First, get list of existing repositories to find a valid path
   const reposResult = await apiCall<{ id: string; name: string; path: string }[]>("/repos");
   assertEquals(reposResult.success, true);
-
-  if (!reposResult.data || reposResult.data.length === 0) {
-    console.log("Skipping test: no repositories available");
-    return;
-  }
+  assertExists(reposResult.data, "No repositories available - register at least one repository before running tests");
+  assertEquals(reposResult.data.length > 0, true, "No repositories available - register at least one repository before running tests");
 
   const existingRepoPath = reposResult.data[0].path;
 
