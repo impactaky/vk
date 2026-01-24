@@ -15,7 +15,15 @@ import { config } from "./helpers/test-server.ts";
 async function apiCall<T>(
   path: string,
   options: RequestInit = {},
-): Promise<{ success: boolean; data?: T; error?: string }> {
+): Promise<
+  {
+    success: boolean;
+    data?: T;
+    error?: string;
+    status?: number;
+    rawText?: string;
+  }
+> {
   const response = await fetch(`${config.apiUrl}/api${path}`, {
     ...options,
     headers: {
@@ -23,7 +31,17 @@ async function apiCall<T>(
       ...options.headers,
     },
   });
-  return await response.json();
+  const text = await response.text();
+  try {
+    return await JSON.parse(text);
+  } catch {
+    return {
+      success: false,
+      error: text,
+      status: response.status,
+      rawText: text,
+    };
+  }
 }
 
 // Project Tests using raw API calls
@@ -113,4 +131,122 @@ Deno.test("API: List all task attempts", async () => {
   assertEquals(result.success, true);
   assertExists(result.data);
   assertEquals(Array.isArray(result.data), true);
+});
+
+// Shared test directory path (available in both containers via shared volume)
+const SHARED_TEST_DIR = "/shared";
+
+// Helper to create a test repository directory with .git folder
+async function createTestRepoDir(suffix: string): Promise<string> {
+  const testPath = `${SHARED_TEST_DIR}/test-repo-api-${Date.now()}-${suffix}`;
+  await Deno.mkdir(`${testPath}/.git`, { recursive: true });
+  return testPath;
+}
+
+// Project Repository Tests
+Deno.test("API: Add repository to project", async () => {
+  // Create a test repo directory with .git folder
+  const testRepoPath = await createTestRepoDir("add-repo");
+
+  // Create a test project
+  const createResult = await apiCall<{ id: string; name: string }>(
+    "/projects",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        name: `test-project-add-repo-${Date.now()}`,
+        repositories: [],
+      }),
+    },
+  );
+  assertEquals(createResult.success, true);
+  const projectId = createResult.data!.id;
+
+  try {
+    // Test adding repository with display_name and git_repo_path
+    const addResult = await apiCall<{ id: string }>(
+      `/projects/${projectId}/repositories`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          display_name: "Test Repository",
+          git_repo_path: testRepoPath,
+        }),
+      },
+    );
+    console.log("Add repo result:", JSON.stringify(addResult, null, 2));
+    assertEquals(
+      addResult.success,
+      true,
+      `Failed to add repo: ${addResult.error || addResult.rawText}`,
+    );
+    assertExists(addResult.data);
+
+    // Verify the repository was added
+    const listResult = await apiCall<{ id: string }[]>(
+      `/projects/${projectId}/repositories`,
+    );
+    assertEquals(listResult.success, true);
+    assertExists(listResult.data);
+    assertEquals(listResult.data.length >= 1, true);
+  } finally {
+    // Cleanup: delete the project and test directory
+    await apiCall(`/projects/${projectId}`, { method: "DELETE" });
+    try {
+      await Deno.remove(testRepoPath, { recursive: true });
+    } catch {
+      // Ignore cleanup errors
+    }
+  }
+});
+
+Deno.test("API: Add repository to project with custom display_name", async () => {
+  // Create a test repo directory with .git folder
+  const testRepoPath = await createTestRepoDir("custom-name");
+
+  // Create a test project
+  const createResult = await apiCall<{ id: string; name: string }>(
+    "/projects",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        name: `test-project-add-repo-custom-${Date.now()}`,
+        repositories: [],
+      }),
+    },
+  );
+  assertEquals(createResult.success, true);
+  const projectId = createResult.data!.id;
+
+  try {
+    // Test adding repository with custom display_name
+    const addResult = await apiCall<{ id: string; display_name: string }>(
+      `/projects/${projectId}/repositories`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          display_name: "My Custom Display Name",
+          git_repo_path: testRepoPath,
+        }),
+      },
+    );
+    console.log(
+      "Add repo with custom name result:",
+      JSON.stringify(addResult, null, 2),
+    );
+    assertEquals(
+      addResult.success,
+      true,
+      `Failed to add repo: ${addResult.error || addResult.rawText}`,
+    );
+    assertExists(addResult.data);
+  } finally {
+    // Cleanup: delete the project and test directory
+    await apiCall(`/projects/${projectId}`, { method: "DELETE" });
+    try {
+      await Deno.remove(testRepoPath, { recursive: true });
+    } catch {
+      // Ignore cleanup errors
+    }
+  }
 });

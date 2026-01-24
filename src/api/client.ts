@@ -59,7 +59,7 @@ export class ApiClient {
 
     const result: ApiResponse<T> = await response.json();
     if (!result.success) {
-      throw new Error(result.error || "Unknown API error");
+      throw new Error(result.error || result.message || "Unknown API error");
     }
 
     return result.data as T;
@@ -102,12 +102,15 @@ export class ApiClient {
 
   addProjectRepo(
     projectId: string,
-    repoId: string,
-    isMain: boolean,
+    displayName: string,
+    gitRepoPath: string,
   ): Promise<Repo> {
     return this.request<Repo>(`/projects/${projectId}/repositories`, {
       method: "POST",
-      body: JSON.stringify({ repo_id: repoId, is_main: isMain }),
+      body: JSON.stringify({
+        display_name: displayName,
+        git_repo_path: gitRepoPath,
+      }),
     });
   }
 
