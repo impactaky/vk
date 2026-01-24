@@ -81,6 +81,8 @@ Then the CLI deletes the project without confirmation
 
 ---
 
+## NEW Requirements
+
 ### Requirement: Project Update Command
 The CLI MUST provide a command to update a project name.
 
@@ -315,35 +317,3 @@ When the user runs `vk task list` without --project flag
 Then the CLI falls back to interactive selection
 
 ---
-
-## REMOVED Requirements
-
-### Requirement: Project List Filter by Archived Status (REMOVED)
-The `--archived` filter option is removed as projects no longer have an `is_archived` field.
-
-### Requirement: Project List Filter by Color (REMOVED)
-The `--color` filter option is removed as projects no longer have a `hex_color` field.
-
-### Requirement: Task Filter by Priority (REMOVED)
-The `--priority` filter option is removed as tasks no longer have a `priority` field.
-
-### Requirement: Task Filter by Executor (REMOVED)
-The `--executor` filter option on task list is removed as tasks no longer have an `executor` field.
-
-### Requirement: Task Filter by Label (REMOVED)
-The `--label` filter option is removed as tasks no longer have a `labels` field.
-
-### Requirement: Task Filter by Favorite (REMOVED)
-The `--favorite` filter option is removed as tasks no longer have an `is_favorite` field.
-
-### Requirement: Task Filter by Color (REMOVED)
-The `--color` filter option on task list is removed as tasks no longer have a `hex_color` field.
-
-### Requirement: Attempt Filter by Executor (REMOVED)
-The `--executor` filter option on workspace list is removed as workspaces no longer have an `executor` field directly.
-
-### Requirement: Attempt Filter by Target Branch (REMOVED)
-The `--target-branch` filter option is removed as workspaces no longer have a `target_branch` field.
-
-### Requirement: Attempt Update Target Branch (REMOVED)
-The `--target-branch` update option is removed as workspaces no longer have this field.
