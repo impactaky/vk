@@ -5,17 +5,27 @@ import { taskCommand } from "./commands/task.ts";
 import { configCommand } from "./commands/config.ts";
 import { attemptCommand } from "./commands/attempt.ts";
 import { repositoryCommand } from "./commands/repository.ts";
+import { generateAIHelp } from "./utils/ai-help.ts";
 
 const VERSION = "0.1.0";
 
-await new Command()
+const cli = new Command()
   .name("vk")
   .version(VERSION)
   .description("CLI for vibe-kanban - manage projects and tasks")
+  .option("--ai", "Output AI-friendly CLI documentation as JSON")
   .command("project", projectCommand)
   .command("task", taskCommand)
   .command("attempt", attemptCommand)
   .command("repository", repositoryCommand)
   .command("config", configCommand)
-  .command("completions", new CompletionsCommand())
-  .parse(Deno.args);
+  .command("completions", new CompletionsCommand());
+
+// Handle --ai flag before normal parsing
+if (Deno.args.includes("--ai")) {
+  const help = generateAIHelp(cli, VERSION);
+  console.log(JSON.stringify(help, null, 2));
+  Deno.exit(0);
+}
+
+await cli.parse(Deno.args);
