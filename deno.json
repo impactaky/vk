@@ -8,7 +8,7 @@
     "lint": "deno lint",
     "check": "deno check src/main.ts",
     "test": "deno test --allow-net --allow-read --allow-write --allow-env",
-    "test:integration": "deno test --allow-net --allow-read --allow-write --allow-env --allow-run=git,fzf tests/*_integration_test.ts"
+    "test:integration": "deno test --allow-net --allow-read --allow-write --allow-env --allow-run=deno,git,fzf tests/*_integration_test.ts"
   },
   "imports": {
     "@cliffy/command": "jsr:@cliffy/command@1.0.0-rc.7",
