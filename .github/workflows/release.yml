@@ -1,0 +1,93 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Check formatting
+        run: deno fmt --check
+
+      - name: Lint
+        run: deno lint
+
+      - name: Type check
+        run: deno check src/main.ts
+
+      - name: Run unit tests
+        run: deno test --allow-read --allow-write --allow-env src/
+
+  build:
+    needs: ci
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            binary_name: vk-linux-x64
+          - target: aarch64-unknown-linux-gnu
+            binary_name: vk-linux-arm64
+          - target: x86_64-pc-windows-msvc
+            binary_name: vk-windows-x64.exe
+          - target: x86_64-apple-darwin
+            binary_name: vk-macos-x64
+          - target: aarch64-apple-darwin
+            binary_name: vk-macos-arm64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Compile binary
+        run: |
+          deno compile \
+            --allow-net \
+            --allow-read \
+            --allow-write \
+            --allow-env \
+            --allow-run=git,fzf \
+            --target ${{ matrix.target }} \
+            --output ${{ matrix.binary_name }} \
+            src/main.ts
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.binary_name }}
+          path: ${{ matrix.binary_name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
