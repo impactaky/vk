@@ -688,7 +688,11 @@ Deno.test({
         }),
       },
     );
-    assertEquals(addRepoResult.success, true, `Failed to add repo: ${addRepoResult.error}`);
+    assertEquals(
+      addRepoResult.success,
+      true,
+      `Failed to add repo: ${addRepoResult.error}`,
+    );
     const repoId = addRepoResult.data!.id;
 
     try {
@@ -866,7 +870,11 @@ Deno.test({
           repos: [{ repo_id: repoId, target_branch: "main" }],
         }),
       });
-      assertEquals(workspaceResult.success, true, `Failed to create workspace: ${workspaceResult.error}`);
+      assertEquals(
+        workspaceResult.success,
+        true,
+        `Failed to create workspace: ${workspaceResult.error}`,
+      );
       const workspaceId = workspaceResult.data!.id;
 
       // Test merge with repo_id
@@ -941,7 +949,11 @@ Deno.test({
           repos: [{ repo_id: repoId, target_branch: "main" }],
         }),
       });
-      assertEquals(workspaceResult.success, true, `Failed to create workspace: ${workspaceResult.error}`);
+      assertEquals(
+        workspaceResult.success,
+        true,
+        `Failed to create workspace: ${workspaceResult.error}`,
+      );
       const workspaceId = workspaceResult.data!.id;
 
       // Test push with repo_id
@@ -1021,7 +1033,11 @@ Deno.test({
           repos: [{ repo_id: repoId, target_branch: "main" }],
         }),
       });
-      assertEquals(workspaceResult.success, true, `Failed to create workspace: ${workspaceResult.error}`);
+      assertEquals(
+        workspaceResult.success,
+        true,
+        `Failed to create workspace: ${workspaceResult.error}`,
+      );
       const workspaceId = workspaceResult.data!.id;
 
       // Test rebase with repo_id only

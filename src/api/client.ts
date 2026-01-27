@@ -206,7 +206,10 @@ export class ApiClient {
     });
   }
 
-  mergeWorkspace(id: string, request: MergeWorkspaceRequest): Promise<MergeResult> {
+  mergeWorkspace(
+    id: string,
+    request: MergeWorkspaceRequest,
+  ): Promise<MergeResult> {
     return this.request<MergeResult>(`/task-attempts/${id}/merge`, {
       method: "POST",
       body: JSON.stringify(request),

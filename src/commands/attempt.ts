@@ -360,7 +360,11 @@ attemptCommand
         id,
         options.project,
       );
-      const repoId = await getRepoIdForWorkspace(client, workspaceId, options.repo);
+      const repoId = await getRepoIdForWorkspace(
+        client,
+        workspaceId,
+        options.repo,
+      );
       const request: MergeWorkspaceRequest = { repo_id: repoId };
       const result = await client.mergeWorkspace(workspaceId, request);
 
@@ -407,7 +411,11 @@ attemptCommand
         id,
         options.project,
       );
-      const repoId = await getRepoIdForWorkspace(client, workspaceId, options.repo);
+      const repoId = await getRepoIdForWorkspace(
+        client,
+        workspaceId,
+        options.repo,
+      );
       const request: PushWorkspaceRequest = { repo_id: repoId };
       await client.pushWorkspace(workspaceId, request);
       console.log(`Branch pushed successfully.`);
@@ -440,7 +448,11 @@ attemptCommand
         id,
         options.project,
       );
-      const repoId = await getRepoIdForWorkspace(client, workspaceId, options.repo);
+      const repoId = await getRepoIdForWorkspace(
+        client,
+        workspaceId,
+        options.repo,
+      );
       const request: RebaseWorkspaceRequest = {
         repo_id: repoId,
         old_base_branch: options.oldBase,
@@ -613,7 +625,11 @@ attemptCommand
         id,
         options.project,
       );
-      const repoId = await getRepoIdForWorkspace(client, workspaceId, options.repo);
+      const repoId = await getRepoIdForWorkspace(
+        client,
+        workspaceId,
+        options.repo,
+      );
 
       if (!options.force) {
         const confirmed = await Confirm.prompt(
