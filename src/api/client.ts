@@ -11,13 +11,16 @@ import type {
   GitBranch,
   InitRepoRequest,
   MergeResult,
+  MergeWorkspaceRequest,
   Project,
   PRResult,
+  PushWorkspaceRequest,
+  RebaseWorkspaceRequest,
   RegisterRepoRequest,
   RenameBranchRequest,
   Repo,
   Task,
-  TaskWithWorkspaceStatus,
+  TaskWithAttemptStatus,
   UnifiedPRComment,
   UpdateProject,
   UpdateRepo,
@@ -124,8 +127,8 @@ export class ApiClient {
   }
 
   // Task endpoints
-  listTasks(projectId: string): Promise<TaskWithWorkspaceStatus[]> {
-    return this.request<TaskWithWorkspaceStatus[]>(
+  listTasks(projectId: string): Promise<TaskWithAttemptStatus[]> {
+    return this.request<TaskWithAttemptStatus[]>(
       `/tasks?project_id=${projectId}`,
     );
   }
@@ -203,21 +206,24 @@ export class ApiClient {
     });
   }
 
-  mergeWorkspace(id: string): Promise<MergeResult> {
+  mergeWorkspace(id: string, request: MergeWorkspaceRequest): Promise<MergeResult> {
     return this.request<MergeResult>(`/task-attempts/${id}/merge`, {
       method: "POST",
+      body: JSON.stringify(request),
     });
   }
 
-  pushWorkspace(id: string): Promise<void> {
+  pushWorkspace(id: string, request: PushWorkspaceRequest): Promise<void> {
     return this.request<void>(`/task-attempts/${id}/push`, {
       method: "POST",
+      body: JSON.stringify(request),
     });
   }
 
-  rebaseWorkspace(id: string): Promise<void> {
+  rebaseWorkspace(id: string, request: RebaseWorkspaceRequest): Promise<void> {
     return this.request<void>(`/task-attempts/${id}/rebase`, {
       method: "POST",
+      body: JSON.stringify(request),
     });
   }
 
@@ -239,9 +245,10 @@ export class ApiClient {
   }
 
   // Force push workspace branch to remote
-  forcePushWorkspace(id: string): Promise<void> {
+  forcePushWorkspace(id: string, request: PushWorkspaceRequest): Promise<void> {
     return this.request<void>(`/task-attempts/${id}/push/force`, {
       method: "POST",
+      body: JSON.stringify(request),
     });
   }
 

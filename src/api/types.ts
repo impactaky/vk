@@ -59,16 +59,17 @@ export type TaskStatus =
   | "done"
   | "cancelled";
 
-export interface TaskWithWorkspaceStatus extends Task {
-  has_in_progress_workspace: boolean;
-  has_merged_workspace: boolean;
-  last_workspace_failed: boolean;
+export interface TaskWithAttemptStatus extends Task {
+  has_in_progress_attempt: boolean;
+  last_attempt_failed: boolean;
+  executor: string;
 }
 
 export interface CreateTask {
   project_id: string;
   title: string;
   description?: string;
+  image_ids?: string[] | null;
 }
 
 export interface UpdateTask {
@@ -76,6 +77,7 @@ export interface UpdateTask {
   description?: string | null;
   status?: TaskStatus;
   parent_workspace_id?: string | null;
+  image_ids?: string[] | null;
 }
 
 // Workspace types (formerly TaskAttempt) - updated to match latest API
@@ -171,6 +173,21 @@ export interface MergeResult {
   message?: string;
 }
 
+// Git operation request types (require repo_id for multi-repo workspaces)
+export interface MergeWorkspaceRequest {
+  repo_id: string;
+}
+
+export interface PushWorkspaceRequest {
+  repo_id: string;
+}
+
+export interface RebaseWorkspaceRequest {
+  repo_id: string;
+  old_base_branch?: string;
+  new_base_branch?: string;
+}
+
 // PR creation returns just the URL string
 export type PRResult = string;
 
@@ -220,6 +237,7 @@ export interface Repo {
   copy_files: string | null;
   parallel_setup_script: boolean;
   dev_server_script: string | null;
+  default_target_branch: string | null;
   created_at: string;
   updated_at: string;
 }
