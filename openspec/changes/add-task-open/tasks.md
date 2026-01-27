@@ -6,6 +6,6 @@
 
 ## 2. Verification
 
-- [ ] 2.1 Run `deno task dev task open --help` to verify command is registered
-- [ ] 2.2 Run lint, fmt, and type checks
-- [ ] 2.3 Run tests to ensure no regressions
+- [x] 2.1 Run `deno task dev task open --help` to verify command is registered
+- [x] 2.2 Run lint, fmt, and type checks
+- [x] 2.3 Run tests to ensure no regressions
