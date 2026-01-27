@@ -501,154 +501,6 @@ Deno.test("API: List tasks with status filter", async () => {
 });
 
 // ============================================================================
-// Repository CRUD Tests
-// ============================================================================
-
-// Note: Direct repo registration may have different API requirements on some server versions
-// Use project.add-repo endpoint instead for reliable repo management
-Deno.test({
-  name: "API: Register, get, update, and delete repository",
-  ignore: true, // Skip: server API may require different fields
-  fn: async () => {
-    // Create a test repo directory with .git folder
-    const testRepoPath = await createTestRepoDir("crud-repo");
-
-    try {
-      // Register a repository
-      const createResult = await apiCall<{ id: string; display_name: string }>(
-        "/repos",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            display_name: "Test CRUD Repository",
-            path: testRepoPath,
-          }),
-        },
-      );
-      assertEquals(
-        createResult.success,
-        true,
-        `Failed to register repo: ${createResult.error}`,
-      );
-      assertExists(createResult.data);
-      const repoId = createResult.data.id;
-
-      // Get the repository by ID
-      const getResult = await apiCall<{ id: string; display_name: string }>(
-        `/repos/${repoId}`,
-      );
-      assertEquals(getResult.success, true);
-      assertEquals(getResult.data?.id, repoId);
-      assertEquals(getResult.data?.display_name, "Test CRUD Repository");
-
-      // Update the repository display_name
-      const updateResult = await apiCall<{ id: string; display_name: string }>(
-        `/repos/${repoId}`,
-        {
-          method: "PUT",
-          body: JSON.stringify({
-            display_name: "Updated Repository Name",
-          }),
-        },
-      );
-      assertEquals(updateResult.success, true);
-      assertEquals(updateResult.data?.display_name, "Updated Repository Name");
-
-      // Delete the repository
-      const deleteResult = await apiCall(`/repos/${repoId}`, {
-        method: "DELETE",
-      });
-      assertEquals(deleteResult.success, true);
-
-      // Verify repository is deleted
-      const getDeletedResult = await apiCall(`/repos/${repoId}`);
-      assertEquals(getDeletedResult.success, false);
-    } finally {
-      // Cleanup test directory
-      try {
-        await Deno.remove(testRepoPath, { recursive: true });
-      } catch {
-        // Ignore cleanup errors
-      }
-    }
-  },
-});
-
-Deno.test({
-  name: "API: List repositories with name filter",
-  ignore: true, // Skip: depends on direct repo registration
-  fn: async () => {
-    // Create two test repo directories
-    const testRepoPath1 = await createTestRepoDir("filter-repo-1");
-    const testRepoPath2 = await createTestRepoDir("filter-repo-2");
-
-    const uniqueSuffix = Date.now();
-    const repoIds: string[] = [];
-
-    try {
-      // Register two repositories with unique names
-      const create1Result = await apiCall<{ id: string }>(
-        "/repos",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            display_name: `test-filter-alpha-${uniqueSuffix}`,
-            path: testRepoPath1,
-          }),
-        },
-      );
-      assertEquals(create1Result.success, true);
-      repoIds.push(create1Result.data!.id);
-
-      const create2Result = await apiCall<{ id: string }>(
-        "/repos",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            display_name: `test-filter-beta-${uniqueSuffix}`,
-            path: testRepoPath2,
-          }),
-        },
-      );
-      assertEquals(create2Result.success, true);
-      repoIds.push(create2Result.data!.id);
-
-      // List all repos (should include our test repos)
-      const allReposResult = await apiCall<{ id: string }[]>("/repos");
-      assertEquals(allReposResult.success, true);
-      assertEquals(allReposResult.data!.length >= 2, true);
-
-      // List repos with name filter
-      const filteredResult = await apiCall<
-        { id: string; display_name: string }[]
-      >(
-        `/repos?name=alpha-${uniqueSuffix}`,
-      );
-      assertEquals(filteredResult.success, true);
-      assertEquals(filteredResult.data!.length >= 1, true);
-      // Check that filtered result contains alpha
-      const hasAlpha = filteredResult.data!.some((r) =>
-        r.display_name.includes("alpha")
-      );
-      assertEquals(hasAlpha, true);
-
-      // Cleanup repos
-      for (const repoId of repoIds) {
-        await apiCall(`/repos/${repoId}`, { method: "DELETE" });
-      }
-    } finally {
-      // Cleanup test directories
-      try {
-        await Deno.remove(testRepoPath1, { recursive: true });
-        await Deno.remove(testRepoPath2, { recursive: true });
-      } catch {
-        // Ignore cleanup errors
-      }
-    }
-  },
-});
-
-// ============================================================================
 // Task Attempt (Workspace) CRUD Tests
 // ============================================================================
 
@@ -656,7 +508,6 @@ Deno.test({
 // These tests may fail on server versions that require additional fields
 Deno.test({
   name: "API: Create, get, update, and delete task attempt",
-  ignore: true, // Skip: server may require additional fields for workspace creation
   fn: async () => {
     // Create a test repo directory with .git folder
     const testRepoPath = await createTestRepoDir("attempt-repo");
@@ -691,6 +542,7 @@ Deno.test({
       true,
       `Failed to add repo: ${addRepoResult.error}`,
     );
+    const repoId = addRepoResult.data!.id;
 
     try {
       // Create a task
@@ -723,7 +575,7 @@ Deno.test({
               executor: "CLAUDE_CODE",
               variant: null,
             },
-            base_branch: "main",
+            repos: [{ repo_id: repoId, target_branch: "main" }],
           }),
         },
       );
@@ -807,7 +659,6 @@ Deno.test({
 
 Deno.test({
   name: "API: List task attempts with task filter",
-  ignore: true, // Skip: depends on workspace creation
   fn: async () => {
     // Create a test repo directory
     const testRepoPath = await createTestRepoDir("attempt-filter-repo");
@@ -827,7 +678,7 @@ Deno.test({
     const projectId = projectResult.data!.id;
 
     // Add repository to project
-    await apiCall(
+    const addRepoResult = await apiCall<{ id: string }>(
       `/projects/${projectId}/repositories`,
       {
         method: "POST",
@@ -837,6 +688,8 @@ Deno.test({
         }),
       },
     );
+    assertEquals(addRepoResult.success, true, `Failed to add repo: ${addRepoResult.error}`);
+    const repoId = addRepoResult.data!.id;
 
     try {
       // Create two tasks
@@ -879,7 +732,7 @@ Deno.test({
               executor: "CLAUDE_CODE",
               variant: null,
             },
-            base_branch: "main",
+            repos: [{ repo_id: repoId, target_branch: "main" }],
           }),
         },
       );
@@ -901,7 +754,7 @@ Deno.test({
               executor: "CLAUDE_CODE",
               variant: null,
             },
-            base_branch: "main",
+            repos: [{ repo_id: repoId, target_branch: "main" }],
           }),
         },
       );
@@ -957,107 +810,12 @@ Deno.test({
   },
 });
 
-Deno.test({
-  name: "API: Get task attempt repositories",
-  ignore: true, // Skip: depends on workspace creation
-  fn: async () => {
-    // Create a test repo directory
-    const testRepoPath = await createTestRepoDir("attempt-repos");
-
-    // Create a test project
-    const projectResult = await apiCall<{ id: string }>(
-      "/projects",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          name: `test-project-attempt-repos-${Date.now()}`,
-          repositories: [],
-        }),
-      },
-    );
-    assertEquals(projectResult.success, true);
-    const projectId = projectResult.data!.id;
-
-    // Add repository to project
-    await apiCall(
-      `/projects/${projectId}/repositories`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          display_name: "Test Attempt Repos Repository",
-          git_repo_path: testRepoPath,
-        }),
-      },
-    );
-
-    try {
-      // Create a task
-      const taskResult = await apiCall<{ id: string }>(
-        "/tasks",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            project_id: projectId,
-            title: `test-task-attempt-repos-${Date.now()}`,
-            description: "Test task for attempt repos",
-          }),
-        },
-      );
-      assertEquals(taskResult.success, true);
-      const taskId = taskResult.data!.id;
-
-      // Create a task attempt
-      const attemptResult = await apiCall<{ id: string }>(
-        "/task-attempts",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            task_id: taskId,
-            executor_profile_id: {
-              executor: "CLAUDE_CODE",
-              variant: null,
-            },
-            base_branch: "main",
-          }),
-        },
-      );
-      assertEquals(
-        attemptResult.success,
-        true,
-        `Failed to create attempt: ${attemptResult.error}`,
-      );
-      const attemptId = attemptResult.data!.id;
-
-      // Get task attempt repositories
-      const reposResult = await apiCall<unknown[]>(
-        `/task-attempts/${attemptId}/repositories`,
-      );
-      assertEquals(reposResult.success, true);
-      assertExists(reposResult.data);
-      assertEquals(Array.isArray(reposResult.data), true);
-
-      // Cleanup
-      await apiCall(`/task-attempts/${attemptId}`, { method: "DELETE" });
-      await apiCall(`/tasks/${taskId}`, { method: "DELETE" });
-    } finally {
-      // Cleanup project and test directory
-      await apiCall(`/projects/${projectId}`, { method: "DELETE" });
-      try {
-        await Deno.remove(testRepoPath, { recursive: true });
-      } catch {
-        // Ignore cleanup errors
-      }
-    }
-  },
-});
-
 // ============================================================================
 // Workspace Git Operations Tests (merge, push, rebase with repo_id)
 // ============================================================================
 
 Deno.test({
   name: "API: Workspace merge requires repo_id",
-  ignore: true, // Skip: requires running workspace with actual git repo
   fn: async () => {
     // Create a test repo directory
     const testRepoPath = await createTestRepoDir("merge-repo");
@@ -1105,10 +863,10 @@ Deno.test({
         body: JSON.stringify({
           task_id: taskId,
           executor_profile_id: { executor: "CLAUDE_CODE", variant: null },
-          base_branch: "main",
+          repos: [{ repo_id: repoId, target_branch: "main" }],
         }),
       });
-      assertEquals(workspaceResult.success, true);
+      assertEquals(workspaceResult.success, true, `Failed to create workspace: ${workspaceResult.error}`);
       const workspaceId = workspaceResult.data!.id;
 
       // Test merge with repo_id
@@ -1138,7 +896,6 @@ Deno.test({
 
 Deno.test({
   name: "API: Workspace push requires repo_id",
-  ignore: true, // Skip: requires running workspace with actual git repo
   fn: async () => {
     const testRepoPath = await createTestRepoDir("push-repo");
 
@@ -1181,10 +938,10 @@ Deno.test({
         body: JSON.stringify({
           task_id: taskId,
           executor_profile_id: { executor: "CLAUDE_CODE", variant: null },
-          base_branch: "main",
+          repos: [{ repo_id: repoId, target_branch: "main" }],
         }),
       });
-      assertEquals(workspaceResult.success, true);
+      assertEquals(workspaceResult.success, true, `Failed to create workspace: ${workspaceResult.error}`);
       const workspaceId = workspaceResult.data!.id;
 
       // Test push with repo_id
@@ -1219,7 +976,6 @@ Deno.test({
 
 Deno.test({
   name: "API: Workspace rebase requires repo_id with optional base branches",
-  ignore: true, // Skip: requires running workspace with actual git repo
   fn: async () => {
     const testRepoPath = await createTestRepoDir("rebase-repo");
 
@@ -1262,10 +1018,10 @@ Deno.test({
         body: JSON.stringify({
           task_id: taskId,
           executor_profile_id: { executor: "CLAUDE_CODE", variant: null },
-          base_branch: "main",
+          repos: [{ repo_id: repoId, target_branch: "main" }],
         }),
       });
-      assertEquals(workspaceResult.success, true);
+      assertEquals(workspaceResult.success, true, `Failed to create workspace: ${workspaceResult.error}`);
       const workspaceId = workspaceResult.data!.id;
 
       // Test rebase with repo_id only
