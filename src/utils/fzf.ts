@@ -5,7 +5,7 @@
 import type {
   Project,
   Repo,
-  TaskWithWorkspaceStatus,
+  TaskWithAttemptStatus,
   Workspace,
 } from "../api/types.ts";
 
@@ -97,7 +97,7 @@ export function formatProject(project: Project): string {
 /**
  * Format task for fzf display
  */
-export function formatTask(task: TaskWithWorkspaceStatus): string {
+export function formatTask(task: TaskWithAttemptStatus): string {
   return `${task.id}\t${task.title}\t[${task.status}]`;
 }
 
@@ -139,7 +139,7 @@ export async function selectProject(projects: Project[]): Promise<string> {
  * Select a task using fzf
  */
 export async function selectTask(
-  tasks: TaskWithWorkspaceStatus[],
+  tasks: TaskWithAttemptStatus[],
 ): Promise<string> {
   if (tasks.length === 0) {
     throw new Error("No tasks available.");

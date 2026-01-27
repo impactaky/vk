@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import { formatProject, formatTask, formatWorkspace } from "./fzf.ts";
 import type {
   Project,
-  TaskWithWorkspaceStatus,
+  TaskWithAttemptStatus,
   Workspace,
 } from "../api/types.ts";
 
@@ -35,7 +35,7 @@ Deno.test("formatProject formats project with null working dir", () => {
 });
 
 Deno.test("formatTask formats task correctly", () => {
-  const task: TaskWithWorkspaceStatus = {
+  const task: TaskWithAttemptStatus = {
     id: "task-456",
     project_id: "proj-123",
     title: "Fix bug",
@@ -43,9 +43,9 @@ Deno.test("formatTask formats task correctly", () => {
     status: "inprogress",
     parent_workspace_id: null,
     shared_task_id: null,
-    has_in_progress_workspace: true,
-    has_merged_workspace: false,
-    last_workspace_failed: false,
+    has_in_progress_attempt: true,
+    last_attempt_failed: false,
+    executor: "CLAUDE_CODE",
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",
   };

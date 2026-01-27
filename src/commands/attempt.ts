@@ -7,6 +7,9 @@ import type {
   CreatePRRequest,
   CreateWorkspace,
   FollowUpRequest,
+  MergeWorkspaceRequest,
+  PushWorkspaceRequest,
+  RebaseWorkspaceRequest,
   UpdateWorkspace,
 } from "../api/types.ts";
 import { applyFilters } from "../utils/filter.ts";
@@ -313,6 +316,28 @@ attemptCommand
     }
   });
 
+// Helper function to get repo_id with auto-detection for single-repo workspaces
+async function getRepoIdForWorkspace(
+  client: ApiClient,
+  workspaceId: string,
+  explicitRepoId?: string,
+): Promise<string> {
+  if (explicitRepoId) {
+    return explicitRepoId;
+  }
+
+  const repos = await client.getWorkspaceRepos(workspaceId);
+  if (repos.length === 0) {
+    throw new Error("Workspace has no repositories");
+  }
+  if (repos.length === 1) {
+    return repos[0].repo_id;
+  }
+  throw new Error(
+    `Workspace has ${repos.length} repositories. Please specify --repo <repo-id>`,
+  );
+}
+
 // Merge workspace
 attemptCommand
   .command("merge")
@@ -321,6 +346,10 @@ attemptCommand
   .option(
     "--project <id:string>",
     "Project ID (for fzf selection, auto-detected from git if omitted)",
+  )
+  .option(
+    "--repo <id:string>",
+    "Repository ID (auto-detected if workspace has only one repo)",
   )
   .option("--json", "Output as JSON")
   .action(async (options, id) => {
@@ -331,7 +360,13 @@ attemptCommand
         id,
         options.project,
       );
-      const result = await client.mergeWorkspace(workspaceId);
+      const repoId = await getRepoIdForWorkspace(
+        client,
+        workspaceId,
+        options.repo,
+      );
+      const request: MergeWorkspaceRequest = { repo_id: repoId };
+      const result = await client.mergeWorkspace(workspaceId, request);
 
       if (options.json) {
         console.log(JSON.stringify(result, null, 2));
@@ -364,6 +399,10 @@ attemptCommand
     "--project <id:string>",
     "Project ID (for fzf selection, auto-detected from git if omitted)",
   )
+  .option(
+    "--repo <id:string>",
+    "Repository ID (auto-detected if workspace has only one repo)",
+  )
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
@@ -372,7 +411,13 @@ attemptCommand
         id,
         options.project,
       );
-      await client.pushWorkspace(workspaceId);
+      const repoId = await getRepoIdForWorkspace(
+        client,
+        workspaceId,
+        options.repo,
+      );
+      const request: PushWorkspaceRequest = { repo_id: repoId };
+      await client.pushWorkspace(workspaceId, request);
       console.log(`Branch pushed successfully.`);
     } catch (error) {
       handleCliError(error);
@@ -389,6 +434,12 @@ attemptCommand
     "--project <id:string>",
     "Project ID (for fzf selection, auto-detected from git if omitted)",
   )
+  .option(
+    "--repo <id:string>",
+    "Repository ID (auto-detected if workspace has only one repo)",
+  )
+  .option("--old-base <branch:string>", "Old base branch to rebase from")
+  .option("--new-base <branch:string>", "New base branch to rebase onto")
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
@@ -397,7 +448,17 @@ attemptCommand
         id,
         options.project,
       );
-      await client.rebaseWorkspace(workspaceId);
+      const repoId = await getRepoIdForWorkspace(
+        client,
+        workspaceId,
+        options.repo,
+      );
+      const request: RebaseWorkspaceRequest = {
+        repo_id: repoId,
+        old_base_branch: options.oldBase,
+        new_base_branch: options.newBase,
+      };
+      await client.rebaseWorkspace(workspaceId, request);
       console.log(`Branch rebased successfully.`);
     } catch (error) {
       handleCliError(error);
@@ -551,6 +612,10 @@ attemptCommand
     "--project <id:string>",
     "Project ID (for fzf selection, auto-detected from git if omitted)",
   )
+  .option(
+    "--repo <id:string>",
+    "Repository ID (auto-detected if workspace has only one repo)",
+  )
   .option("--force", "Skip confirmation prompt")
   .action(async (options, id) => {
     try {
@@ -559,6 +624,11 @@ attemptCommand
         client,
         id,
         options.project,
+      );
+      const repoId = await getRepoIdForWorkspace(
+        client,
+        workspaceId,
+        options.repo,
       );
 
       if (!options.force) {
@@ -571,7 +641,8 @@ attemptCommand
         }
       }
 
-      await client.forcePushWorkspace(workspaceId);
+      const request: PushWorkspaceRequest = { repo_id: repoId };
+      await client.forcePushWorkspace(workspaceId, request);
       console.log(`Branch force pushed successfully.`);
     } catch (error) {
       handleCliError(error);
