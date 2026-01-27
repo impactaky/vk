@@ -1392,7 +1392,6 @@ Deno.test("API: Update task with image_ids", async () => {
 
 Deno.test({
   name: "API: Repository includes default_target_branch field",
-  ignore: true, // Skip: server may not have this field yet
   fn: async () => {
     const result = await apiCall<
       { id: string; default_target_branch: string | null }[]
