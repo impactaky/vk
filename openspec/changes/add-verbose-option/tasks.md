@@ -3,30 +3,30 @@
 ## Implementation Tasks
 
 ### 1. Create verbose state module
-- Create `src/utils/verbose.ts` with:
-  - `setVerbose(enabled: boolean)` function
-  - `isVerbose()` function
-  - `verboseLog(message: string)` function that logs to stderr
+- [x] Create `src/utils/verbose.ts` with:
+  - [x] `setVerbose(enabled: boolean)` function
+  - [x] `isVerbose()` function
+  - [x] `verboseLog(message: string)` function that logs to stderr
 - **Verification**: Module exports correctly, functions work as expected
 
 ### 2. Add verbose flag to CLI entry point
-- Modify `src/main.ts`:
-  - Add `-v, --verbose` option to CLI definition
-  - Check for flag before parsing and call `setVerbose(true)`
+- [x] Modify `src/main.ts`:
+  - [x] Add `-v, --verbose` option to CLI definition
+  - [x] Check for flag before parsing and call `setVerbose(true)`
 - **Verification**: `vk --help` shows verbose option
 
 ### 3. Instrument API client for verbose logging
-- Modify `src/api/client.ts`:
-  - Import verbose module
-  - Update `request<T>()` method to log request details (method, URL, body)
-  - Log response details (status, body) using `response.clone()`
+- [x] Modify `src/api/client.ts`:
+  - [x] Import verbose module
+  - [x] Update `request<T>()` method to log request details (method, URL, body)
+  - [x] Log response details (status, body) using `response.clone()`
 - **Verification**: `vk project list -v` shows API request/response details
 
 ### 4. Test verbose output format
-- Manual testing:
-  - Verify verbose output goes to stderr
-  - Verify `vk project list -v --json | jq .` produces valid JSON
-  - Verify POST requests show request body
+- [ ] Manual testing:
+  - [ ] Verify verbose output goes to stderr
+  - [ ] Verify `vk project list -v --json | jq .` produces valid JSON
+  - [ ] Verify POST requests show request body
 - **Verification**: All scenarios from spec pass
 
 ## Dependencies
