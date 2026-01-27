@@ -5,18 +5,12 @@ description: Run unit tests and integration tests for Deno projects (mirrors CI 
 
 # Test
 
-Run tests based on the CI workflow:
+Run tests using Docker:
 
-1. **Run unit tests**
-   ```bash
-   deno test --allow-read --allow-write --allow-env src/
-   ```
-   Fix any failing tests.
+```bash
+docker compose run --rm vk
+```
 
-2. **Run integration tests** (requires Docker)
-   ```bash
-   docker compose run --rm vk
-   ```
-   This starts the vibe-kanban server with health checks and runs all integration tests.
+This starts the vibe-kanban server with health checks and runs all tests.
 
 Report the results and summarize any failures that need attention.

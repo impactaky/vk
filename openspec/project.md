@@ -13,16 +13,13 @@ This project also provides comamnds for using [openspec](https://github.com/Fiss
 ## Project Conventions
 
 ### Code Style
-Use deno fmt for formatting.
-Use deno lint for linting.
-Use deno check for type checking.
+Check /lint skill.
 
 ### Architecture Patterns
 Clean architecture.
 
 ### Testing Strategy
-Use deno test for testing.
-Use github actions for CI/CD.
+Use test skill
 
 ### Git Workflow
 github flow
@@ -36,6 +33,7 @@ For example, manage tasks dependencies, or switch agent feature are not supporte
 Please make simple implementation first.
 
 ## External Dependencies
+You can use deepwiki mcp to get those repository details.
 - [vibe-kanban](https://github.com/BloopAI/vibe-kanban)
 - [openspec](https://github.com/Fission-AI/OpenSpec)
 - [deno-cliffy](https://github.com/c4spar/deno-cliffy)
