@@ -1,7 +1,9 @@
 import { Command } from "@cliffy/command";
 import { Confirm, Input } from "@cliffy/prompt";
 import { Table } from "@cliffy/table";
+import { open } from "@opensrc/deno-open";
 import { ApiClient } from "../api/client.ts";
+import { getApiUrl } from "../api/config.ts";
 import type {
   CreateTask,
   CreateWorkspace,
@@ -294,6 +296,38 @@ taskCommand
 
       await client.deleteTask(taskId);
       console.log(`Task ${taskId} deleted.`);
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+// Open task in browser
+taskCommand
+  .command("open")
+  .description("Open a task in the browser")
+  .arguments("[id:string]")
+  .option(
+    "--project <id:string>",
+    "Project ID (for fzf selection, auto-detected from git if omitted)",
+  )
+  .action(async (options, id) => {
+    try {
+      const client = await ApiClient.create();
+
+      const taskId = await getTaskIdWithAutoDetect(
+        client,
+        id,
+        options.project,
+      );
+
+      const task = await client.getTask(taskId);
+
+      const baseUrl = await getApiUrl();
+      const url = `${baseUrl}/projects/${task.project_id}/tasks/${task.id}`;
+
+      console.log(`Opening: ${url}`);
+      await open(url);
     } catch (error) {
       handleCliError(error);
       throw error;
