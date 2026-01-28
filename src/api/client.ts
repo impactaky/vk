@@ -1,4 +1,5 @@
 import { getApiUrl } from "./config.ts";
+import { isVerbose, verboseLog } from "../utils/verbose.ts";
 import type {
   ApiResponse,
   AttachPRRequest,
@@ -47,6 +48,17 @@ export class ApiClient {
     options: RequestInit = {},
   ): Promise<T> {
     const url = `${this.baseUrl}/api${path}`;
+    const method = options.method || "GET";
+
+    // Verbose: Log request details
+    if (isVerbose()) {
+      verboseLog(`--- API Request ---`);
+      verboseLog(`${method} ${url}`);
+      if (options.body) {
+        verboseLog(`Request Body: ${options.body}`);
+      }
+    }
+
     const response = await fetch(url, {
       ...options,
       headers: {
@@ -55,12 +67,22 @@ export class ApiClient {
       },
     });
 
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`API error (${response.status}): ${text}`);
+    // Clone response to read body for verbose logging
+    const responseText = await response.clone().text();
+
+    // Verbose: Log response details
+    if (isVerbose()) {
+      verboseLog(`--- API Response ---`);
+      verboseLog(`Status: ${response.status} ${response.statusText}`);
+      verboseLog(`Response Body: ${responseText}`);
+      verboseLog(`-------------------`);
     }
 
-    const result: ApiResponse<T> = await response.json();
+    if (!response.ok) {
+      throw new Error(`API error (${response.status}): ${responseText}`);
+    }
+
+    const result: ApiResponse<T> = JSON.parse(responseText);
     if (!result.success) {
       throw new Error(result.error || result.message || "Unknown API error");
     }
