@@ -195,8 +195,8 @@ export type PRResult = string;
 export interface Session {
   id: string;
   workspace_id: string;
-  executor_profile_id: ExecutorProfileID;
-  status: SessionStatus;
+  executor: BaseCodingAgent;
+  status?: SessionStatus;
   created_at: string;
   updated_at: string;
 }
@@ -220,6 +220,7 @@ export interface ExecutionProcess {
 // Follow-up request for sending messages to running sessions
 export interface CreateFollowUpAttempt {
   prompt: string;
+  executor_profile_id: ExecutorProfileID;
 }
 
 // Attach existing PR to a workspace

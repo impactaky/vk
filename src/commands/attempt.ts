@@ -592,17 +592,24 @@ attemptCommand
         options.project,
       );
 
-      // Get session ID - either from option or auto-detect from workspace
-      let sessionId = options.session;
-      if (!sessionId) {
-        const sessions = await client.listSessions(workspaceId);
-        if (sessions.length === 0) {
-          throw new Error("No sessions found for this workspace");
+      // Get sessions for workspace
+      const sessions = await client.listSessions(workspaceId);
+      if (sessions.length === 0) {
+        throw new Error("No sessions found for this workspace");
+      }
+
+      // Get session - either from option or auto-detect
+      let session;
+      if (options.session) {
+        session = sessions.find((s) => s.id === options.session);
+        if (!session) {
+          throw new Error(`Session ${options.session} not found for this workspace`);
         }
+      } else {
         // Find running session, or use most recent
         const runningSession = sessions.find((s) => s.status === "running");
         if (runningSession) {
-          sessionId = runningSession.id;
+          session = runningSession;
         } else {
           // Sort by created_at descending and use most recent
           const sorted = sessions.sort(
@@ -610,15 +617,19 @@ attemptCommand
               new Date(b.created_at).getTime() -
               new Date(a.created_at).getTime(),
           );
-          sessionId = sorted[0].id;
+          session = sorted[0];
         }
       }
 
       const request: CreateFollowUpAttempt = {
         prompt: options.message,
+        executor_profile_id: {
+          executor: session.executor,
+          variant: null,
+        },
       };
 
-      await client.followUp(sessionId, request);
+      await client.followUp(session.id, request);
       console.log(`Follow-up message sent successfully.`);
     } catch (error) {
       handleCliError(error);
