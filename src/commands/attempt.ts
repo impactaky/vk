@@ -4,9 +4,9 @@ import { Table } from "@cliffy/table";
 import { ApiClient } from "../api/client.ts";
 import type {
   AttachPRRequest,
+  CreateFollowUpAttempt,
   CreatePRRequest,
   CreateWorkspace,
-  FollowUpRequest,
   MergeWorkspaceRequest,
   PushWorkspaceRequest,
   RebaseWorkspaceRequest,
@@ -582,6 +582,7 @@ attemptCommand
   .option("--message <message:string>", "Message to send to the executor", {
     required: true,
   })
+  .option("--session <id:string>", "Session ID (auto-detected if omitted)")
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
@@ -591,11 +592,33 @@ attemptCommand
         options.project,
       );
 
-      const request: FollowUpRequest = {
-        message: options.message,
+      // Get session ID - either from option or auto-detect from workspace
+      let sessionId = options.session;
+      if (!sessionId) {
+        const sessions = await client.listSessions(workspaceId);
+        if (sessions.length === 0) {
+          throw new Error("No sessions found for this workspace");
+        }
+        // Find running session, or use most recent
+        const runningSession = sessions.find((s) => s.status === "running");
+        if (runningSession) {
+          sessionId = runningSession.id;
+        } else {
+          // Sort by created_at descending and use most recent
+          const sorted = sessions.sort(
+            (a, b) =>
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime(),
+          );
+          sessionId = sorted[0].id;
+        }
+      }
+
+      const request: CreateFollowUpAttempt = {
+        prompt: options.message,
       };
 
-      await client.followUp(workspaceId, request);
+      await client.followUp(sessionId, request);
       console.log(`Follow-up message sent successfully.`);
     } catch (error) {
       handleCliError(error);

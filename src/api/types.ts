@@ -191,9 +191,35 @@ export interface RebaseWorkspaceRequest {
 // PR creation returns just the URL string
 export type PRResult = string;
 
-// Follow-up request for sending messages to running workspaces
-export interface FollowUpRequest {
-  message: string;
+// Session types
+export interface Session {
+  id: string;
+  workspace_id: string;
+  executor_profile_id: ExecutorProfileID;
+  status: SessionStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export type SessionStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+// Execution process returned from follow-up
+export interface ExecutionProcess {
+  id: string;
+  session_id: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Follow-up request for sending messages to running sessions
+export interface CreateFollowUpAttempt {
+  prompt: string;
 }
 
 // Attach existing PR to a workspace

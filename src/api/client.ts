@@ -4,11 +4,12 @@ import type {
   ApiResponse,
   AttachPRRequest,
   BranchStatus,
+  CreateFollowUpAttempt,
   CreateProject,
   CreatePRRequest,
   CreateTask,
   CreateWorkspace,
-  FollowUpRequest,
+  ExecutionProcess,
   GitBranch,
   InitRepoRequest,
   MergeResult,
@@ -20,6 +21,7 @@ import type {
   RegisterRepoRequest,
   RenameBranchRequest,
   Repo,
+  Session,
   Task,
   TaskWithAttemptStatus,
   UnifiedPRComment,
@@ -284,9 +286,18 @@ export class ApiClient {
     });
   }
 
-  // Send follow-up message to a running workspace
-  followUp(id: string, request: FollowUpRequest): Promise<void> {
-    return this.request<void>(`/task-attempts/${id}/follow-up`, {
+  // Session endpoints
+  listSessions(workspaceId: string): Promise<Session[]> {
+    return this.request<Session[]>(`/sessions?workspace_id=${workspaceId}`);
+  }
+
+  getSession(id: string): Promise<Session> {
+    return this.request<Session>(`/sessions/${id}`);
+  }
+
+  // Send follow-up message to a running session
+  followUp(sessionId: string, request: CreateFollowUpAttempt): Promise<ExecutionProcess> {
+    return this.request<ExecutionProcess>(`/sessions/${sessionId}/follow-up`, {
       method: "POST",
       body: JSON.stringify(request),
     });
