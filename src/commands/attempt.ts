@@ -17,6 +17,7 @@ import {
   getAttemptIdWithAutoDetect,
   getTaskIdWithAutoDetect,
 } from "../utils/attempt-resolver.ts";
+import { selectSession } from "../utils/fzf.ts";
 import { parseExecutorString } from "../utils/executor-parser.ts";
 import { handleCliError } from "../utils/error-handler.ts";
 
@@ -570,7 +571,7 @@ attemptCommand
     }
   });
 
-// Follow-up command - send message to running workspace
+// Follow-up command - send message to running session
 attemptCommand
   .command("follow-up")
   .description("Send a follow-up message to a running workspace")
@@ -582,21 +583,53 @@ attemptCommand
   .option("--message <message:string>", "Message to send to the executor", {
     required: true,
   })
+  .option(
+    "--executor <executor:string>",
+    "Override executor (format: NAME:VARIANT, e.g., CLAUDE_CODE:DEFAULT)",
+  )
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
+
+      // Resolve workspace ID (from arg, auto-detect, or fzf)
       const workspaceId = await getAttemptIdWithAutoDetect(
         client,
         id,
         options.project,
       );
 
+      // Get sessions for the workspace
+      const sessions = await client.listSessions(workspaceId);
+      if (sessions.length === 0) {
+        throw new Error("No sessions found for this workspace");
+      }
+
+      // Auto-select if single session, otherwise use fzf
+      const sessionId = sessions.length === 1
+        ? sessions[0].id
+        : await selectSession(sessions);
+
+      // Determine executor: use provided --executor flag, or default to CLAUDE_CODE
+      // For Phase 1: default executor handling
+      // Future: extract executor from session's execution process
+      let executorProfileId;
+      if (options.executor) {
+        executorProfileId = parseExecutorString(options.executor);
+      } else {
+        // Default executor for follow-up - use CLAUDE_CODE as safe default
+        executorProfileId = {
+          executor: "CLAUDE_CODE" as const,
+          variant: null,
+        };
+      }
+
       const request: FollowUpRequest = {
-        message: options.message,
+        prompt: options.message, // Map --message flag to prompt field
+        executor_profile_id: executorProfileId,
       };
 
-      await client.followUp(workspaceId, request);
-      console.log(`Follow-up message sent successfully.`);
+      await client.sessionFollowUp(sessionId, request);
+      console.log("Follow-up message sent successfully.");
     } catch (error) {
       handleCliError(error);
       throw error;

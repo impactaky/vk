@@ -20,6 +20,7 @@ import type {
   RegisterRepoRequest,
   RenameBranchRequest,
   Repo,
+  Session,
   Task,
   TaskWithAttemptStatus,
   UnifiedPRComment,
@@ -284,14 +285,6 @@ export class ApiClient {
     });
   }
 
-  // Send follow-up message to a running workspace
-  followUp(id: string, request: FollowUpRequest): Promise<void> {
-    return this.request<void>(`/task-attempts/${id}/follow-up`, {
-      method: "POST",
-      body: JSON.stringify(request),
-    });
-  }
-
   // Attach an existing PR to a workspace
   attachPR(id: string, request: AttachPRRequest): Promise<PRResult> {
     return this.request<PRResult>(`/task-attempts/${id}/pr/attach`, {
@@ -303,6 +296,22 @@ export class ApiClient {
   // Get PR comments for a workspace
   getPRComments(id: string): Promise<UnifiedPRComment[]> {
     return this.request<UnifiedPRComment[]>(`/task-attempts/${id}/pr/comments`);
+  }
+
+  // Session endpoints
+  listSessions(workspaceId: string): Promise<Session[]> {
+    return this.request<Session[]>(`/sessions?workspace_id=${workspaceId}`);
+  }
+
+  getSession(id: string): Promise<Session> {
+    return this.request<Session>(`/sessions/${id}`);
+  }
+
+  sessionFollowUp(sessionId: string, request: FollowUpRequest): Promise<void> {
+    return this.request<void>(`/sessions/${sessionId}/follow-up`, {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
   }
 
   // Repository endpoints
