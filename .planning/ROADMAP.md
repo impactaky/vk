@@ -42,10 +42,10 @@ Plans:
   2. User can run `vk attempt pr-comments` with repo_id parameter
   3. User can specify `--repo` flag on multi-repo commands (branch-status, pr-comments, merge, push, rebase)
   4. RepoBranchStatus type exists for proper response typing
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 02-01: TBD
+- [ ] 02-01-PLAN.md - Add RepoBranchStatus type and fix multi-repo commands
 
 ### Phase 3: Type Alignment
 **Goal**: All CLI types match current vibe-kanban API schema
@@ -83,7 +83,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Critical Fix | 0/TBD | Not started | - |
-| 2. Schema Corrections | 0/TBD | Not started | - |
+| 2. Schema Corrections | 0/1 | Ready | - |
 | 3. Type Alignment | 0/TBD | Not started | - |
 | 4. Session Commands | 0/TBD | Not started | - |
 
