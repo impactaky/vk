@@ -12,7 +12,7 @@ This milestone fixes the broken follow-up command and aligns the CLI with the cu
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Critical Fix** - Restore working follow-up command via Sessions API
+- [x] **Phase 1: Critical Fix** - Restore working follow-up command via Sessions API
 - [ ] **Phase 2: Schema Corrections** - Fix branch-status and pr-comments for multi-repo workspaces
 - [ ] **Phase 3: Type Alignment** - Update remaining types to match current API
 - [ ] **Phase 4: Session Commands** - Expose session management for power users
@@ -31,8 +31,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md - Add Session type and API client methods
-- [ ] 01-02-PLAN.md - Integrate session resolution into follow-up command
+- [x] 01-01-PLAN.md - Add Session type and API client methods
+- [x] 01-02-PLAN.md - Integrate session resolution into follow-up command
 
 ### Phase 2: Schema Corrections
 **Goal**: Multi-repo workspace commands work correctly
@@ -83,8 +83,8 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Critical Fix | 0/2 | Ready | - |
-| 2. Schema Corrections | 0/TBD | Not started | - |
+| 1. Critical Fix | 2/2 | ✓ Complete | 2026-01-30 |
+| 2. Schema Corrections | 0/TBD | Ready | - |
 | 3. Type Alignment | 0/TBD | Not started | - |
 | 4. Session Commands | 0/TBD | Not started | - |
 

@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-01-30)
 
 **Core value:** Developers can efficiently manage vibe-kanban workflows from the command line
-**Current focus:** Phase 1 - Critical Fix (restore follow-up command)
+**Current focus:** Phase 2 - Schema Corrections (multi-repo workspace commands)
 
 ## Current Position
 
-Phase: 1 of 4 (Critical Fix)
-Plan: 2 of 2 (Follow-Up Command Integration)
-Status: Phase complete
-Last activity: 2026-01-30 — Completed 01-02-PLAN.md
+Phase: 2 of 4 (Schema Corrections)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-01-30 — Phase 1 verified and complete
 
-Progress: [██████████] 100% (Phase 1: 2/2 plans)
+Progress: [██░░░░░░░░] 25% (Phase 1 complete, 3 phases remain)
 
 ## Performance Metrics
 
