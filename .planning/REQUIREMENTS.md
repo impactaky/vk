@@ -26,8 +26,8 @@ Requirements for API alignment milestone. Each maps to roadmap phases.
 ### Type Alignment
 
 - [ ] **TYPE-01**: Add missing types: Session, ExecutionProcess, ExecutionProcessStatus, RepoBranchStatus
-- [ ] **TYPE-02**: Fix FollowUpRequest schema (`message` → `prompt`, add required fields)
-- [ ] **TYPE-03**: Fix WorkspaceRepo field (`branch` → `target_branch`, remove `worktree_path`)
+- [ ] **TYPE-02**: Fix FollowUpRequest schema (`message` -> `prompt`, add required fields)
+- [ ] **TYPE-03**: Fix WorkspaceRepo field (`branch` -> `target_branch`, remove `worktree_path`)
 - [ ] **TYPE-04**: Update CreateWorkspace to use `repos[]` array instead of `base_branch`
 - [ ] **TYPE-05**: Add missing fields to Repo type (`default_working_dir`)
 - [ ] **TYPE-06**: Add missing fields to GitBranch type (`last_commit_date`)
@@ -70,29 +70,29 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SESS-01 | TBD | Pending |
-| SESS-02 | TBD | Pending |
-| SESS-03 | TBD | Pending |
-| SESS-04 | TBD | Pending |
-| SESS-05 | TBD | Pending |
-| SESS-06 | TBD | Pending |
-| SESS-07 | TBD | Pending |
-| SCHM-01 | TBD | Pending |
-| SCHM-02 | TBD | Pending |
-| SCHM-03 | TBD | Pending |
-| TYPE-01 | TBD | Pending |
-| TYPE-02 | TBD | Pending |
-| TYPE-03 | TBD | Pending |
-| TYPE-04 | TBD | Pending |
-| TYPE-05 | TBD | Pending |
-| TYPE-06 | TBD | Pending |
-| TYPE-07 | TBD | Pending |
+| SESS-01 | Phase 1 | Pending |
+| SESS-02 | Phase 1 | Pending |
+| SESS-03 | Phase 1 | Pending |
+| SESS-04 | Phase 1 | Pending |
+| SESS-05 | Phase 4 | Pending |
+| SESS-06 | Phase 4 | Pending |
+| SESS-07 | Phase 4 | Pending |
+| SCHM-01 | Phase 2 | Pending |
+| SCHM-02 | Phase 2 | Pending |
+| SCHM-03 | Phase 2 | Pending |
+| TYPE-01 | Phase 2 | Pending |
+| TYPE-02 | Phase 1 | Pending |
+| TYPE-03 | Phase 3 | Pending |
+| TYPE-04 | Phase 3 | Pending |
+| TYPE-05 | Phase 3 | Pending |
+| TYPE-06 | Phase 3 | Pending |
+| TYPE-07 | Phase 3 | Pending |
 
 **Coverage:**
 - v1.0 requirements: 17 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 17
+- Mapped to phases: 17
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-30*
-*Last updated: 2026-01-30 after initial definition*
+*Last updated: 2026-01-30 after roadmap creation*
