@@ -285,13 +285,6 @@ export class ApiClient {
     });
   }
 
-  // Send follow-up message to a running workspace
-  followUp(id: string, request: FollowUpRequest): Promise<void> {
-    return this.request<void>(`/task-attempts/${id}/follow-up`, {
-      method: "POST",
-      body: JSON.stringify(request),
-    });
-  }
 
   // Attach an existing PR to a workspace
   attachPR(id: string, request: AttachPRRequest): Promise<PRResult> {
