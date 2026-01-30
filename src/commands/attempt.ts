@@ -624,7 +624,7 @@ attemptCommand
       }
 
       const request: FollowUpRequest = {
-        prompt: options.message,  // Map --message flag to prompt field
+        prompt: options.message, // Map --message flag to prompt field
         executor_profile_id: executorProfileId,
       };
 

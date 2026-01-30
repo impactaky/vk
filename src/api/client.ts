@@ -285,7 +285,6 @@ export class ApiClient {
     });
   }
 
-
   // Attach an existing PR to a workspace
   attachPR(id: string, request: AttachPRRequest): Promise<PRResult> {
     return this.request<PRResult>(`/task-attempts/${id}/pr/attach`, {
