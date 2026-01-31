@@ -4,7 +4,7 @@
 
 **Milestone:** v1.1
 **Goal:** Add convenience commands for working with attempts — open in browser, cd into workdir, and spin-off to new task.
-**Total Requirements:** 14
+**Total Requirements:** 16
 
 ---
 
@@ -58,22 +58,22 @@ None — all requirements scoped to this milestone.
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| OPEN-01 | TBD | Pending |
-| OPEN-02 | TBD | Pending |
-| OPEN-03 | TBD | Pending |
-| CD-01 | TBD | Pending |
-| CD-02 | TBD | Pending |
-| CD-03 | TBD | Pending |
-| CD-04 | TBD | Pending |
-| CD-05 | TBD | Pending |
-| SPINOFF-01 | TBD | Pending |
-| SPINOFF-02 | TBD | Pending |
-| SPINOFF-03 | TBD | Pending |
-| SPINOFF-04 | TBD | Pending |
-| SPINOFF-05 | TBD | Pending |
-| SPINOFF-06 | TBD | Pending |
-| TEST-01 | TBD | Pending |
-| TEST-02 | TBD | Pending |
+| OPEN-01 | Phase 5 | Pending |
+| OPEN-02 | Phase 5 | Pending |
+| OPEN-03 | Phase 5 | Pending |
+| CD-01 | Phase 6 | Pending |
+| CD-02 | Phase 6 | Pending |
+| CD-03 | Phase 6 | Pending |
+| CD-04 | Phase 6 | Pending |
+| CD-05 | Phase 6 | Pending |
+| SPINOFF-01 | Phase 7 | Pending |
+| SPINOFF-02 | Phase 7 | Pending |
+| SPINOFF-03 | Phase 7 | Pending |
+| SPINOFF-04 | Phase 7 | Pending |
+| SPINOFF-05 | Phase 7 | Pending |
+| SPINOFF-06 | Phase 7 | Pending |
+| TEST-01 | Phase 8 | Pending |
+| TEST-02 | Phase 8 | Pending |
 
 ---
 *Created: 2026-02-01*
