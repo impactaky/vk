@@ -205,8 +205,8 @@ taskCommand
         // Build repos array with target branches
         const repos = projectRepos.map((repo) => ({
           repo_id: repo.id,
-          target_branch:
-            options.targetBranch || repo.default_target_branch || "main",
+          target_branch: options.targetBranch || repo.default_target_branch ||
+            "main",
         }));
 
         const createWorkspace: CreateWorkspace = {
