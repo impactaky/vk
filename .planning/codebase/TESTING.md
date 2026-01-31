@@ -4,6 +4,12 @@
 
 ## Test Framework
 
+**Quick Start (Recommended):**
+```bash
+docker compose run --rm vk
+```
+This starts the vibe-kanban server with health checks and runs all tests. Use this for the complete test experience matching CI.
+
 **Runner:**
 - Deno's built-in test runner via `Deno.test()`
 - No external test framework required
