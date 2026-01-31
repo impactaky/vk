@@ -42,6 +42,20 @@
 - Uses `// deno-lint-ignore` comments for specific rule suppressions (see `src/utils/filter.ts` line 7)
 - Linted directories: `src/` and `tests/`
 
+**Quick Reference Commands:**
+```bash
+# Check formatting (fix with: deno fmt)
+deno fmt --check
+
+# Run linter
+deno lint
+
+# Type check
+deno check src/main.ts
+```
+
+Run these checks before committing to ensure code quality.
+
 ## Import Organization
 
 **Order:**
