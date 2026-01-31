@@ -8,9 +8,14 @@ A command-line interface for [vibe-kanban](https://github.com/BloopAI/vibe-kanba
 
 Developers can efficiently manage vibe-kanban workflows from the command line without switching to the web UI.
 
-## Current Milestone
+## Current Milestone: v1.1 Attempt Workflow Enhancements
 
-(None — ready for next milestone)
+**Goal:** Add convenience commands for working with attempts — open in browser, cd into workdir, and spin-off to new task.
+
+**Target features:**
+- `vk attempt open` — Open workspace in browser
+- `vk attempt cd` — SSH (if remote) and cd to workspace workdir
+- `vk attempt spin-off` — Create new task from current workspace branch
 
 ## Requirements
 
@@ -39,7 +44,9 @@ Developers can efficiently manage vibe-kanban workflows from the command line wi
 
 <!-- Current scope. Building toward these. -->
 
-(None — ready for next milestone)
+- `vk attempt open` — Open workspace URL in browser
+- `vk attempt cd` — SSH + cd to agent_working_dir (configurable shell, default bash)
+- `vk attempt spin-off` — Create task with parent_workspace_id, spawns workspace from parent branch
 
 ### Out of Scope
 
@@ -81,4 +88,4 @@ Developers can efficiently manage vibe-kanban workflows from the command line wi
 | Keep --message flag, map to prompt internally | Backward compatibility | ✓ v1.0 |
 
 ---
-*Last updated: 2026-01-31 after v1.0 milestone completion*
+*Last updated: 2026-02-01 — v1.1 milestone started*
