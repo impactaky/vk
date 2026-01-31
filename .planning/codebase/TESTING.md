@@ -4,25 +4,15 @@
 
 ## Test Framework
 
-**Runner:**
-- Deno's built-in test runner via `Deno.test()`
-- No external test framework required
-- Config in `deno.json` with test tasks
-
-**Assertion Library:**
-- `@std/assert` from JSR (Deno standard library)
-- Imported as: `import { assertEquals, assertThrows, assertExists } from "@std/assert"`
-
-**Run Commands:**
+**Run Tests:**
 ```bash
-deno task test                          # Run all unit and module tests with permissions
-deno task test:integration              # Run integration tests only (separate task)
-deno test --allow-net --allow-read ...  # Direct deno test invocation
+docker compose run --rm vk
 ```
+This starts the vibe-kanban server with health checks and runs all tests, matching CI.
 
-**Task Definitions from `deno.json`:**
-- `test`: `deno test --allow-net --allow-read --allow-write --allow-env` runs all tests in codebase
-- `test:integration`: `deno test --allow-net --allow-read --allow-write --allow-env --allow-run tests/*_integration_test.ts` runs only integration tests
+**Framework:**
+- Deno's built-in test runner via `Deno.test()`
+- Assertions from `@std/assert` (JSR)
 
 ## Test File Organization
 
