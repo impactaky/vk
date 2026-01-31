@@ -19,19 +19,19 @@ Requirements for API alignment milestone. Each maps to roadmap phases.
 
 ### Schema Fixes
 
-- [ ] **SCHM-01**: Fix `attempt branch-status` to handle array response (one per repo)
-- [ ] **SCHM-02**: Fix `attempt pr-comments` to include required `repo_id` parameter
-- [ ] **SCHM-03**: Add `--repo` flag to multi-repo commands (branch-status, pr-comments, merge, push, rebase)
+- [x] **SCHM-01**: Fix `attempt branch-status` to handle array response (one per repo)
+- [x] **SCHM-02**: Fix `attempt pr-comments` to include required `repo_id` parameter
+- [x] **SCHM-03**: Add `--repo` flag to multi-repo commands (branch-status, pr-comments, merge, push, rebase)
 
 ### Type Alignment
 
-- [ ] **TYPE-01**: Add missing types: Session, ExecutionProcess, ExecutionProcessStatus, RepoBranchStatus
+- [x] **TYPE-01**: Add missing types: Session, ExecutionProcess, ExecutionProcessStatus, RepoBranchStatus
 - [x] **TYPE-02**: Fix FollowUpRequest schema (`message` -> `prompt`, add required fields)
-- [ ] **TYPE-03**: Fix WorkspaceRepo field (`branch` -> `target_branch`, remove `worktree_path`)
-- [ ] **TYPE-04**: Update CreateWorkspace to use `repos[]` array instead of `base_branch`
-- [ ] **TYPE-05**: Add missing fields to Repo type (`default_working_dir`)
-- [ ] **TYPE-06**: Add missing fields to GitBranch type (`last_commit_date`)
-- [ ] **TYPE-07**: Remove deprecated Task field (`shared_task_id`)
+- [x] **TYPE-03**: Fix WorkspaceRepo field (`branch` -> `target_branch`, remove `worktree_path`)
+- [x] **TYPE-04**: Update CreateWorkspace to use `repos[]` array instead of `base_branch`
+- [x] **TYPE-05**: Add missing fields to Repo type (`default_working_dir`)
+- [x] **TYPE-06**: Add missing fields to GitBranch type (`last_commit_date`)
+- [x] **TYPE-07**: Remove deprecated Task field (`shared_task_id`)
 
 ### CLI Client Integration Tests
 
@@ -81,23 +81,23 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SESS-02 | Phase 1 | Complete |
 | SESS-03 | Phase 1 | Complete |
 | SESS-04 | Phase 1 | Complete |
-| SESS-05 | Phase 4 | Pending |
-| SESS-06 | Phase 4 | Pending |
-| SESS-07 | Phase 4 | Pending |
-| SCHM-01 | Phase 2 | Pending |
-| SCHM-02 | Phase 2 | Pending |
-| SCHM-03 | Phase 2 | Pending |
-| TYPE-01 | Phase 2 | Pending |
+| SESS-05 | Phase 3 | Pending |
+| SESS-06 | Phase 3 | Pending |
+| SESS-07 | Phase 3 | Pending |
+| SCHM-01 | Phase 2 | Complete |
+| SCHM-02 | Phase 2 | Complete |
+| SCHM-03 | Phase 2 | Complete |
+| TYPE-01 | Phase 2 | Complete |
 | TYPE-02 | Phase 1 | Complete |
-| TYPE-03 | Phase 3 | Pending |
-| TYPE-04 | Phase 3 | Pending |
-| TYPE-05 | Phase 3 | Pending |
-| TYPE-06 | Phase 3 | Pending |
-| TYPE-07 | Phase 3 | Pending |
-| TEST-01 | Phase 5 | Pending |
-| TEST-02 | Phase 5 | Pending |
-| TEST-03 | Phase 5 | Pending |
-| TEST-04 | Phase 5 | Pending |
+| TYPE-03 | Phase 2 | Complete |
+| TYPE-04 | Phase 2 | Complete |
+| TYPE-05 | Phase 2 | Complete |
+| TYPE-06 | Phase 2 | Complete |
+| TYPE-07 | Phase 2 | Complete |
+| TEST-01 | Phase 4 | Pending |
+| TEST-02 | Phase 4 | Pending |
+| TEST-03 | Phase 4 | Pending |
+| TEST-04 | Phase 4 | Pending |
 
 **Coverage:**
 - v1.0 requirements: 21 total
