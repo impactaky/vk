@@ -3,7 +3,6 @@ import { isVerbose, verboseLog } from "../utils/verbose.ts";
 import type {
   ApiResponse,
   AttachPRRequest,
-  BranchStatus,
   CreateProject,
   CreatePRRequest,
   CreateTask,
@@ -20,6 +19,7 @@ import type {
   RegisterRepoRequest,
   RenameBranchRequest,
   Repo,
+  RepoBranchStatus,
   Task,
   TaskWithAttemptStatus,
   UnifiedPRComment,
@@ -265,8 +265,10 @@ export class ApiClient {
     });
   }
 
-  getBranchStatus(id: string): Promise<BranchStatus> {
-    return this.request<BranchStatus>(`/task-attempts/${id}/branch-status`);
+  getBranchStatus(id: string): Promise<RepoBranchStatus[]> {
+    return this.request<RepoBranchStatus[]>(
+      `/task-attempts/${id}/branch-status`,
+    );
   }
 
   // Force push workspace branch to remote
@@ -300,9 +302,11 @@ export class ApiClient {
     });
   }
 
-  // Get PR comments for a workspace
-  getPRComments(id: string): Promise<UnifiedPRComment[]> {
-    return this.request<UnifiedPRComment[]>(`/task-attempts/${id}/pr/comments`);
+  // Get PR comments for a workspace (requires repo_id for multi-repo workspaces)
+  getPRComments(id: string, repoId: string): Promise<UnifiedPRComment[]> {
+    return this.request<UnifiedPRComment[]>(
+      `/task-attempts/${id}/pr/comments?repo_id=${repoId}`,
+    );
   }
 
   // Repository endpoints
