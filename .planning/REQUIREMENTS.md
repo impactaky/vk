@@ -33,6 +33,13 @@ Requirements for API alignment milestone. Each maps to roadmap phases.
 - [ ] **TYPE-06**: Add missing fields to GitBranch type (`last_commit_date`)
 - [ ] **TYPE-07**: Remove deprecated Task field (`shared_task_id`)
 
+### CLI Client Integration Tests
+
+- [ ] **TEST-01**: Add integration tests for CLI client methods to verify API schema alignment
+- [ ] **TEST-02**: Test `createWorkspace` sends correct `repos[]` payload (not `base_branch`)
+- [ ] **TEST-03**: Test `followUp` sends correct session-based request
+- [ ] **TEST-04**: Test multi-repo commands (branch-status, pr-comments) handle array responses
+
 ## Future Requirements
 
 Deferred to later milestones. Tracked but not in current roadmap.
@@ -87,10 +94,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TYPE-05 | Phase 3 | Pending |
 | TYPE-06 | Phase 3 | Pending |
 | TYPE-07 | Phase 3 | Pending |
+| TEST-01 | Phase 5 | Pending |
+| TEST-02 | Phase 5 | Pending |
+| TEST-03 | Phase 5 | Pending |
+| TEST-04 | Phase 5 | Pending |
 
 **Coverage:**
-- v1.0 requirements: 17 total
-- Mapped to phases: 17
+- v1.0 requirements: 21 total
+- Mapped to phases: 21
 - Unmapped: 0
 
 ---

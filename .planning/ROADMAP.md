@@ -16,6 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: Schema Corrections** - Fix branch-status and pr-comments for multi-repo workspaces
 - [ ] **Phase 3: Type Alignment** - Update remaining types to match current API
 - [ ] **Phase 4: Session Commands** - Expose session management for power users
+- [ ] **Phase 5: CLI Client Integration Tests** - Prevent API schema drift with automated tests
 
 ## Phase Details
 
@@ -76,10 +77,25 @@ Plans:
 Plans:
 - [ ] 04-01: TBD
 
+### Phase 5: CLI Client Integration Tests
+**Goal**: Automated tests prevent API schema mismatches from shipping
+**Depends on**: Phase 3 (tests verify the fixed types)
+**Requirements**: TEST-01, TEST-02, TEST-03, TEST-04
+**Success Criteria** (what must be TRUE):
+  1. Integration tests exist for CLI client methods (createWorkspace, followUp, etc.)
+  2. Tests verify `createWorkspace` sends `repos[]` array (not deprecated `base_branch`)
+  3. Tests verify `followUp` uses session-based endpoint with correct payload
+  4. Tests verify multi-repo commands handle array responses correctly
+  5. Tests run against live API (like existing `api_integration_test.ts`)
+**Plans**: TBD
+
+Plans:
+- [ ] 05-01: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -87,6 +103,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 2. Schema Corrections | 0/TBD | Ready | - |
 | 3. Type Alignment | 0/TBD | Not started | - |
 | 4. Session Commands | 0/TBD | Not started | - |
+| 5. CLI Client Integration Tests | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-01-30*
