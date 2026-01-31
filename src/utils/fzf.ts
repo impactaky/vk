@@ -5,6 +5,7 @@
 import type {
   Project,
   Repo,
+  Session,
   TaskWithAttemptStatus,
   Workspace,
 } from "../api/types.ts";
@@ -175,5 +176,25 @@ export async function selectRepository(repos: Repo[]): Promise<string> {
 
   const items = repos.map(formatRepository);
   const selected = await runFzf(items, "Select repository:");
+  return extractId(selected);
+}
+
+/**
+ * Format session for fzf display
+ */
+export function formatSession(session: Session): string {
+  return `${session.id}\t${session.created_at}\t${session.workspace_id}`;
+}
+
+/**
+ * Select a session using fzf
+ */
+export async function selectSession(sessions: Session[]): Promise<string> {
+  if (sessions.length === 0) {
+    throw new Error("No sessions available.");
+  }
+
+  const items = sessions.map(formatSession);
+  const selected = await runFzf(items, "Select session:");
   return extractId(selected);
 }

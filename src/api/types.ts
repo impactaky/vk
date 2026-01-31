@@ -118,6 +118,14 @@ export type WorkspaceStatus =
   | "ExecutorComplete"
   | "ExecutorFailed";
 
+// Session type for session-based operations
+export interface Session {
+  id: string;
+  workspace_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // All supported coding agents in vibe-kanban
 export type BaseCodingAgent =
   | "CLAUDE_CODE"
@@ -219,9 +227,10 @@ export interface RebaseWorkspaceRequest {
 // PR creation returns just the URL string
 export type PRResult = string;
 
-// Follow-up request for sending messages to running workspaces
+// Follow-up request for sending messages to running sessions
 export interface FollowUpRequest {
-  message: string;
+  prompt: string;
+  executor_profile_id: ExecutorProfileID;
 }
 
 // Attach existing PR to a workspace

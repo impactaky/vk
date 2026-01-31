@@ -12,7 +12,7 @@ This milestone fixes the broken follow-up command and aligns the CLI with the cu
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Critical Fix** - Restore working follow-up command via Sessions API
+- [x] **Phase 1: Critical Fix** - Restore working follow-up command via Sessions API
 - [ ] **Phase 2: Schema Corrections** - Fix branch-status and pr-comments for multi-repo workspaces
 - [ ] **Phase 3: Type Alignment** - Update remaining types to match current API
 - [ ] **Phase 4: Session Commands** - Expose session management for power users
@@ -28,10 +28,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Follow-up automatically resolves the correct session for a workspace
   3. Follow-up request includes required fields (prompt, executor_profile_id)
   4. Session type exists in types.ts with correct fields
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: TBD
+- [x] 01-01-PLAN.md - Add Session type and API client methods
+- [x] 01-02-PLAN.md - Integrate session resolution into follow-up command
 
 ### Phase 2: Schema Corrections
 **Goal**: Multi-repo workspace commands work correctly
@@ -42,10 +43,10 @@ Plans:
   2. User can run `vk attempt pr-comments` with repo_id parameter
   3. User can specify `--repo` flag on multi-repo commands (branch-status, pr-comments, merge, push, rebase)
   4. RepoBranchStatus type exists for proper response typing
-**Plans**: 1 plan
+**Plans**: TBD
 
 Plans:
-- [ ] 02-01-PLAN.md - Add RepoBranchStatus type and fix multi-repo commands
+- [ ] 02-01: TBD
 
 ### Phase 3: Type Alignment
 **Goal**: All CLI types match current vibe-kanban API schema
@@ -82,8 +83,8 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Critical Fix | 0/TBD | Not started | - |
-| 2. Schema Corrections | 0/1 | Ready | - |
+| 1. Critical Fix | 2/2 | ✓ Complete | 2026-01-30 |
+| 2. Schema Corrections | 0/TBD | Ready | - |
 | 3. Type Alignment | 0/TBD | Not started | - |
 | 4. Session Commands | 0/TBD | Not started | - |
 

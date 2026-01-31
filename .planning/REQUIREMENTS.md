@@ -9,10 +9,10 @@ Requirements for API alignment milestone. Each maps to roadmap phases.
 
 ### Sessions API
 
-- [ ] **SESS-01**: Fix `attempt follow-up` to call `/api/sessions/{id}/follow-up` instead of broken endpoint
-- [ ] **SESS-02**: Add Session type definition to `types.ts`
-- [ ] **SESS-03**: Add Sessions API methods to client (list, get, create, follow-up)
-- [ ] **SESS-04**: Auto-resolve session from workspace ID for transparent follow-up UX
+- [x] **SESS-01**: Fix `attempt follow-up` to call `/api/sessions/{id}/follow-up` instead of broken endpoint
+- [x] **SESS-02**: Add Session type definition to `types.ts`
+- [x] **SESS-03**: Add Sessions API methods to client (list, get, create, follow-up)
+- [x] **SESS-04**: Auto-resolve session from workspace ID for transparent follow-up UX
 - [ ] **SESS-05**: Add `vk session list` command to view sessions for a workspace
 - [ ] **SESS-06**: Add `vk session show` command to view session details
 - [ ] **SESS-07**: Add `--session` flag to `attempt follow-up` for explicit targeting
@@ -26,7 +26,7 @@ Requirements for API alignment milestone. Each maps to roadmap phases.
 ### Type Alignment
 
 - [ ] **TYPE-01**: Add missing types: Session, ExecutionProcess, ExecutionProcessStatus, RepoBranchStatus
-- [ ] **TYPE-02**: Fix FollowUpRequest schema (`message` -> `prompt`, add required fields)
+- [x] **TYPE-02**: Fix FollowUpRequest schema (`message` -> `prompt`, add required fields)
 - [ ] **TYPE-03**: Fix WorkspaceRepo field (`branch` -> `target_branch`, remove `worktree_path`)
 - [ ] **TYPE-04**: Update CreateWorkspace to use `repos[]` array instead of `base_branch`
 - [ ] **TYPE-05**: Add missing fields to Repo type (`default_working_dir`)
@@ -70,10 +70,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SESS-01 | Phase 1 | Pending |
-| SESS-02 | Phase 1 | Pending |
-| SESS-03 | Phase 1 | Pending |
-| SESS-04 | Phase 1 | Pending |
+| SESS-01 | Phase 1 | Complete |
+| SESS-02 | Phase 1 | Complete |
+| SESS-03 | Phase 1 | Complete |
+| SESS-04 | Phase 1 | Complete |
 | SESS-05 | Phase 4 | Pending |
 | SESS-06 | Phase 4 | Pending |
 | SESS-07 | Phase 4 | Pending |
@@ -81,7 +81,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SCHM-02 | Phase 2 | Pending |
 | SCHM-03 | Phase 2 | Pending |
 | TYPE-01 | Phase 2 | Pending |
-| TYPE-02 | Phase 1 | Pending |
+| TYPE-02 | Phase 1 | Complete |
 | TYPE-03 | Phase 3 | Pending |
 | TYPE-04 | Phase 3 | Pending |
 | TYPE-05 | Phase 3 | Pending |
