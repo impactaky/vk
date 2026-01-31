@@ -8,14 +8,9 @@ A command-line interface for [vibe-kanban](https://github.com/BloopAI/vibe-kanba
 
 Developers can efficiently manage vibe-kanban workflows from the command line without switching to the web UI.
 
-## Current Milestone: v1.0 Align with vibe-kanban API
+## Current Milestone
 
-**Goal:** Update CLI to match the current vibe-kanban backend API, fixing broken commands and adding missing endpoints.
-
-**Target features:**
-- Fix `attempt follow-up` to use sessions API
-- Add session-related commands/functionality
-- Verify and fix any other API mismatches
+(None — ready for next milestone)
 
 ## Requirements
 
@@ -34,13 +29,17 @@ Developers can efficiently manage vibe-kanban workflows from the command line wi
 - ✓ Configuration management (api-url)
 - ✓ Shell completions (bash, zsh, fish)
 - ✓ Verbose logging mode
+- ✓ Sessions API integration (list, show, follow-up)
+- ✓ Session-based follow-up endpoint (`/api/sessions/{id}/follow-up`)
+- ✓ Multi-repo workspace support (`repos[]` array in createWorkspace)
+- ✓ CLI types aligned with vibe-kanban API schema
+- ✓ CLI client integration tests for API schema validation
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Sessions API integration (follow-up endpoint fix)
-- [ ] Verify all endpoints match current API
+(None — ready for next milestone)
 
 ### Out of Scope
 
@@ -57,9 +56,6 @@ Developers can efficiently manage vibe-kanban workflows from the command line wi
 - Cliffy for CLI framework
 - vibe-kanban backend API (Rust/Axum)
 - Optional fzf integration for interactive selection
-
-**Current issue:**
-The vibe-kanban API introduced a Sessions abstraction. Follow-up messages now go to `/api/sessions/{id}/follow-up` instead of the old `/api/task-attempts/{id}/follow-up`. The CLI needs to adapt to this change.
 
 **API structure:**
 - Workspaces contain Sessions
@@ -79,6 +75,10 @@ The vibe-kanban API introduced a Sessions abstraction. Follow-up messages now go
 | Use "attempt" as CLI term for "workspace" | User familiarity, matches mental model | ✓ Good |
 | Client-side filtering | Reduces API complexity, acceptable perf | ✓ Good |
 | Optional fzf dependency | Graceful degradation, power user feature | ✓ Good |
+| Use prompt field (not message) in FollowUpRequest | Match API schema | ✓ v1.0 |
+| CLAUDE_CODE as default executor for follow-up | Most common use case | ✓ v1.0 |
+| Single session auto-selects, multiple triggers fzf | Optimize common case | ✓ v1.0 |
+| Keep --message flag, map to prompt internally | Backward compatibility | ✓ v1.0 |
 
 ---
-*Last updated: 2026-01-30 after milestone v1.0 initialization*
+*Last updated: 2026-01-31 after v1.0 milestone completion*

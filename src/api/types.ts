@@ -47,7 +47,6 @@ export interface Task {
   description: string | null;
   status: TaskStatus;
   parent_workspace_id: string | null;
-  shared_task_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -103,11 +102,12 @@ export interface UpdateWorkspace {
 
 // Workspace-Repository relationship
 export interface WorkspaceRepo {
+  id: string;
   workspace_id: string;
   repo_id: string;
-  worktree_path: string | null;
-  branch: string;
+  target_branch: string;
   created_at: string;
+  updated_at: string;
 }
 
 export type WorkspaceStatus =
@@ -122,6 +122,32 @@ export type WorkspaceStatus =
 export interface Session {
   id: string;
   workspace_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Execution process types
+export type ExecutionProcessStatus =
+  | "running"
+  | "completed"
+  | "failed"
+  | "killed";
+
+export type ExecutionProcessRunReason =
+  | "setupscript"
+  | "cleanupscript"
+  | "codingagent"
+  | "devserver";
+
+export interface ExecutionProcess {
+  id: string;
+  session_id: string;
+  run_reason: ExecutionProcessRunReason;
+  status: ExecutionProcessStatus;
+  exit_code: number | null;
+  dropped: boolean;
+  started_at: string;
+  completed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -155,10 +181,16 @@ export interface ExecutorProfileID {
   variant: string | null;
 }
 
+// Input for creating workspace repos (multi-repo support)
+export interface WorkspaceRepoInput {
+  repo_id: string;
+  target_branch: string;
+}
+
 export interface CreateWorkspace {
   task_id: string;
   executor_profile_id: ExecutorProfileID;
-  base_branch: string;
+  repos: WorkspaceRepoInput[];
 }
 
 export interface RenameBranchRequest {
@@ -275,6 +307,7 @@ export interface Repo {
   parallel_setup_script: boolean;
   dev_server_script: string | null;
   default_target_branch: string | null;
+  default_working_dir: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -302,4 +335,5 @@ export interface GitBranch {
   name: string;
   is_current: boolean;
   is_remote: boolean;
+  last_commit_date: string;
 }

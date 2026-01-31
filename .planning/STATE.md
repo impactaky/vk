@@ -2,61 +2,52 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-01-30)
+See: .planning/PROJECT.md (updated 2026-01-31)
 
 **Core value:** Developers can efficiently manage vibe-kanban workflows from the command line
-**Current focus:** Phase 2 - Schema Corrections (multi-repo workspace commands)
+**Current focus:** Ready for next milestone
 
 ## Current Position
 
-Phase: 2 of 4 (Schema Corrections)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-01-30 — Phase 1 verified and complete
+Phase: N/A
+Plan: N/A
+Status: Between milestones
+Last activity: 2026-01-31 — Completed and archived v1.0 milestone
 
-Progress: [██░░░░░░░░] 25% (Phase 1 complete, 3 phases remain)
+Progress: Ready for next milestone
+
+## Completed Milestones
+
+| Version | Shipped | Phases | Requirements | Summary |
+|---------|---------|--------|--------------|---------|
+| v1.0 | 2026-01-31 | 4 | 21 | API alignment, sessions, integration tests |
 
 ## Performance Metrics
 
-**Velocity:**
-- Total plans completed: 2
-- Average duration: 1.5 min
-- Total execution time: 3 min
-
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 1. Critical Fix | 2/2 | 3 min | 1.5 min |
-
-**Recent Trend:**
-- Last 5 plans: 01-01 (1 min), 01-02 (2 min)
-- Trend: Steady
-
-*Updated after each plan completion*
+**v1.0 Milestone:**
+- Total plans completed: 5
+- Total execution time: ~3 min
+- Phases: 4
 
 ## Accumulated Context
 
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
+v1.0 decisions carried forward:
 
-- [Roadmap]: Sessions API required before type fixes (follow-up is P0 critical)
-- [Roadmap]: TYPE-01 and TYPE-02 moved to earlier phases where they're dependencies
-- [01-01]: Use prompt field (not message) in FollowUpRequest to match API schema
-- [01-01]: Keep existing followUp method for backward compatibility during transition
-- [01-02]: Use CLAUDE_CODE as default executor for follow-up when --executor not specified
-- [01-02]: Single session auto-selects, multiple sessions trigger fzf (no user prompt for common case)
-- [01-02]: Keep --message flag for backward compatibility, map to prompt field internally
+- Use prompt field (not message) in FollowUpRequest to match API schema
+- Use CLAUDE_CODE as default executor for follow-up when --executor not specified
+- Single session auto-selects, multiple sessions trigger fzf
+- Keep --message flag for backward compatibility, map to prompt field internally
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
-None yet.
+None.
 
 ### Quick Tasks Completed
 
@@ -66,10 +57,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-31T13:29:44Z
-Stopped at: Completed quick-001 (Update GSD Docs - Skills Migration)
+Last session: 2026-01-31
+Stopped at: Completed v1.0 milestone archival
 Resume file: None
 
 ---
 *State initialized: 2026-01-30*
-*Last updated: 2026-01-31T13:29:44Z*
+*Last updated: 2026-01-31 after v1.0 milestone completion*

@@ -150,7 +150,10 @@ attemptCommand
       required: true,
     },
   )
-  .option("--base-branch <branch:string>", "Base branch", { default: "main" })
+  .option(
+    "--target-branch <branch:string>",
+    "Target branch for workspace repos (default: repo's default or 'main')",
+  )
   .action(async (options) => {
     try {
       const client = await ApiClient.create();
@@ -158,10 +161,29 @@ attemptCommand
       // Parse executor string into profile ID
       const executorProfileId = parseExecutorString(options.executor);
 
+      // Get task to find project_id
+      const task = await client.getTask(options.task);
+
+      // Get project repos to build repos[] array
+      const projectRepos = await client.listProjectRepos(task.project_id);
+      if (projectRepos.length === 0) {
+        console.error(
+          "Error: Project has no repositories. Add a repository first.",
+        );
+        Deno.exit(1);
+      }
+
+      // Build repos array with target branches
+      const repos = projectRepos.map((repo) => ({
+        repo_id: repo.id,
+        target_branch: options.targetBranch || repo.default_target_branch ||
+          "main",
+      }));
+
       const createWorkspace: CreateWorkspace = {
         task_id: options.task,
         executor_profile_id: executorProfileId,
-        base_branch: options.baseBranch,
+        repos,
       };
 
       const workspace = await client.createWorkspace(createWorkspace);
@@ -304,11 +326,10 @@ attemptCommand
       }
 
       const table = new Table()
-        .header(["Repo ID", "Branch", "Worktree Path"])
+        .header(["Repo ID", "Target Branch"])
         .body(repos.map((r) => [
           r.repo_id,
-          r.branch,
-          r.worktree_path || "-",
+          r.target_branch,
         ]));
 
       table.render();
@@ -663,31 +684,40 @@ attemptCommand
     "--executor <executor:string>",
     "Override executor (format: NAME:VARIANT, e.g., CLAUDE_CODE:DEFAULT)",
   )
+  .option(
+    "--session <id:string>",
+    "Target a specific session ID (skips auto-detection)",
+  )
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
 
-      // Resolve workspace ID (from arg, auto-detect, or fzf)
-      const workspaceId = await getAttemptIdWithAutoDetect(
-        client,
-        id,
-        options.project,
-      );
+      let sessionId: string;
 
-      // Get sessions for the workspace
-      const sessions = await client.listSessions(workspaceId);
-      if (sessions.length === 0) {
-        throw new Error("No sessions found for this workspace");
+      if (options.session) {
+        // Use explicitly provided session ID
+        sessionId = options.session;
+      } else {
+        // Resolve workspace ID (from arg, auto-detect, or fzf)
+        const workspaceId = await getAttemptIdWithAutoDetect(
+          client,
+          id,
+          options.project,
+        );
+
+        // Get sessions for the workspace
+        const sessions = await client.listSessions(workspaceId);
+        if (sessions.length === 0) {
+          throw new Error("No sessions found for this workspace");
+        }
+
+        // Auto-select if single session, otherwise use fzf
+        sessionId = sessions.length === 1
+          ? sessions[0].id
+          : await selectSession(sessions);
       }
 
-      // Auto-select if single session, otherwise use fzf
-      const sessionId = sessions.length === 1
-        ? sessions[0].id
-        : await selectSession(sessions);
-
       // Determine executor: use provided --executor flag, or default to CLAUDE_CODE
-      // For Phase 1: default executor handling
-      // Future: extract executor from session's execution process
       let executorProfileId;
       if (options.executor) {
         executorProfileId = parseExecutorString(options.executor);

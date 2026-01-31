@@ -43,6 +43,7 @@ Deno.test("formatRepository: formats repository for fzf display", () => {
     parallel_setup_script: false,
     dev_server_script: null,
     default_target_branch: null,
+    default_working_dir: null,
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",
   };
@@ -63,6 +64,7 @@ Deno.test("formatRepository: handles empty display name", () => {
     parallel_setup_script: false,
     dev_server_script: null,
     default_target_branch: null,
+    default_working_dir: null,
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",
   };
