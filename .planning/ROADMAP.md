@@ -14,8 +14,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Critical Fix** - Restore working follow-up command via Sessions API
 - [x] **Phase 2: Schema & Type Alignment** - Fix types and commands for multi-repo workspaces
-- [ ] **Phase 3: Session Commands** - Expose session management for power users
-- [ ] **Phase 4: CLI Client Integration Tests** - Prevent API schema drift with automated tests
+- [x] **Phase 3: Session Commands** - Expose session management for power users
+- [x] **Phase 4: CLI Client Integration Tests** - Prevent API schema drift with automated tests
 
 ## Phase Details
 
@@ -61,10 +61,10 @@ Plans:
   1. User can run `vk session list` to see all sessions for a workspace
   2. User can run `vk session show` to view session details including conversation history
   3. User can specify `--session` flag on `attempt follow-up` to target specific session
-**Plans**: TBD
+**Plans**: 1 plan (direct execution)
 
 Plans:
-- [ ] 03-01: TBD
+- [x] 03-01: Direct implementation of session commands
 
 ### Phase 4: CLI Client Integration Tests
 **Goal**: Automated tests prevent API schema mismatches from shipping
@@ -76,10 +76,10 @@ Plans:
   3. Tests verify `followUp` uses session-based endpoint with correct payload
   4. Tests verify multi-repo commands handle array responses correctly
   5. Tests run against live API (like existing `api_integration_test.ts`)
-**Plans**: TBD
+**Plans**: 1 plan (direct execution)
 
 Plans:
-- [ ] 04-01: TBD
+- [x] 04-01: cli_client_integration_test.ts
 
 ## Progress
 
@@ -90,8 +90,8 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Critical Fix | 2/2 | ✓ Complete | 2026-01-30 |
 | 2. Schema & Type Alignment | 1/1 | ✓ Complete | 2026-01-31 |
-| 3. Session Commands | 0/TBD | Ready | - |
-| 4. CLI Client Integration Tests | 0/TBD | Not started | - |
+| 3. Session Commands | 1/1 | ✓ Complete | 2026-01-31 |
+| 4. CLI Client Integration Tests | 1/1 | ✓ Complete | 2026-01-31 |
 
 ---
 *Roadmap created: 2026-01-30*

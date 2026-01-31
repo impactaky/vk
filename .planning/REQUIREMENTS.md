@@ -13,9 +13,9 @@ Requirements for API alignment milestone. Each maps to roadmap phases.
 - [x] **SESS-02**: Add Session type definition to `types.ts`
 - [x] **SESS-03**: Add Sessions API methods to client (list, get, create, follow-up)
 - [x] **SESS-04**: Auto-resolve session from workspace ID for transparent follow-up UX
-- [ ] **SESS-05**: Add `vk session list` command to view sessions for a workspace
-- [ ] **SESS-06**: Add `vk session show` command to view session details
-- [ ] **SESS-07**: Add `--session` flag to `attempt follow-up` for explicit targeting
+- [x] **SESS-05**: Add `vk session list` command to view sessions for a workspace
+- [x] **SESS-06**: Add `vk session show` command to view session details
+- [x] **SESS-07**: Add `--session` flag to `attempt follow-up` for explicit targeting
 
 ### Schema Fixes
 
@@ -35,10 +35,10 @@ Requirements for API alignment milestone. Each maps to roadmap phases.
 
 ### CLI Client Integration Tests
 
-- [ ] **TEST-01**: Add integration tests for CLI client methods to verify API schema alignment
-- [ ] **TEST-02**: Test `createWorkspace` sends correct `repos[]` payload (not `base_branch`)
-- [ ] **TEST-03**: Test `followUp` sends correct session-based request
-- [ ] **TEST-04**: Test multi-repo commands (branch-status, pr-comments) handle array responses
+- [x] **TEST-01**: Add integration tests for CLI client methods to verify API schema alignment
+- [x] **TEST-02**: Test `createWorkspace` sends correct `repos[]` payload (not `base_branch`)
+- [x] **TEST-03**: Test `followUp` sends correct session-based request
+- [x] **TEST-04**: Test multi-repo commands (branch-status, pr-comments) handle array responses
 
 ## Future Requirements
 
@@ -81,9 +81,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SESS-02 | Phase 1 | Complete |
 | SESS-03 | Phase 1 | Complete |
 | SESS-04 | Phase 1 | Complete |
-| SESS-05 | Phase 3 | Pending |
-| SESS-06 | Phase 3 | Pending |
-| SESS-07 | Phase 3 | Pending |
+| SESS-05 | Phase 3 | Complete |
+| SESS-06 | Phase 3 | Complete |
+| SESS-07 | Phase 3 | Complete |
 | SCHM-01 | Phase 2 | Complete |
 | SCHM-02 | Phase 2 | Complete |
 | SCHM-03 | Phase 2 | Complete |
@@ -94,10 +94,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TYPE-05 | Phase 2 | Complete |
 | TYPE-06 | Phase 2 | Complete |
 | TYPE-07 | Phase 2 | Complete |
-| TEST-01 | Phase 4 | Pending |
-| TEST-02 | Phase 4 | Pending |
-| TEST-03 | Phase 4 | Pending |
-| TEST-04 | Phase 4 | Pending |
+| TEST-01 | Phase 4 | Complete |
+| TEST-02 | Phase 4 | Complete |
+| TEST-03 | Phase 4 | Complete |
+| TEST-04 | Phase 4 | Complete |
 
 **Coverage:**
 - v1.0 requirements: 21 total
