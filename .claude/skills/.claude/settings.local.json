@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Skill(skill-creator)",
-      "Bash(zsh -c \"python3 /home/impactaky/shelffiles/config/claude/plugins/cache/anthropic-agent-skills/document-skills/69c0b1a06741/skills/skill-creator/scripts/init_skill.py lint --path /mnt/ext1/vibe-kanban/vk/.claude/skills\")",
-      "Bash(zsh:*)"
-    ]
-  }
-}
