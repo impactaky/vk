@@ -10,6 +10,7 @@ import type {
   MergeWorkspaceRequest,
   PushWorkspaceRequest,
   RebaseWorkspaceRequest,
+  RepoBranchStatus,
   UpdateWorkspace,
 } from "../api/types.ts";
 import { applyFilters } from "../utils/filter.ts";
@@ -546,6 +547,10 @@ attemptCommand
     "--project <id:string>",
     "Project ID (for fzf selection, auto-detected from git if omitted)",
   )
+  .option(
+    "--repo <id:string>",
+    "Repository ID (auto-detected if workspace has only one repo)",
+  )
   .option("--json", "Output as JSON")
   .action(async (options, id) => {
     try {
@@ -555,16 +560,87 @@ attemptCommand
         id,
         options.project,
       );
-      const status = await client.getBranchStatus(workspaceId);
+      const statuses = await client.getBranchStatus(workspaceId);
 
       if (options.json) {
-        console.log(JSON.stringify(status, null, 2));
+        console.log(JSON.stringify(statuses, null, 2));
         return;
       }
 
-      console.log(`Ahead:         ${status.ahead}`);
-      console.log(`Behind:        ${status.behind}`);
-      console.log(`Has Conflicts: ${status.has_conflicts}`);
+      // If --repo flag provided, filter to single repo and show detailed view
+      if (options.repo) {
+        const filtered = statuses.find(
+          (s: RepoBranchStatus) => s.repo_id === options.repo,
+        );
+        if (!filtered) {
+          throw new Error(`No status found for repo ${options.repo}`);
+        }
+        console.log(
+          `Repo:                ${filtered.repo_name || filtered.repo_id}`,
+        );
+        console.log(`Target Branch:       ${filtered.target_branch_name}`);
+        console.log(`Ahead:               ${filtered.commits_ahead} commits`);
+        console.log(`Behind:              ${filtered.commits_behind} commits`);
+        console.log(
+          `Remote Ahead:        ${filtered.remote_commits_ahead} commits`,
+        );
+        console.log(
+          `Remote Behind:       ${filtered.remote_commits_behind} commits`,
+        );
+        console.log(`Uncommitted:         ${filtered.uncommitted_count} files`);
+        console.log(`Untracked:           ${filtered.untracked_count} files`);
+        console.log(
+          `Has Changes:         ${
+            filtered.has_uncommitted_changes ? "Yes" : "No"
+          }`,
+        );
+        console.log(
+          `Rebase In Progress:  ${
+            filtered.is_rebase_in_progress ? "Yes" : "No"
+          }`,
+        );
+        if (filtered.conflict_op) {
+          console.log(`Conflict Operation:  ${filtered.conflict_op}`);
+          console.log(
+            `Conflicted Files:    ${filtered.conflicted_files.length}`,
+          );
+        }
+        return;
+      }
+
+      // Display all repos in table format
+      if (statuses.length === 0) {
+        console.log("No repositories found.");
+        return;
+      }
+
+      const table = new Table()
+        .header([
+          "Repo",
+          "Target Branch",
+          "Ahead",
+          "Behind",
+          "Changes",
+          "Conflicts",
+        ])
+        .body(
+          statuses.map((s: RepoBranchStatus) => [
+            s.repo_name || s.repo_id,
+            s.target_branch_name,
+            s.commits_ahead.toString(),
+            s.commits_behind.toString(),
+            s.has_uncommitted_changes ? "Yes" : "No",
+            s.conflict_op ? s.conflicted_files.length.toString() : "-",
+          ]),
+        );
+
+      table.render();
+
+      if (statuses.length > 1) {
+        console.log(
+          `\nTip: Use --repo <id> to see detailed status for a specific repository`,
+        );
+      }
     } catch (error) {
       handleCliError(error);
       throw error;
@@ -759,6 +835,10 @@ attemptCommand
     "--project <id:string>",
     "Project ID (for fzf selection, auto-detected from git if omitted)",
   )
+  .option(
+    "--repo <id:string>",
+    "Repository ID (auto-detected if workspace has only one repo)",
+  )
   .option("--json", "Output as JSON")
   .action(async (options, id) => {
     try {
@@ -769,7 +849,14 @@ attemptCommand
         options.project,
       );
 
-      const comments = await client.getPRComments(workspaceId);
+      // Resolve repo_id (auto-detect for single-repo, require flag for multi-repo)
+      const repoId = await getRepoIdForWorkspace(
+        client,
+        workspaceId,
+        options.repo,
+      );
+
+      const comments = await client.getPRComments(workspaceId, repoId);
 
       if (options.json) {
         console.log(JSON.stringify(comments, null, 2));

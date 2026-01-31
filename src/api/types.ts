@@ -170,10 +170,38 @@ export interface CreatePRRequest {
   body?: string;
 }
 
+/** @deprecated Use RepoBranchStatus instead - API now returns array of repo statuses */
 export interface BranchStatus {
   ahead: number;
   behind: number;
   has_conflicts: boolean;
+}
+
+// Multi-repo branch status types
+export type ConflictOp = "rebase" | "merge" | "cherry_pick" | "revert";
+
+export interface Merge {
+  oid: string;
+  message: string;
+}
+
+export interface RepoBranchStatus {
+  repo_id: string;
+  repo_name: string;
+  commits_behind: number;
+  commits_ahead: number;
+  has_uncommitted_changes: boolean;
+  head_oid: string;
+  uncommitted_count: number;
+  untracked_count: number;
+  target_branch_name: string;
+  remote_commits_behind: number;
+  remote_commits_ahead: number;
+  merges: Merge[];
+  is_rebase_in_progress: boolean;
+  conflict_op: ConflictOp | null;
+  conflicted_files: string[];
+  is_target_remote: boolean;
 }
 
 export interface MergeResult {
