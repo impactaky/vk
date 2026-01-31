@@ -111,9 +111,6 @@ taskCommand
       if (task.parent_workspace_id) {
         console.log(`Parent Workspace ID: ${task.parent_workspace_id}`);
       }
-      if (task.shared_task_id) {
-        console.log(`Shared Task ID:      ${task.shared_task_id}`);
-      }
       console.log(`Created:             ${task.created_at}`);
       console.log(`Updated:             ${task.updated_at}`);
     } catch (error) {
@@ -138,9 +135,10 @@ taskCommand
     "--executor <executor:string>",
     "Executor profile ID in format <name>:<variant> (e.g., CLAUDE_CODE:DEFAULT). Required when --run is specified.",
   )
-  .option("--base-branch <branch:string>", "Base branch for workspace", {
-    default: "main",
-  })
+  .option(
+    "--target-branch <branch:string>",
+    "Target branch for workspace repos (default: repo's default or 'main')",
+  )
   .action(async (options) => {
     try {
       // Validate option combinations
@@ -195,10 +193,26 @@ taskCommand
       if (options.run && options.executor) {
         const executorProfileId = parseExecutorString(options.executor);
 
+        // Get project repos to build repos[] array
+        const projectRepos = await client.listProjectRepos(projectId);
+        if (projectRepos.length === 0) {
+          console.error(
+            "Error: Project has no repositories. Add a repository first.",
+          );
+          Deno.exit(1);
+        }
+
+        // Build repos array with target branches
+        const repos = projectRepos.map((repo) => ({
+          repo_id: repo.id,
+          target_branch:
+            options.targetBranch || repo.default_target_branch || "main",
+        }));
+
         const createWorkspace: CreateWorkspace = {
           task_id: task.id,
           executor_profile_id: executorProfileId,
-          base_branch: options.baseBranch,
+          repos,
         };
 
         const workspace = await client.createWorkspace(createWorkspace);

@@ -42,7 +42,6 @@ Deno.test("formatTask formats task correctly", () => {
     description: null,
     status: "inprogress",
     parent_workspace_id: null,
-    shared_task_id: null,
     has_in_progress_attempt: true,
     last_attempt_failed: false,
     executor: "CLAUDE_CODE",

@@ -150,7 +150,10 @@ attemptCommand
       required: true,
     },
   )
-  .option("--base-branch <branch:string>", "Base branch", { default: "main" })
+  .option(
+    "--target-branch <branch:string>",
+    "Target branch for workspace repos (default: repo's default or 'main')",
+  )
   .action(async (options) => {
     try {
       const client = await ApiClient.create();
@@ -158,10 +161,29 @@ attemptCommand
       // Parse executor string into profile ID
       const executorProfileId = parseExecutorString(options.executor);
 
+      // Get task to find project_id
+      const task = await client.getTask(options.task);
+
+      // Get project repos to build repos[] array
+      const projectRepos = await client.listProjectRepos(task.project_id);
+      if (projectRepos.length === 0) {
+        console.error(
+          "Error: Project has no repositories. Add a repository first.",
+        );
+        Deno.exit(1);
+      }
+
+      // Build repos array with target branches
+      const repos = projectRepos.map((repo) => ({
+        repo_id: repo.id,
+        target_branch:
+          options.targetBranch || repo.default_target_branch || "main",
+      }));
+
       const createWorkspace: CreateWorkspace = {
         task_id: options.task,
         executor_profile_id: executorProfileId,
-        base_branch: options.baseBranch,
+        repos,
       };
 
       const workspace = await client.createWorkspace(createWorkspace);
@@ -304,11 +326,10 @@ attemptCommand
       }
 
       const table = new Table()
-        .header(["Repo ID", "Branch", "Worktree Path"])
+        .header(["Repo ID", "Target Branch"])
         .body(repos.map((r) => [
           r.repo_id,
-          r.branch,
-          r.worktree_path || "-",
+          r.target_branch,
         ]));
 
       table.render();
