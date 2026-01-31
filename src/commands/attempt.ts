@@ -684,31 +684,40 @@ attemptCommand
     "--executor <executor:string>",
     "Override executor (format: NAME:VARIANT, e.g., CLAUDE_CODE:DEFAULT)",
   )
+  .option(
+    "--session <id:string>",
+    "Target a specific session ID (skips auto-detection)",
+  )
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
 
-      // Resolve workspace ID (from arg, auto-detect, or fzf)
-      const workspaceId = await getAttemptIdWithAutoDetect(
-        client,
-        id,
-        options.project,
-      );
+      let sessionId: string;
 
-      // Get sessions for the workspace
-      const sessions = await client.listSessions(workspaceId);
-      if (sessions.length === 0) {
-        throw new Error("No sessions found for this workspace");
+      if (options.session) {
+        // Use explicitly provided session ID
+        sessionId = options.session;
+      } else {
+        // Resolve workspace ID (from arg, auto-detect, or fzf)
+        const workspaceId = await getAttemptIdWithAutoDetect(
+          client,
+          id,
+          options.project,
+        );
+
+        // Get sessions for the workspace
+        const sessions = await client.listSessions(workspaceId);
+        if (sessions.length === 0) {
+          throw new Error("No sessions found for this workspace");
+        }
+
+        // Auto-select if single session, otherwise use fzf
+        sessionId = sessions.length === 1
+          ? sessions[0].id
+          : await selectSession(sessions);
       }
 
-      // Auto-select if single session, otherwise use fzf
-      const sessionId = sessions.length === 1
-        ? sessions[0].id
-        : await selectSession(sessions);
-
       // Determine executor: use provided --executor flag, or default to CLAUDE_CODE
-      // For Phase 1: default executor handling
-      // Future: extract executor from session's execution process
       let executorProfileId;
       if (options.executor) {
         executorProfileId = parseExecutorString(options.executor);
