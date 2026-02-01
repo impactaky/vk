@@ -20,7 +20,7 @@ services:
     image: denoland/deno:latest
     environment:
       - VK_API_URL=http://vibe-kanban:3000
-    command: deno test --allow-net --allow-read --allow-write --allow-env
+    command: deno test --allow-net --allow-read --allow-write --allow-env --allow-run
     working_dir: /app
     volumes:
       - .:/app
