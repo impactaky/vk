@@ -77,13 +77,14 @@ None.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 001 | Update GSD docs - skills migration | 2026-01-31 | 2a23e81 | [001-update-gsd-docs-skills-migration](./quick/001-update-gsd-docs-skills-migration/) |
+| 002 | Simplify README, add QuickStart section | 2026-02-01 | 14c9e6b | [002-simplify-readme-add-quickstart](./quick/002-simplify-readme-add-quickstart/) |
 
 ## Session Continuity
 
 Last session: 2026-02-01
-Stopped at: Completed 08-01-PLAN.md (v1.1 milestone complete)
+Stopped at: Completed quick task 002 (Simplify README, add QuickStart)
 Resume file: None
 
 ---
 *State initialized: 2026-01-30*
-*Last updated: 2026-02-01 — Completed Phase 8 (v1.1 milestone shipped)*
+*Last updated: 2026-02-01 — Completed quick task 002 (README QuickStart)*
