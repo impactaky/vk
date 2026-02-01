@@ -23,7 +23,7 @@ See archived planning documents for v1.0 details.
 **Milestone Goal:** Add convenience commands for working with attempts — open in browser, cd into workdir, and spin-off to new task.
 
 - [x] **Phase 5: Attempt Open** - Open workspace in browser
-- [ ] **Phase 6: Attempt CD** - Navigate to workspace workdir (local or SSH)
+- [x] **Phase 6: Attempt CD** - Navigate to workspace workdir (local or SSH)
 - [ ] **Phase 7: Attempt Spin-Off** - Create child task from workspace
 - [ ] **Phase 8: Integration Tests** - Validate spin-off and config commands
 
@@ -55,7 +55,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 06-01-PLAN.md — Add attempt cd subcommand with shell config
+- [x] 06-01-PLAN.md — Add attempt cd subcommand with shell config
 
 ### Phase 7: Attempt Spin-Off
 **Goal**: User can create a new task that inherits context from current workspace
@@ -92,10 +92,10 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 1-4 | v1.0 | - | Complete | 2026-01-31 |
 | 5. Attempt Open | v1.1 | 1/1 | Complete | 2026-02-01 |
-| 6. Attempt CD | v1.1 | 0/1 | Planned | - |
+| 6. Attempt CD | v1.1 | 1/1 | Complete | 2026-02-01 |
 | 7. Attempt Spin-Off | v1.1 | 0/? | Not started | - |
 | 8. Integration Tests | v1.1 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-02-01*
-*Last updated: 2026-02-01 — Phase 6 planned*
+*Last updated: 2026-02-01 — Phase 6 complete*

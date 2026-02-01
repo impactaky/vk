@@ -18,11 +18,11 @@
 
 ### CD — Workdir Navigation
 
-- [ ] **CD-01**: User can run `vk attempt cd [id]` to cd into workspace workdir
-- [ ] **CD-02**: If API URL is localhost, print cd command (can't change parent shell)
-- [ ] **CD-03**: If API URL is remote, execute `ssh <host> -t "cd <agent_working_dir> && <shell>"`
-- [ ] **CD-04**: Shell is configurable via `vk config set remote-shell <shell>` (default: `bash`)
-- [ ] **CD-05**: Supports auto-detect from current branch
+- [x] **CD-01**: User can run `vk attempt cd [id]` to cd into workspace workdir
+- [x] **CD-02**: If API URL is localhost, spawn local subshell in agent_working_dir
+- [x] **CD-03**: If API URL is remote, execute `ssh <host> -t "cd <agent_working_dir> && <shell>"`
+- [x] **CD-04**: Shell is configurable via `vk config set shell <shell>` (default: `bash`)
+- [x] **CD-05**: Supports auto-detect from current branch
 
 ### SPINOFF — Task Creation from Workspace
 
@@ -36,7 +36,7 @@
 ### TEST — Integration Tests
 
 - [ ] **TEST-01**: Integration test for `attempt spin-off` command (API call with parent_workspace_id)
-- [ ] **TEST-02**: Integration test for `config set/get remote-shell`
+- [ ] **TEST-02**: Integration test for `config set/get shell`
 
 ---
 
@@ -61,11 +61,11 @@ None — all requirements scoped to this milestone.
 | OPEN-01 | Phase 5 | Complete |
 | OPEN-02 | Phase 5 | Complete |
 | OPEN-03 | Phase 5 | Complete |
-| CD-01 | Phase 6 | Pending |
-| CD-02 | Phase 6 | Pending |
-| CD-03 | Phase 6 | Pending |
-| CD-04 | Phase 6 | Pending |
-| CD-05 | Phase 6 | Pending |
+| CD-01 | Phase 6 | Complete |
+| CD-02 | Phase 6 | Complete |
+| CD-03 | Phase 6 | Complete |
+| CD-04 | Phase 6 | Complete |
+| CD-05 | Phase 6 | Complete |
 | SPINOFF-01 | Phase 7 | Pending |
 | SPINOFF-02 | Phase 7 | Pending |
 | SPINOFF-03 | Phase 7 | Pending |
