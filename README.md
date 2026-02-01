@@ -193,22 +193,6 @@ vk task delete
 vk attempt pr
 ```
 
-## Development
-
-```bash
-# Format code
-deno task fmt
-
-# Lint
-deno task lint
-
-# Type check
-deno task check
-
-# Run tests
-deno task test
-```
-
 ## License
 
 MIT
