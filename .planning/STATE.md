@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 5 of 8 (Attempt Open)
-Plan: Ready to plan
-Status: Ready to plan
-Last activity: 2026-02-01 — Roadmap created for v1.1
+Plan: 1 of 2
+Status: In progress
+Last activity: 2026-02-01 — Completed 05-01-PLAN.md
 
-Progress: [####......] 50% (v1.0 complete, v1.1 starting)
+Progress: [#####.....] 54% (5 of 9 plans complete)
 
 ## Completed Milestones
 
@@ -32,6 +32,8 @@ Progress: [####......] 50% (v1.0 complete, v1.1 starting)
 **v1.1 Milestone:**
 - Phases planned: 4 (Phases 5-8)
 - Requirements: 16
+- Plans completed: 1 of 4
+- Total execution time: ~2 min
 
 ## Accumulated Context
 
@@ -44,6 +46,13 @@ v1.0 decisions carried forward:
 - Use CLAUDE_CODE as default executor for follow-up when --executor not specified
 - Single session auto-selects, multiple sessions trigger fzf
 - Keep --message flag for backward compatibility, map to prompt field internally
+
+v1.1 decisions (Phase 5):
+
+- Silent on success for browser automation commands (Unix philosophy)
+- Print URL only on browser launch failure (fallback for copy/paste)
+- No fzf fallback for workspace resolution in open commands
+- URL format: `{API_URL}/workspaces/{workspace_id}` for workspace browser access
 
 ### Pending Todos
 
@@ -61,10 +70,10 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-01
-Stopped at: Roadmap created for v1.1 milestone
+Last session: 2026-02-01T06:25:59Z
+Stopped at: Completed 05-01-PLAN.md (attempt open command)
 Resume file: None
 
 ---
 *State initialized: 2026-01-30*
-*Last updated: 2026-02-01 — v1.1 roadmap created*
+*Last updated: 2026-02-01 — Completed 05-01-PLAN.md*
