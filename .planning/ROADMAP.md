@@ -37,10 +37,10 @@ See archived planning documents for v1.0 details.
   1. User can run `vk attempt open <id>` and browser opens to workspace URL
   2. User can run `vk attempt open` from a workspace branch and browser opens automatically
   3. URL correctly points to `<API_URL>/workspaces/<workspace_id>`
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 05-01: TBD
+- [ ] 05-01-PLAN.md — Add attempt open subcommand
 
 ### Phase 6: Attempt CD
 **Goal**: User can navigate directly into a workspace's working directory
@@ -91,7 +91,7 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1-4 | v1.0 | - | Complete | 2026-01-31 |
-| 5. Attempt Open | v1.1 | 0/? | Not started | - |
+| 5. Attempt Open | v1.1 | 0/1 | Planned | - |
 | 6. Attempt CD | v1.1 | 0/? | Not started | - |
 | 7. Attempt Spin-Off | v1.1 | 0/? | Not started | - |
 | 8. Integration Tests | v1.1 | 0/? | Not started | - |
