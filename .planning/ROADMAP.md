@@ -93,7 +93,7 @@ Plans:
 | 1-4 | v1.0 | - | Complete | 2026-01-31 |
 | 5. Attempt Open | v1.1 | 1/1 | Complete | 2026-02-01 |
 | 6. Attempt CD | v1.1 | 1/1 | Complete | 2026-02-01 |
-| 7. Attempt Spin-Off | v1.1 | 0/? | Not started | - |
+| 7. Attempt Spin-Off | v1.1 | 0/1 | Planned | - |
 | 8. Integration Tests | v1.1 | 0/? | Not started | - |
 
 ---
