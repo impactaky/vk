@@ -12,9 +12,9 @@
 
 ### OPEN — Browser Integration
 
-- [ ] **OPEN-01**: User can run `vk attempt open [id]` to open workspace in browser
-- [ ] **OPEN-02**: URL format is `<API_URL>/workspaces/<workspace_id>`
-- [ ] **OPEN-03**: Supports auto-detect from current branch (like other attempt commands)
+- [x] **OPEN-01**: User can run `vk attempt open [id]` to open workspace in browser
+- [x] **OPEN-02**: URL format is `<API_URL>/workspaces/<workspace_id>`
+- [x] **OPEN-03**: Supports auto-detect from current branch (like other attempt commands)
 
 ### CD — Workdir Navigation
 
@@ -58,9 +58,9 @@ None — all requirements scoped to this milestone.
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| OPEN-01 | Phase 5 | Pending |
-| OPEN-02 | Phase 5 | Pending |
-| OPEN-03 | Phase 5 | Pending |
+| OPEN-01 | Phase 5 | Complete |
+| OPEN-02 | Phase 5 | Complete |
+| OPEN-03 | Phase 5 | Complete |
 | CD-01 | Phase 6 | Pending |
 | CD-02 | Phase 6 | Pending |
 | CD-03 | Phase 6 | Pending |
