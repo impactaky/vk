@@ -1,4 +1,5 @@
 {
   "commit_docs": true,
-  "model_profile": "balanced"
+  "model_profile": "balanced",
+  "mode": "yolo"
 }
