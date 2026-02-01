@@ -3,7 +3,7 @@
 ## Milestones
 
 - [x] **v1.0 MVP** - Phases 1-4 (shipped 2026-01-31)
-- [ ] **v1.1 Attempt Workflow Enhancements** - Phases 5-8 (in progress)
+- [x] **v1.1 Attempt Workflow Enhancements** - Phases 5-8 (shipped 2026-02-01)
 
 ## Phases
 
@@ -25,7 +25,7 @@ See archived planning documents for v1.0 details.
 - [x] **Phase 5: Attempt Open** - Open workspace in browser
 - [x] **Phase 6: Attempt CD** - Navigate to workspace workdir (local or SSH)
 - [x] **Phase 7: Attempt Spin-Off** - Create child task from workspace
-- [ ] **Phase 8: Integration Tests** - Validate spin-off and config commands
+- [x] **Phase 8: Integration Tests** - Validate spin-off and config commands
 
 ## Phase Details
 
@@ -82,7 +82,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 08-01-PLAN.md — Add CLI integration tests for spin-off and config commands
+- [x] 08-01-PLAN.md — Add CLI integration tests for spin-off and config commands
 
 ## Progress
 
@@ -94,8 +94,8 @@ Plans:
 | 5. Attempt Open | v1.1 | 1/1 | Complete | 2026-02-01 |
 | 6. Attempt CD | v1.1 | 1/1 | Complete | 2026-02-01 |
 | 7. Attempt Spin-Off | v1.1 | 1/1 | Complete | 2026-02-01 |
-| 8. Integration Tests | v1.1 | 0/1 | Not started | - |
+| 8. Integration Tests | v1.1 | 1/1 | Complete | 2026-02-01 |
 
 ---
 *Roadmap created: 2026-02-01*
-*Last updated: 2026-02-01 — Phase 8 planned*
+*Last updated: 2026-02-01 — Phase 8 complete, v1.1 milestone shipped*

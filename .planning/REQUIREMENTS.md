@@ -35,8 +35,8 @@
 
 ### TEST — Integration Tests
 
-- [ ] **TEST-01**: Integration test for `attempt spin-off` command (API call with parent_workspace_id)
-- [ ] **TEST-02**: Integration test for `config set/get shell`
+- [x] **TEST-01**: Integration test for `attempt spin-off` command (API call with parent_workspace_id)
+- [x] **TEST-02**: Integration test for `config set/get shell`
 
 ---
 
@@ -72,8 +72,8 @@ None — all requirements scoped to this milestone.
 | SPINOFF-04 | Phase 7 | Complete |
 | SPINOFF-05 | Phase 7 | Complete |
 | SPINOFF-06 | Phase 7 | Complete |
-| TEST-01 | Phase 8 | Pending |
-| TEST-02 | Phase 8 | Pending |
+| TEST-01 | Phase 8 | Complete |
+| TEST-02 | Phase 8 | Complete |
 
 ---
 *Created: 2026-02-01*
