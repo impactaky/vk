@@ -930,7 +930,7 @@ attemptCommand
     "--project <id:string>",
     "Project ID (for fzf selection, auto-detected from git if omitted)",
   )
-  .action(async (options, id) => {
+  .action(async (_options, id) => {
     try {
       const client = await ApiClient.create();
 
@@ -972,7 +972,7 @@ attemptCommand
     "--project <id:string>",
     "Project ID (for fzf selection, auto-detected from git if omitted)",
   )
-  .action(async (options, id) => {
+  .action(async (_options, id) => {
     try {
       const client = await ApiClient.create();
 
