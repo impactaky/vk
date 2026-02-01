@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 8 of 8 (Integration Tests)
-Plan: Context gathered, ready to research/plan
-Status: CONTEXT.md created with test scope decisions
-Last activity: 2026-02-01 — Phase 8 context discussion complete
+Plan: 1 of 1 (CLI Commands Integration Tests)
+Status: Phase complete - all v1.1 features tested
+Last activity: 2026-02-01 — Completed 08-01-PLAN.md
 
-Progress: [########..] 85% (Phase 7 complete, Phase 8 remaining)
+Progress: [##########] 100% (All phases complete)
 
 ## Completed Milestones
 
@@ -32,9 +32,9 @@ Progress: [########..] 85% (Phase 7 complete, Phase 8 remaining)
 **v1.1 Milestone:**
 - Phases planned: 4 (Phases 5-8)
 - Requirements: 16
-- Phases complete: 3 of 4 (Phases 5-7)
-- Plans completed: 3
-- Total execution time: ~6 min
+- Phases complete: 4 of 4 (All complete)
+- Plans completed: 4
+- Total execution time: ~8 min
 
 ## Accumulated Context
 
@@ -48,7 +48,7 @@ v1.0 decisions carried forward:
 - Single session auto-selects, multiple sessions trigger fzf
 - Keep --message flag for backward compatibility, map to prompt field internally
 
-v1.1 decisions (Phases 5-7):
+v1.1 decisions (Phases 5-8):
 
 - Silent on success for browser automation commands (Unix philosophy)
 - Print URL only on browser launch failure (fallback for copy/paste)
@@ -61,6 +61,8 @@ v1.1 decisions (Phases 5-7):
 - Title defaults to first line of message when --title not provided (spin-off command)
 - Minimal output for spin-off command (task ID and title only)
 - --message flag maps to description field in CreateTask interface
+- Test spin-off via subprocess, verify parent_workspace_id via API (TEST-01)
+- Use isolated HOME directory for config tests to prevent pollution (TEST-02)
 
 ### Pending Todos
 
@@ -79,9 +81,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-01
-Stopped at: Phase 8 context complete, ready for research/plan
+Stopped at: Completed 08-01-PLAN.md (v1.1 milestone complete)
 Resume file: None
 
 ---
 *State initialized: 2026-01-30*
-*Last updated: 2026-02-01 — Phase 8 context discussion complete*
+*Last updated: 2026-02-01 — Completed Phase 8 (v1.1 milestone shipped)*
