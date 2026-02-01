@@ -23,7 +23,8 @@ import {
 import { selectSession } from "../utils/fzf.ts";
 import { parseExecutorString } from "../utils/executor-parser.ts";
 import { handleCliError } from "../utils/error-handler.ts";
-import { getApiUrl } from "../api/config.ts";
+import { getApiUrl, loadConfig } from "../api/config.ts";
+import { isLocalhost } from "../utils/localhost.ts";
 
 export const attemptCommand = new Command()
   .description("Manage workspaces (task attempts)")
@@ -954,6 +955,93 @@ attemptCommand
       } catch {
         // Print URL as fallback if browser launch fails
         console.log(`Could not open browser. Visit: ${url}`);
+      }
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+// CD into workspace directory
+attemptCommand
+  .command("cd")
+  .description("Navigate into a workspace's working directory")
+  .arguments("[id:string]")
+  .option(
+    "--project <id:string>",
+    "Project ID (for fzf selection, auto-detected from git if omitted)",
+  )
+  .action(async (options, id) => {
+    try {
+      const client = await ApiClient.create();
+
+      // Resolve workspace ID (explicit > branch > error - NO fzf fallback, like open command)
+      let workspaceId: string;
+      if (id) {
+        workspaceId = id;
+      } else {
+        const workspace = await resolveWorkspaceFromBranch(client);
+        if (!workspace) {
+          throw new Error("Not in a workspace branch. Provide workspace ID.");
+        }
+        workspaceId = workspace.id;
+      }
+
+      // Get workspace details for agent_working_dir and branch
+      const workspace = await client.getWorkspace(workspaceId);
+
+      if (!workspace.agent_working_dir) {
+        throw new Error("Workspace has no working directory configured.");
+      }
+
+      // Load config for shell preference and API URL
+      const config = await loadConfig();
+      const shell = config.shell || Deno.env.get("SHELL") || "bash";
+
+      // Check if API is local or remote
+      if (isLocalhost(config.apiUrl)) {
+        // Local: spawn subshell in workspace directory
+        console.log(`Entering workspace: ${workspace.branch}`);
+
+        const command = new Deno.Command(shell, {
+          cwd: workspace.agent_working_dir,
+          // stdio defaults to "inherit" for spawn() - interactive terminal
+        });
+
+        const process = command.spawn();
+        const status = await process.status;
+
+        console.log("Exited workspace shell");
+
+        if (!status.success) {
+          throw new Error(`Shell exited with code ${status.code}`);
+        }
+      } else {
+        // Remote: SSH into host with cd to workspace directory
+        // Extract host from API URL
+        const apiUrl = new URL(config.apiUrl);
+        const host = apiUrl.hostname;
+
+        console.log(`Entering workspace: ${workspace.branch}`);
+
+        // Use exec to replace ssh process with shell for clean exit
+        const command = new Deno.Command("ssh", {
+          args: [
+            "-t",
+            host,
+            `cd "${workspace.agent_working_dir}" && exec ${shell}`,
+          ],
+          // stdio inherited by default for spawn()
+        });
+
+        const process = command.spawn();
+        const status = await process.status;
+
+        console.log("Exited workspace shell");
+
+        if (!status.success) {
+          throw new Error(`SSH session exited with code ${status.code}`);
+        }
       }
     } catch (error) {
       handleCliError(error);
