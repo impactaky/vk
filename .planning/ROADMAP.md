@@ -24,7 +24,7 @@ See archived planning documents for v1.0 details.
 
 - [x] **Phase 5: Attempt Open** - Open workspace in browser
 - [x] **Phase 6: Attempt CD** - Navigate to workspace workdir (local or SSH)
-- [ ] **Phase 7: Attempt Spin-Off** - Create child task from workspace
+- [x] **Phase 7: Attempt Spin-Off** - Create child task from workspace
 - [ ] **Phase 8: Integration Tests** - Validate spin-off and config commands
 
 ## Phase Details
@@ -70,7 +70,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 07-01-PLAN.md — Implement spin-off subcommand with parent workspace linking
+- [x] 07-01-PLAN.md — Implement spin-off subcommand with parent workspace linking
 
 ### Phase 8: Integration Tests
 **Goal**: Validate spin-off command and config commands work correctly with API
@@ -93,9 +93,9 @@ Plans:
 | 1-4 | v1.0 | - | Complete | 2026-01-31 |
 | 5. Attempt Open | v1.1 | 1/1 | Complete | 2026-02-01 |
 | 6. Attempt CD | v1.1 | 1/1 | Complete | 2026-02-01 |
-| 7. Attempt Spin-Off | v1.1 | 0/1 | Planned | - |
+| 7. Attempt Spin-Off | v1.1 | 1/1 | Complete | 2026-02-01 |
 | 8. Integration Tests | v1.1 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-02-01*
-*Last updated: 2026-02-01 — Phase 6 complete*
+*Last updated: 2026-02-01 — Phase 7 complete*

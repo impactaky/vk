@@ -26,12 +26,12 @@
 
 ### SPINOFF — Task Creation from Workspace
 
-- [ ] **SPINOFF-01**: User can run `vk attempt spin-off [id]` to create a new task from workspace
-- [ ] **SPINOFF-02**: Prompts for task title (required) if not provided via flag
-- [ ] **SPINOFF-03**: Accepts `--title` and `--description` flags
-- [ ] **SPINOFF-04**: Creates task with `parent_workspace_id` set to current workspace
-- [ ] **SPINOFF-05**: Displays created task ID and confirms parent relationship
-- [ ] **SPINOFF-06**: Supports auto-detect from current branch
+- [x] **SPINOFF-01**: User can run `vk attempt spin-off [id]` to create a new task from workspace
+- [x] **SPINOFF-02**: Prompts for message if not provided via flag; title defaults to first line of message
+- [x] **SPINOFF-03**: Accepts `--title`, `--message`, and `--from` flags
+- [x] **SPINOFF-04**: Creates task with `parent_workspace_id` set to current workspace
+- [x] **SPINOFF-05**: Displays created task ID and title (minimal output per design decision)
+- [x] **SPINOFF-06**: Supports auto-detect from current branch
 
 ### TEST — Integration Tests
 
@@ -66,12 +66,12 @@ None — all requirements scoped to this milestone.
 | CD-03 | Phase 6 | Complete |
 | CD-04 | Phase 6 | Complete |
 | CD-05 | Phase 6 | Complete |
-| SPINOFF-01 | Phase 7 | Pending |
-| SPINOFF-02 | Phase 7 | Pending |
-| SPINOFF-03 | Phase 7 | Pending |
-| SPINOFF-04 | Phase 7 | Pending |
-| SPINOFF-05 | Phase 7 | Pending |
-| SPINOFF-06 | Phase 7 | Pending |
+| SPINOFF-01 | Phase 7 | Complete |
+| SPINOFF-02 | Phase 7 | Complete |
+| SPINOFF-03 | Phase 7 | Complete |
+| SPINOFF-04 | Phase 7 | Complete |
+| SPINOFF-05 | Phase 7 | Complete |
+| SPINOFF-06 | Phase 7 | Complete |
 | TEST-01 | Phase 8 | Pending |
 | TEST-02 | Phase 8 | Pending |
 
