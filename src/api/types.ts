@@ -68,6 +68,7 @@ export interface CreateTask {
   project_id: string;
   title: string;
   description?: string;
+  parent_workspace_id?: string | null;
   image_ids?: string[] | null;
 }
 

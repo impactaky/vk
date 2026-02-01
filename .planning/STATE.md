@@ -2,19 +2,19 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-01-31)
+See: .planning/PROJECT.md (updated 2026-02-01)
 
 **Core value:** Developers can efficiently manage vibe-kanban workflows from the command line
-**Current focus:** Ready for next milestone
+**Current focus:** Phase 8 - Integration Tests
 
 ## Current Position
 
-Phase: N/A
-Plan: N/A
-Status: Between milestones
-Last activity: 2026-01-31 — Completed and archived v1.0 milestone
+Phase: 8 of 8 (Integration Tests)
+Plan: 1 of 1 (CLI Commands Integration Tests)
+Status: Phase complete - all v1.1 features tested
+Last activity: 2026-02-01 — Completed 08-01-PLAN.md
 
-Progress: Ready for next milestone
+Progress: [##########] 100% (All phases complete)
 
 ## Completed Milestones
 
@@ -29,6 +29,13 @@ Progress: Ready for next milestone
 - Total execution time: ~3 min
 - Phases: 4
 
+**v1.1 Milestone:**
+- Phases planned: 4 (Phases 5-8)
+- Requirements: 16
+- Phases complete: 4 of 4 (All complete)
+- Plans completed: 4
+- Total execution time: ~8 min
+
 ## Accumulated Context
 
 ### Decisions
@@ -40,6 +47,22 @@ v1.0 decisions carried forward:
 - Use CLAUDE_CODE as default executor for follow-up when --executor not specified
 - Single session auto-selects, multiple sessions trigger fzf
 - Keep --message flag for backward compatibility, map to prompt field internally
+
+v1.1 decisions (Phases 5-8):
+
+- Silent on success for browser automation commands (Unix philosophy)
+- Print URL only on browser launch failure (fallback for copy/paste)
+- No fzf fallback for workspace resolution in open commands
+- URL format: `{API_URL}/workspaces/{workspace_id}` for workspace browser access
+- Use shell field in Config interface for user-configurable shell preference
+- Default to bash when shell not configured or SHELL env var not set
+- Spawn local subshell for localhost API, SSH session for remote API
+- Use exec in SSH command for clean shell exit
+- Title defaults to first line of message when --title not provided (spin-off command)
+- Minimal output for spin-off command (task ID and title only)
+- --message flag maps to description field in CreateTask interface
+- Test spin-off via subprocess, verify parent_workspace_id via API (TEST-01)
+- Use isolated HOME directory for config tests to prevent pollution (TEST-02)
 
 ### Pending Todos
 
@@ -57,10 +80,10 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-31
-Stopped at: Completed v1.0 milestone archival
+Last session: 2026-02-01
+Stopped at: Completed 08-01-PLAN.md (v1.1 milestone complete)
 Resume file: None
 
 ---
 *State initialized: 2026-01-30*
-*Last updated: 2026-01-31 after v1.0 milestone completion*
+*Last updated: 2026-02-01 — Completed Phase 8 (v1.1 milestone shipped)*

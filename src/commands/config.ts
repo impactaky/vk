@@ -14,12 +14,13 @@ configCommand
   .action(async () => {
     const config = await loadConfig();
     console.log(`API URL: ${config.apiUrl}`);
+    console.log(`Shell: ${config.shell || "(default: bash)"}`);
   });
 
 // Set config value
 configCommand
   .command("set")
-  .description("Set a configuration value. Available keys: api-url")
+  .description("Set a configuration value. Available keys: api-url, shell")
   .arguments("<key:string> <value:string>")
   .action(async (_options, key, value) => {
     const config = await loadConfig();
@@ -28,9 +29,12 @@ configCommand
       case "api-url":
         config.apiUrl = value;
         break;
+      case "shell":
+        config.shell = value;
+        break;
       default:
         console.error(`Unknown configuration key: ${key}`);
-        console.log("Available keys: api-url");
+        console.log("Available keys: api-url, shell");
         Deno.exit(1);
     }
 

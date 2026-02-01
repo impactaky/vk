@@ -2,6 +2,7 @@ import { join } from "@std/path";
 
 export interface Config {
   apiUrl: string;
+  shell?: string;
 }
 
 const CONFIG_FILE = "vk-config.json";
