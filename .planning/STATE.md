@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 6 of 8 (Attempt CD)
-Plan: Ready to plan
-Status: Ready to plan
-Last activity: 2026-02-01 — Phase 5 complete
+Plan: 1 of 1 complete
+Status: Phase 6 complete
+Last activity: 2026-02-01 — Completed 06-01-PLAN.md
 
-Progress: [#####.....] 56% (Phase 5 complete, Phase 6 ready)
+Progress: [######....] 67% (Phase 6 complete, Phase 7 ready)
 
 ## Completed Milestones
 
@@ -32,9 +32,9 @@ Progress: [#####.....] 56% (Phase 5 complete, Phase 6 ready)
 **v1.1 Milestone:**
 - Phases planned: 4 (Phases 5-8)
 - Requirements: 16
-- Phases complete: 1 of 4 (Phase 5)
-- Plans completed: 1
-- Total execution time: ~2 min
+- Phases complete: 2 of 4 (Phases 5-6)
+- Plans completed: 2
+- Total execution time: ~4 min
 
 ## Accumulated Context
 
@@ -48,12 +48,16 @@ v1.0 decisions carried forward:
 - Single session auto-selects, multiple sessions trigger fzf
 - Keep --message flag for backward compatibility, map to prompt field internally
 
-v1.1 decisions (Phase 5):
+v1.1 decisions (Phases 5-6):
 
 - Silent on success for browser automation commands (Unix philosophy)
 - Print URL only on browser launch failure (fallback for copy/paste)
 - No fzf fallback for workspace resolution in open commands
 - URL format: `{API_URL}/workspaces/{workspace_id}` for workspace browser access
+- Use shell field in Config interface for user-configurable shell preference
+- Default to bash when shell not configured or SHELL env var not set
+- Spawn local subshell for localhost API, SSH session for remote API
+- Use exec in SSH command for clean shell exit
 
 ### Pending Todos
 
@@ -72,9 +76,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-01
-Stopped at: Phase 5 complete, ready for Phase 6
+Stopped at: Completed 06-01-PLAN.md
 Resume file: None
 
 ---
 *State initialized: 2026-01-30*
-*Last updated: 2026-02-01 — Phase 5 complete*
+*Last updated: 2026-02-01 — Phase 6 complete*
