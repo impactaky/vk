@@ -67,10 +67,10 @@ Plans:
   3. Created task has parent_workspace_id linking to source workspace
   4. Command displays created task ID and confirms parent relationship
   5. User can run `vk attempt spin-off` from workspace branch for auto-detection
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 07-01: TBD
+- [ ] 07-01-PLAN.md — Implement spin-off subcommand with parent workspace linking
 
 ### Phase 8: Integration Tests
 **Goal**: Validate spin-off command and config commands work correctly with API
