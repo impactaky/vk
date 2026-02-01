@@ -1,6 +1,7 @@
 import { Command } from "@cliffy/command";
 import { Confirm } from "@cliffy/prompt";
 import { Table } from "@cliffy/table";
+import { open } from "@opensrc/deno-open";
 import { ApiClient } from "../api/client.ts";
 import type {
   AttachPRRequest,
@@ -17,10 +18,12 @@ import { applyFilters } from "../utils/filter.ts";
 import {
   getAttemptIdWithAutoDetect,
   getTaskIdWithAutoDetect,
+  resolveWorkspaceFromBranch,
 } from "../utils/attempt-resolver.ts";
 import { selectSession } from "../utils/fzf.ts";
 import { parseExecutorString } from "../utils/executor-parser.ts";
 import { handleCliError } from "../utils/error-handler.ts";
+import { getApiUrl } from "../api/config.ts";
 
 export const attemptCommand = new Command()
   .description("Manage workspaces (task attempts)")
@@ -909,6 +912,48 @@ attemptCommand
           );
         }
         console.log(`\n${comment.body}\n`);
+      }
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+// Open workspace in browser
+attemptCommand
+  .command("open")
+  .description("Open a workspace in the browser")
+  .arguments("[id:string]")
+  .option(
+    "--project <id:string>",
+    "Project ID (for fzf selection, auto-detected from git if omitted)",
+  )
+  .action(async (options, id) => {
+    try {
+      const client = await ApiClient.create();
+
+      // Resolve workspace ID (explicit > branch > error - NO fzf fallback)
+      let workspaceId: string;
+      if (id) {
+        workspaceId = id;
+      } else {
+        const workspace = await resolveWorkspaceFromBranch(client);
+        if (!workspace) {
+          throw new Error("Not in a workspace branch. Provide workspace ID.");
+        }
+        workspaceId = workspace.id;
+      }
+
+      // Construct URL
+      const baseUrl = await getApiUrl();
+      const url = `${baseUrl}/workspaces/${workspaceId}`;
+
+      // Open in browser (fire-and-forget, silent on success)
+      try {
+        await open(url);
+      } catch {
+        // Print URL as fallback if browser launch fails
+        console.log(`Could not open browser. Visit: ${url}`);
       }
     } catch (error) {
       handleCliError(error);
