@@ -1,11 +1,12 @@
 import { Command } from "@cliffy/command";
-import { Confirm } from "@cliffy/prompt";
+import { Confirm, Input } from "@cliffy/prompt";
 import { Table } from "@cliffy/table";
 import { open } from "@opensrc/deno-open";
 import { ApiClient } from "../api/client.ts";
 import type {
   AttachPRRequest,
   CreatePRRequest,
+  CreateTask,
   CreateWorkspace,
   FollowUpRequest,
   MergeWorkspaceRequest,
@@ -1043,6 +1044,78 @@ attemptCommand
           throw new Error(`SSH session exited with code ${status.code}`);
         }
       }
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+// Spin-off command - create child task from current workspace
+attemptCommand
+  .command("spin-off")
+  .description("Create a new task from current workspace")
+  .arguments("[id:string]")
+  .option(
+    "--project <id:string>",
+    "Project ID (for fzf selection, auto-detected from git if omitted)",
+  )
+  .option("--title <title:string>", "Task title")
+  .option("--message <message:string>", "Initial message for the new task")
+  .option("--from <file:file>", "Load message from file")
+  .action(async (options, id) => {
+    try {
+      const client = await ApiClient.create();
+
+      // Resolve workspace ID (explicit > branch > error - NO fzf fallback, like open/cd)
+      let workspaceId: string;
+      if (id) {
+        workspaceId = id;
+      } else {
+        const workspace = await resolveWorkspaceFromBranch(client);
+        if (!workspace) {
+          throw new Error("Not in a workspace branch. Provide workspace ID.");
+        }
+        workspaceId = workspace.id;
+      }
+
+      // Get workspace and task for project_id
+      const workspace = await client.getWorkspace(workspaceId);
+      const parentTask = await client.getTask(workspace.task_id);
+
+      // Handle input (title and message)
+      let title = options.title;
+      let message = options.message;
+
+      if (options.from) {
+        if (options.title || options.message) {
+          console.error("Error: Cannot use --from with --title or --message");
+          Deno.exit(1);
+        }
+        message = await Deno.readTextFile(options.from);
+        if (!title) {
+          title = message.split("\n")[0].trim();
+        }
+      } else {
+        if (!message) {
+          message = await Input.prompt("Message for new agent:");
+        }
+        if (!title) {
+          title = message.split("\n")[0].trim();
+        }
+      }
+
+      // Create task with parent_workspace_id
+      const createTask: CreateTask = {
+        project_id: parentTask.project_id,
+        title,
+        description: message,
+        parent_workspace_id: workspaceId,
+      };
+
+      const task = await client.createTask(createTask);
+
+      // Simple output (per CONTEXT.md decision)
+      console.log(`${task.id} ${task.title}`);
     } catch (error) {
       handleCliError(error);
       throw error;
