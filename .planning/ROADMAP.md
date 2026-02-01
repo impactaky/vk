@@ -48,14 +48,14 @@ Plans:
 **Requirements**: CD-01, CD-02, CD-03, CD-04, CD-05
 **Success Criteria** (what must be TRUE):
   1. User can run `vk attempt cd <id>` to navigate to workspace workdir
-  2. For localhost API, command prints `cd <path>` for user to execute
+  2. For localhost API, spawns local subshell in agent_working_dir
   3. For remote API, command opens SSH session with cd to agent_working_dir
-  4. User can configure shell via `vk config set remote-shell <shell>`
+  4. User can configure shell via `vk config set shell <shell>`
   5. User can run `vk attempt cd` from workspace branch for auto-detection
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 06-01: TBD
+- [ ] 06-01-PLAN.md — Add attempt cd subcommand with shell config
 
 ### Phase 7: Attempt Spin-Off
 **Goal**: User can create a new task that inherits context from current workspace
@@ -78,7 +78,7 @@ Plans:
 **Requirements**: TEST-01, TEST-02
 **Success Criteria** (what must be TRUE):
   1. Integration test validates `vk attempt spin-off` creates task with correct parent_workspace_id
-  2. Integration test validates `vk config set/get remote-shell` persists and retrieves value
+  2. Integration test validates `vk config set/get shell` persists and retrieves value
 **Plans**: TBD
 
 Plans:
@@ -92,10 +92,10 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 1-4 | v1.0 | - | Complete | 2026-01-31 |
 | 5. Attempt Open | v1.1 | 1/1 | Complete | 2026-02-01 |
-| 6. Attempt CD | v1.1 | 0/? | Not started | - |
+| 6. Attempt CD | v1.1 | 0/1 | Planned | - |
 | 7. Attempt Spin-Off | v1.1 | 0/? | Not started | - |
 | 8. Integration Tests | v1.1 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-02-01*
-*Last updated: 2026-02-01 — Phase 5 complete*
+*Last updated: 2026-02-01 — Phase 6 planned*
