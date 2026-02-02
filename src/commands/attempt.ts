@@ -1062,8 +1062,23 @@ attemptCommand
   .option("--title <title:string>", "Task title")
   .option("--message <message:string>", "Initial message for the new task")
   .option("--from <file:file>", "Load message from file")
+  .option("--run", "Create a workspace and start execution immediately")
+  .option(
+    "--executor <executor:string>",
+    "Executor profile ID in format <name>:<variant> (e.g., CLAUDE_CODE:DEFAULT). Required when --run is specified.",
+  )
+  .option(
+    "--target-branch <branch:string>",
+    "Target branch for workspace repos (default: repo's default or 'main')",
+  )
   .action(async (options, id) => {
     try {
+      // Validate option combinations
+      if (options.run && !options.executor) {
+        console.error("Error: --executor is required when --run is specified");
+        Deno.exit(1);
+      }
+
       const client = await ApiClient.create();
 
       // Resolve workspace ID (explicit > branch > error - NO fzf fallback, like open/cd)
@@ -1116,6 +1131,40 @@ attemptCommand
 
       // Simple output (per CONTEXT.md decision)
       console.log(`${task.id} ${task.title}`);
+
+      // If --run is specified, create a workspace and start execution
+      if (options.run && options.executor) {
+        const executorProfileId = parseExecutorString(options.executor);
+
+        // Get project repos to build repos[] array
+        const projectRepos = await client.listProjectRepos(
+          parentTask.project_id,
+        );
+        if (projectRepos.length === 0) {
+          console.error(
+            "Error: Project has no repositories. Add a repository first.",
+          );
+          Deno.exit(1);
+        }
+
+        // Build repos array with target branches
+        const repos = projectRepos.map((repo) => ({
+          repo_id: repo.id,
+          target_branch: options.targetBranch || repo.default_target_branch ||
+            "main",
+        }));
+
+        const createWorkspace: CreateWorkspace = {
+          task_id: task.id,
+          executor_profile_id: executorProfileId,
+          repos,
+        };
+
+        const newWorkspace = await client.createWorkspace(createWorkspace);
+
+        console.log(`Workspace: ${newWorkspace.id}`);
+        console.log(`Branch: ${newWorkspace.branch}`);
+      }
     } catch (error) {
       handleCliError(error);
       throw error;
