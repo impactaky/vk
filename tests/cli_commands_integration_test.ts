@@ -183,6 +183,150 @@ Deno.test("CLI: vk attempt spin-off creates task with parent_workspace_id", asyn
   }
 });
 
+Deno.test("CLI: vk attempt spin-off --run creates task and workspace", async () => {
+  const testRepoPath = await createTestRepoDir("spin-off-run");
+
+  // Create project with repository
+  const projectResult = await apiCall<{ id: string }>("/projects", {
+    method: "POST",
+    body: JSON.stringify({
+      name: `test-project-spin-off-run-${Date.now()}`,
+      repositories: [],
+    }),
+  });
+  assertEquals(projectResult.success, true);
+  const projectId = projectResult.data!.id;
+
+  try {
+    // Add repository to project
+    const addRepoResult = await apiCall<{ id: string }>(
+      `/projects/${projectId}/repositories`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          display_name: "Test Spin-off Run Repository",
+          git_repo_path: testRepoPath,
+        }),
+      },
+    );
+    assertEquals(addRepoResult.success, true);
+    const repoId = addRepoResult.data!.id;
+
+    // Create parent task
+    const taskResult = await apiCall<{ id: string }>("/tasks", {
+      method: "POST",
+      body: JSON.stringify({
+        project_id: projectId,
+        title: `test-task-spin-off-run-${Date.now()}`,
+        description: "Parent task for spin-off --run test",
+      }),
+    });
+    assertEquals(taskResult.success, true);
+    const taskId = taskResult.data!.id;
+
+    // Create parent workspace
+    const workspaceResult = await apiCall<{ id: string }>("/task-attempts", {
+      method: "POST",
+      body: JSON.stringify({
+        task_id: taskId,
+        executor_profile_id: { executor: "CLAUDE_CODE", variant: null },
+        repos: [{ repo_id: repoId, target_branch: "main" }],
+      }),
+    });
+    assertEquals(workspaceResult.success, true);
+    const workspaceId = workspaceResult.data!.id;
+
+    // Execute CLI spin-off command with --run
+    const command = new Deno.Command("deno", {
+      args: [
+        "run",
+        "--allow-net",
+        "--allow-read",
+        "--allow-write",
+        "--allow-env",
+        "src/main.ts",
+        "attempt",
+        "spin-off",
+        workspaceId,
+        "--title",
+        "Child task from spin-off --run",
+        "--message",
+        "Test message for spin-off --run command",
+        "--run",
+        "--executor",
+        "CLAUDE_CODE:DEFAULT",
+      ],
+      stdout: "piped",
+      stderr: "piped",
+      env: {
+        VK_API_URL: config.apiUrl,
+        HOME: "/tmp/test-home-spin-off-run",
+      },
+    });
+
+    const { code, stdout, stderr } = await command.output();
+    const stdoutText = new TextDecoder().decode(stdout);
+    const stderrText = new TextDecoder().decode(stderr);
+
+    assertEquals(
+      code,
+      0,
+      `Spin-off --run command failed with code ${code}: ${stderrText}`,
+    );
+
+    // Parse task ID from output (format: "{id} {title}\nWorkspace: {workspace_id}\nBranch: {branch}")
+    const lines = stdoutText.trim().split("\n");
+    const taskLine = lines[0];
+    const spaceIndex = taskLine.indexOf(" ");
+    assertExists(
+      spaceIndex > 0,
+      `Expected output format "{id} {title}", got: ${taskLine}`,
+    );
+    const newTaskId = taskLine.substring(0, spaceIndex);
+
+    // Verify task was created with correct parent_workspace_id via API
+    const taskCheckResult = await apiCall<
+      { id: string; parent_workspace_id?: string }
+    >(
+      `/tasks/${newTaskId}`,
+    );
+    assertEquals(taskCheckResult.success, true);
+    assertEquals(
+      taskCheckResult.data?.parent_workspace_id,
+      workspaceId,
+      "Task should have parent_workspace_id set to workspace ID",
+    );
+
+    // Verify workspace was created for the new task
+    const workspacesResult = await apiCall<
+      Array<{ id: string; task_id: string }>
+    >(
+      `/task-attempts?task_id=${newTaskId}`,
+    );
+    assertEquals(workspacesResult.success, true);
+    assertEquals(
+      workspacesResult.data?.length,
+      1,
+      "Expected one workspace to be created for the child task",
+    );
+    const childWorkspaceId = workspacesResult.data![0].id;
+
+    // Cleanup: delete child workspace, child task, parent workspace, parent task
+    await apiCall(`/task-attempts/${childWorkspaceId}`, { method: "DELETE" });
+    await apiCall(`/tasks/${newTaskId}`, { method: "DELETE" });
+    await apiCall(`/task-attempts/${workspaceId}`, { method: "DELETE" });
+    await apiCall(`/tasks/${taskId}`, { method: "DELETE" });
+  } finally {
+    // Cleanup: delete project and test directory
+    await apiCall(`/projects/${projectId}`, { method: "DELETE" });
+    try {
+      await Deno.remove(testRepoPath, { recursive: true });
+    } catch {
+      // Ignore cleanup errors
+    }
+  }
+});
+
 // ============================================================================
 // CLI: vk config set/get shell
 // ============================================================================
