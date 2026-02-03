@@ -298,7 +298,9 @@ Deno.test("CLI: vk attempt spin-off --run creates task and workspace", async () 
     );
 
     // Verify workspace was created for the new task
-    const workspacesResult = await apiCall<Array<{ id: string; task_id: string }>>(
+    const workspacesResult = await apiCall<
+      Array<{ id: string; task_id: string }>
+    >(
       `/task-attempts?task_id=${newTaskId}`,
     );
     assertEquals(workspacesResult.success, true);
