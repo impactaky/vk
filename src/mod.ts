@@ -19,7 +19,7 @@
 export { ApiClient } from "./api/client.ts";
 
 // Configuration
-export { loadConfig, saveConfig, getApiUrl } from "./api/config.ts";
+export { getApiUrl, loadConfig, saveConfig } from "./api/config.ts";
 export type { Config } from "./api/config.ts";
 
 // Types - re-export everything from types.ts
@@ -28,9 +28,9 @@ export type {
   AttachPRRequest,
   BranchStatus,
   ConflictOp,
-  CreatePRRequest,
   CreateProject,
   CreateProjectRepo,
+  CreatePRRequest,
   CreateTask,
   CreateWorkspace,
   ExecutionProcess,
@@ -44,9 +44,9 @@ export type {
   MergeResult,
   MergeWorkspaceRequest,
   PRComment,
-  PRResult,
   Project,
   ProjectRepo,
+  PRResult,
   PushWorkspaceRequest,
   RebaseWorkspaceRequest,
   RegisterRepoRequest,
