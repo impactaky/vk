@@ -1,7 +1,9 @@
 {
   "name": "@vibe-kanban/cli",
   "version": "0.1.0",
-  "exports": "./src/main.ts",
+  "exports": {
+    ".": "./src/mod.ts"
+  },
   "tasks": {
     "dev": "deno run --allow-net --allow-read --allow-write --allow-env --allow-run src/main.ts",
     "fmt": "deno fmt",
