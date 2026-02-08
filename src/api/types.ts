@@ -1,5 +1,13 @@
-// API Response types matching vibe-kanban API
+/**
+ * API types for the vibe-kanban CLI.
+ *
+ * Contains all request/response types used to communicate with the
+ * vibe-kanban API server.
+ *
+ * @module
+ */
 
+/** Standard API response wrapper for all endpoints. */
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
@@ -7,7 +15,7 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
-// Project types - updated to match latest API
+/** A project represents a collection of tasks and repositories. */
 export interface Project {
   id: string;
   name: string;
@@ -17,21 +25,24 @@ export interface Project {
   updated_at: string;
 }
 
+/** Repository configuration for creating projects with attached repositories. */
 export interface CreateProjectRepo {
   display_name: string;
   git_repo_path: string;
 }
 
+/** Request body for creating a new project. */
 export interface CreateProject {
   name: string;
   repositories: CreateProjectRepo[];
 }
 
+/** Request body for updating project properties. */
 export interface UpdateProject {
   name?: string | null;
 }
 
-// Project-Repository relationship
+/** Join table linking projects to their repositories. */
 export interface ProjectRepo {
   project_id: string;
   repo_id: string;
@@ -39,7 +50,7 @@ export interface ProjectRepo {
   created_at: string;
 }
 
-// Task types - updated to match latest API
+/** A task represents a unit of work within a project. */
 export interface Task {
   id: string;
   project_id: string;
@@ -51,6 +62,7 @@ export interface Task {
   updated_at: string;
 }
 
+/** Status of a task in its lifecycle. */
 export type TaskStatus =
   | "todo"
   | "inprogress"
@@ -58,12 +70,14 @@ export type TaskStatus =
   | "done"
   | "cancelled";
 
+/** Task with additional workspace/attempt status information. */
 export interface TaskWithAttemptStatus extends Task {
   has_in_progress_attempt: boolean;
   last_attempt_failed: boolean;
   executor: string;
 }
 
+/** Request body for creating a new task. */
 export interface CreateTask {
   project_id: string;
   title: string;
@@ -72,6 +86,7 @@ export interface CreateTask {
   image_ids?: string[] | null;
 }
 
+/** Request body for updating task properties. */
 export interface UpdateTask {
   title?: string;
   description?: string | null;
@@ -80,10 +95,14 @@ export interface UpdateTask {
   image_ids?: string[] | null;
 }
 
-// Workspace types (formerly TaskAttempt) - updated to match latest API
+/**
+ * Workspace (formerly TaskAttempt) represents an isolated development environment
+ * for working on a task, with its own git branch and optional container.
+ */
 export interface Workspace {
   id: string;
   task_id: string;
+  /** Docker container reference for the workspace environment. */
   container_ref: string | null;
   branch: string;
   agent_working_dir: string | null;
@@ -95,13 +114,14 @@ export interface Workspace {
   name: string | null;
 }
 
+/** Request body for updating workspace properties. */
 export interface UpdateWorkspace {
   name?: string | null;
   archived?: boolean;
   pinned?: boolean;
 }
 
-// Workspace-Repository relationship
+/** Join table linking workspaces to their repositories. */
 export interface WorkspaceRepo {
   id: string;
   workspace_id: string;
@@ -111,6 +131,7 @@ export interface WorkspaceRepo {
   updated_at: string;
 }
 
+/** Status of a workspace's setup and execution lifecycle. */
 export type WorkspaceStatus =
   | "SetupRunning"
   | "SetupComplete"
@@ -119,7 +140,7 @@ export type WorkspaceStatus =
   | "ExecutorComplete"
   | "ExecutorFailed";
 
-// Session type for session-based operations
+/** Session represents an active coding agent session within a workspace. */
 export interface Session {
   id: string;
   workspace_id: string;
@@ -127,25 +148,28 @@ export interface Session {
   updated_at: string;
 }
 
-// Execution process types
+/** Status of an execution process within a session. */
 export type ExecutionProcessStatus =
   | "running"
   | "completed"
   | "failed"
   | "killed";
 
+/** Reason why an execution process was started. */
 export type ExecutionProcessRunReason =
   | "setupscript"
   | "cleanupscript"
   | "codingagent"
   | "devserver";
 
+/** Execution process represents a running script or coding agent within a session. */
 export interface ExecutionProcess {
   id: string;
   session_id: string;
   run_reason: ExecutionProcessRunReason;
   status: ExecutionProcessStatus;
   exit_code: number | null;
+  /** Whether this process was intentionally terminated/dropped by the user. */
   dropped: boolean;
   started_at: string;
   completed_at: string | null;
@@ -153,7 +177,7 @@ export interface ExecutionProcess {
   updated_at: string;
 }
 
-// All supported coding agents in vibe-kanban
+/** All supported coding agents in the vibe-kanban system. */
 export type BaseCodingAgent =
   | "CLAUDE_CODE"
   | "AMP"
@@ -165,6 +189,7 @@ export type BaseCodingAgent =
   | "COPILOT"
   | "DROID";
 
+/** Array of all valid executor names for validation purposes. */
 export const VALID_EXECUTORS: BaseCodingAgent[] = [
   "CLAUDE_CODE",
   "AMP",
@@ -177,27 +202,31 @@ export const VALID_EXECUTORS: BaseCodingAgent[] = [
   "DROID",
 ];
 
+/** Identifies a specific coding agent executor and its variant. */
 export interface ExecutorProfileID {
   executor: BaseCodingAgent;
   variant: string | null;
 }
 
-// Input for creating workspace repos (multi-repo support)
+/** Input for attaching a repository to a workspace during creation. */
 export interface WorkspaceRepoInput {
   repo_id: string;
   target_branch: string;
 }
 
+/** Request body for creating a new workspace. */
 export interface CreateWorkspace {
   task_id: string;
   executor_profile_id: ExecutorProfileID;
   repos: WorkspaceRepoInput[];
 }
 
+/** Request body for renaming a workspace's git branch. */
 export interface RenameBranchRequest {
   new_branch_name: string;
 }
 
+/** Request body for creating a pull request from a workspace. */
 export interface CreatePRRequest {
   title?: string;
   body?: string;
@@ -210,14 +239,16 @@ export interface BranchStatus {
   has_conflicts: boolean;
 }
 
-// Multi-repo branch status types
+/** Type of git operation that resulted in conflicts. */
 export type ConflictOp = "rebase" | "merge" | "cherry_pick" | "revert";
 
+/** Information about a merge commit in the git history. */
 export interface Merge {
   oid: string;
   message: string;
 }
 
+/** Branch status for a single repository within a workspace. */
 export interface RepoBranchStatus {
   repo_id: string;
   repo_name: string;
@@ -232,46 +263,50 @@ export interface RepoBranchStatus {
   remote_commits_ahead: number;
   merges: Merge[];
   is_rebase_in_progress: boolean;
+  /** The git operation that created conflicts, if any. */
   conflict_op: ConflictOp | null;
   conflicted_files: string[];
   is_target_remote: boolean;
 }
 
+/** Result of attempting to merge a workspace branch. */
 export interface MergeResult {
   success: boolean;
   message?: string;
 }
 
-// Git operation request types (require repo_id for multi-repo workspaces)
+/** Request body for merging a workspace branch with its target. */
 export interface MergeWorkspaceRequest {
   repo_id: string;
 }
 
+/** Request body for pushing a workspace branch to remote. */
 export interface PushWorkspaceRequest {
   repo_id: string;
 }
 
+/** Request body for rebasing a workspace branch. */
 export interface RebaseWorkspaceRequest {
   repo_id: string;
   old_base_branch?: string;
   new_base_branch?: string;
 }
 
-// PR creation returns just the URL string
+/** Pull request creation returns the URL of the created PR. */
 export type PRResult = string;
 
-// Follow-up request for sending messages to running sessions
+/** Request body for sending a follow-up message to a running session. */
 export interface FollowUpRequest {
   prompt: string;
   executor_profile_id: ExecutorProfileID;
 }
 
-// Attach existing PR to a workspace
+/** Request body for attaching an existing pull request to a workspace. */
 export interface AttachPRRequest {
   pr_number: number;
 }
 
-// PR comment types
+/** A comment on a pull request. */
 export interface PRComment {
   id: number;
   body: string;
@@ -283,6 +318,7 @@ export interface PRComment {
   side?: string;
 }
 
+/** Unified PR comment merging issue comments, review comments, and threads. */
 export interface UnifiedPRComment {
   id: number;
   body: string;
@@ -296,7 +332,7 @@ export interface UnifiedPRComment {
   in_reply_to_id?: number;
 }
 
-// Repository types
+/** A git repository registered with vibe-kanban. */
 export interface Repo {
   id: string;
   path: string;
@@ -313,6 +349,7 @@ export interface Repo {
   updated_at: string;
 }
 
+/** Request body for updating repository configuration. */
 export interface UpdateRepo {
   display_name?: string | null;
   setup_script?: string | null;
@@ -322,16 +359,19 @@ export interface UpdateRepo {
   dev_server_script?: string | null;
 }
 
+/** Request body for registering an existing git repository. */
 export interface RegisterRepoRequest {
   path: string;
   display_name: string | null;
 }
 
+/** Request body for initializing a new git repository. */
 export interface InitRepoRequest {
   parent_path: string;
   folder_name: string;
 }
 
+/** Information about a git branch. */
 export interface GitBranch {
   name: string;
   is_current: boolean;
