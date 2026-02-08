@@ -63,6 +63,9 @@ v1.1 decisions (Phases 5-8):
 - --message flag maps to description field in CreateTask interface
 - Test spin-off via subprocess, verify parent_workspace_id via API (TEST-01)
 - Use isolated HOME directory for config tests to prevent pollution (TEST-02)
+- JSDoc required on all exported symbols for deno doc compatibility (quick-005)
+- Use @module tag on public API files for domain-level documentation (quick-005)
+- deno doc verification included in standard pre-commit checks (quick-005)
 
 ### Pending Todos
 
@@ -80,13 +83,14 @@ None.
 | 002 | Simplify README, add QuickStart section | 2026-02-01 | 14c9e6b | [002-simplify-readme-add-quickstart](./quick/002-simplify-readme-add-quickstart/) |
 | 003 | Add --run option to vk attempt spin-off | 2026-02-03 | d0ed9e1 | [003-add-run-option-to-vk-attempt-spin-off](./quick/003-add-run-option-to-vk-attempt-spin-off/) |
 | 004 | Support deno doc with JSDoc and mod.ts | 2026-02-08 | faa3b21 | [004-support-deno-doc](./quick/004-support-deno-doc/) |
+| 005 | Update planning docs with JSDoc conventions | 2026-02-08 | cff8cff | [005-update-planning-files-to-make-sure-consi](./quick/005-update-planning-files-to-make-sure-consi/) |
 
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed quick task 004 (Support deno doc)
+Stopped at: Completed quick task 005 (Update planning docs with JSDoc conventions)
 Resume file: None
 
 ---
 *State initialized: 2026-01-30*
-*Last updated: 2026-02-08 — Completed quick task 004 (deno doc support)*
+*Last updated: 2026-02-08 — Completed quick task 005 (planning documentation update)*
