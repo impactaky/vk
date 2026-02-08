@@ -1,6 +1,6 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-01-30
+**Analysis Date:** 2026-02-08
 
 ## Directory Layout
 
@@ -8,6 +8,7 @@
 vk/
 ├── src/                              # Source code
 │   ├── main.ts                       # CLI entry point with Cliffy Command setup
+│   ├── mod.ts                        # Public library entry point (barrel file for deno doc / JSR)
 │   ├── api/                          # API client layer
 │   │   ├── client.ts                 # ApiClient class with all API methods
 │   │   ├── config.ts                 # Config file management and loading
@@ -126,6 +127,7 @@ vk/
 4. Use ApiClient for all API calls, utilities for ID resolution/filtering
 5. Use `handleCliError()` for consistent error handling
 6. Add tests in `tests/newresource_test.ts` and `tests/newresource_integration_test.ts`
+7. Add JSDoc comments to all exported functions and types
 
 **New Utility:**
 1. Create `src/utils/new-utility.ts` exporting functions or classes
@@ -133,18 +135,23 @@ vk/
 3. Add to centralized error handler `src/utils/error-handler.ts` if user-facing
 4. Add unit tests in `src/utils/{new-utility}_test.ts` (if not integration-dependent)
 5. Add integration tests in `tests/new_utility_integration_test.ts`
+6. Add JSDoc comments to all exported functions and classes
+7. If the utility is part of the public API, re-export from `src/mod.ts`
 
 **New API Method:**
 1. Add method to ApiClient class in `src/api/client.ts`
 2. Add types to `src/api/types.ts` (request/response types)
 3. Follow existing pattern: private `request<T>()` method, verbose logging support
 4. Test via `tests/api_client_test.ts` mock server
+5. Add JSDoc comment to the new method with `@param` and `@returns` tags
+6. If adding new types to `src/api/types.ts`, add JSDoc to each exported type
 
 **New Configuration:**
 1. Add field to Config interface in `src/api/config.ts`
 2. Add to loadConfig() default values and saveConfig() serialization
 3. Add environment variable override in loadConfig()
 4. Create `config` subcommand in `src/commands/config.ts` to expose getter/setter
+5. Add JSDoc to new Config fields and any new exported functions
 
 ## Special Directories
 
