@@ -85,7 +85,7 @@ None.
 | 003 | Add --run option to vk attempt spin-off | 2026-02-03 | d0ed9e1 | [003-add-run-option-to-vk-attempt-spin-off](./quick/003-add-run-option-to-vk-attempt-spin-off/) |
 | 004 | Support deno doc with JSDoc and mod.ts | 2026-02-08 | faa3b21 | [004-support-deno-doc](./quick/004-support-deno-doc/) |
 | 005 | Update planning docs with JSDoc conventions | 2026-02-08 | cff8cff | [005-update-planning-files-to-make-sure-consi](./quick/005-update-planning-files-to-make-sure-consi/) |
-| 006 | Update planning docs with lint-before-finish convention | 2026-02-08 | TBD | [006-update-planning-files-to-lint-before-fin](./quick/006-update-planning-files-to-lint-before-fin/) |
+| 006 | Update planning docs with lint-before-finish convention | 2026-02-08 | 5e6e535 | [006-update-planning-files-to-lint-before-fin](./quick/006-update-planning-files-to-lint-before-fin/) |
 
 ## Session Continuity
 
