@@ -42,22 +42,23 @@
 - Uses `// deno-lint-ignore` comments for specific rule suppressions (see `src/utils/filter.ts` line 7)
 - Linted directories: `src/` and `tests/`
 
-**Quick Reference Commands:**
+## Pre-Commit Quality Checklist
+
+**REQUIRED before every commit.** Run all three checks and fix any issues before committing code changes.
+
+| Step | Command | Purpose |
+|------|---------|---------|
+| 1 | `deno fmt --check` | Verify formatting (fix: `deno fmt`) |
+| 2 | `deno lint` | Check for lint errors |
+| 3 | `deno check src/main.ts` | Type-check the codebase |
+| 4 | `deno doc src/mod.ts` | Verify documentation builds |
+
+**Quick run all checks:**
 ```bash
-# Check formatting (fix with: deno fmt)
-deno fmt --check
-
-# Run linter
-deno lint
-
-# Type check
-deno check src/main.ts
-
-# Verify documentation
-deno doc src/mod.ts
+deno fmt --check && deno lint && deno check src/main.ts && deno doc src/mod.ts
 ```
 
-Run these checks before committing to ensure code quality.
+If any check fails, fix the issue before committing. Do NOT suppress lint rules with `// deno-lint-ignore` unless there is a documented reason in the code comment explaining why the suppression is necessary.
 
 ## Import Organization
 
