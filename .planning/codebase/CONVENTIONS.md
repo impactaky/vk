@@ -1,6 +1,6 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-01-30
+**Analysis Date:** 2026-02-08
 
 ## Naming Patterns
 
@@ -52,6 +52,9 @@ deno lint
 
 # Type check
 deno check src/main.ts
+
+# Verify documentation
+deno doc src/mod.ts
 ```
 
 Run these checks before committing to ensure code quality.
@@ -154,37 +157,43 @@ if (isVerbose()) {
 - Business logic reasoning for non-obvious decisions
 
 **JSDoc/TSDoc:**
-- Used for exported functions and classes
-- Parameter documentation includes type and description
-- Return value documentation always included
-- No auto-generated JSDoc templates; only when genuinely useful
+- **REQUIRED** on all exported symbols (interfaces, types, classes, functions, constants)
+- Use `@module` tag at top of files that form the public API surface (e.g., `src/api/types.ts`, `src/api/client.ts`, `src/api/config.ts`)
+- Document non-obvious fields and parameters; self-documenting fields (e.g., `id: string`, `name: string`) can use brief or no per-field JSDoc
+- Parameter documentation includes `@param` tag with type and description
+- Return value documentation includes `@returns` tag
+- All JSDoc must be compatible with `deno doc` output
+- Verify documentation: `deno doc src/mod.ts` (text output) or `deno doc --html --output=docs src/mod.ts` (HTML generation)
 
 **Example:**
 
 ```typescript
-// src/utils/error-handler.ts
+// src/api/types.ts
 /**
- * Common error handling utilities for CLI commands
+ * @module types
+ * Type definitions for vibe-kanban API
  */
 
 /**
- * Handle common CLI errors and exit appropriately
- * Returns true if error was handled, false otherwise
+ * Represents a task in the system
  */
-export function handleCliError(error: unknown): boolean {
-  // ...
+export interface Task {
+  id: string;
+  name: string;
+  /**
+   * Optional reference to container (e.g., docker://container-id or ssh://user@host)
+   */
+  container_ref?: string;
 }
 
+// src/api/client.ts
 /**
- * Apply filters to an array of items
- * @param items - Array of items to filter
- * @param filters - Object containing filter key-value pairs
- * @returns Filtered array of items
+ * Create a new task
+ * @param projectId - ID of the project to create task in
+ * @param taskData - Task creation data
+ * @returns Created task object
  */
-export function applyFilters<T extends Record<string, any>>(
-  items: T[],
-  filters: Record<string, unknown>,
-): T[] {
+async createTask(projectId: string, taskData: CreateTask): Promise<Task> {
   // ...
 }
 ```
@@ -223,15 +232,17 @@ export function applyFilters<T extends Record<string, any>>(
 - All public functions and classes are `export`
 - Interfaces and types exported as needed (e.g., `export interface Project`)
 - Private functionality is not exported; helper functions kept internal when only used within module
-- Barrel files not used; direct imports from specific files required
+- `src/mod.ts` is the public library entry point (barrel file) re-exporting the full public API
+- Internal imports between source files use direct relative paths (barrel file is for external consumers only)
+- When adding new public exports, they MUST be re-exported from `src/mod.ts`
 
 **Example structure:**
 - `src/api/client.ts` exports `ApiClient` class
 - `src/api/types.ts` exports all type interfaces
 - `src/api/config.ts` exports `loadConfig()`, `saveConfig()`, `getApiUrl()`, `Config` interface
 - `src/utils/error-handler.ts` exports utility functions and error classes
-
-**Barrel Files:** Not used in this codebase; imports are explicit file paths
+- `src/mod.ts` re-exports all public API for library consumers
+- `src/main.ts` is the CLI entry point (separate from library entry point)
 
 ## Class Design
 
