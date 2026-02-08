@@ -79,13 +79,14 @@ None.
 | 001 | Update GSD docs - skills migration | 2026-01-31 | 2a23e81 | [001-update-gsd-docs-skills-migration](./quick/001-update-gsd-docs-skills-migration/) |
 | 002 | Simplify README, add QuickStart section | 2026-02-01 | 14c9e6b | [002-simplify-readme-add-quickstart](./quick/002-simplify-readme-add-quickstart/) |
 | 003 | Add --run option to vk attempt spin-off | 2026-02-03 | d0ed9e1 | [003-add-run-option-to-vk-attempt-spin-off](./quick/003-add-run-option-to-vk-attempt-spin-off/) |
+| 004 | Support deno doc with JSDoc and mod.ts | 2026-02-08 | faa3b21 | [004-support-deno-doc](./quick/004-support-deno-doc/) |
 
 ## Session Continuity
 
-Last session: 2026-02-03
-Stopped at: Completed quick task 003 (Add --run option to spin-off)
+Last session: 2026-02-08
+Stopped at: Completed quick task 004 (Support deno doc)
 Resume file: None
 
 ---
 *State initialized: 2026-01-30*
-*Last updated: 2026-02-03 — Completed quick task 003 (spin-off --run)*
+*Last updated: 2026-02-08 — Completed quick task 004 (deno doc support)*
