@@ -128,6 +128,7 @@ vk/
 5. Use `handleCliError()` for consistent error handling
 6. Add tests in `tests/newresource_test.ts` and `tests/newresource_integration_test.ts`
 7. Add JSDoc comments to all exported functions and types
+8. Run pre-commit checks: `deno fmt --check && deno lint && deno check src/main.ts`
 
 **New Utility:**
 1. Create `src/utils/new-utility.ts` exporting functions or classes
@@ -137,6 +138,7 @@ vk/
 5. Add integration tests in `tests/new_utility_integration_test.ts`
 6. Add JSDoc comments to all exported functions and classes
 7. If the utility is part of the public API, re-export from `src/mod.ts`
+8. Run pre-commit checks: `deno fmt --check && deno lint && deno check src/main.ts`
 
 **New API Method:**
 1. Add method to ApiClient class in `src/api/client.ts`
@@ -145,6 +147,7 @@ vk/
 4. Test via `tests/api_client_test.ts` mock server
 5. Add JSDoc comment to the new method with `@param` and `@returns` tags
 6. If adding new types to `src/api/types.ts`, add JSDoc to each exported type
+7. Run pre-commit checks: `deno fmt --check && deno lint && deno check src/main.ts`
 
 **New Configuration:**
 1. Add field to Config interface in `src/api/config.ts`
@@ -152,6 +155,7 @@ vk/
 3. Add environment variable override in loadConfig()
 4. Create `config` subcommand in `src/commands/config.ts` to expose getter/setter
 5. Add JSDoc to new Config fields and any new exported functions
+6. Run pre-commit checks: `deno fmt --check && deno lint && deno check src/main.ts`
 
 ## Special Directories
 

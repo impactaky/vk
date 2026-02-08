@@ -353,6 +353,23 @@ deno test --allow-net --allow-read --allow-write --allow-env
 deno test --allow-net --allow-read --allow-write --allow-env --allow-run tests/*_integration_test.ts
 ```
 
+## Static Analysis
+
+**Required before committing any code changes.** Static analysis catches issues that tests do not cover (formatting, lint rules, type errors in non-test code).
+
+```bash
+# Run all static analysis checks
+deno fmt --check && deno lint && deno check src/main.ts
+```
+
+These checks are separate from `deno test` and must pass independently. The CI-equivalent workflow is:
+1. `deno fmt --check` -- formatting
+2. `deno lint` -- lint rules
+3. `deno check src/main.ts` -- type checking
+4. `deno test ...` -- unit and integration tests
+
+See CONVENTIONS.md Pre-Commit Quality Checklist for full details.
+
 ---
 
-*Testing analysis: 2026-01-30*
+*Testing analysis: 2026-02-08*
