@@ -1,6 +1,6 @@
 # Technology Stack
 
-**Analysis Date:** 2026-01-30
+**Analysis Date:** 2026-02-08
 
 ## Languages
 
@@ -35,6 +35,7 @@
   - `deno fmt` - Code formatting
   - `deno lint` - Linting
   - `deno check` - Type checking
+  - `deno doc` - API documentation generation (text and HTML)
   - `deno compile` - Binary compilation
 
 **External Tools:**
