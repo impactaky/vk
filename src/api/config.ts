@@ -47,6 +47,11 @@ export async function loadConfig(): Promise<Config> {
     config.apiUrl = envApiUrl;
   }
 
+  const envDefaultExecutor = Deno.env.get("VK_DEFAULT_EXECUTOR");
+  if (envDefaultExecutor) {
+    config.defaultExecutor = envDefaultExecutor;
+  }
+
   return config;
 }
 
