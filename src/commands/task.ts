@@ -130,7 +130,9 @@ taskCommand
   .option("--title <title:string>", "Task title")
   .option("--description <desc:string>", "Task description")
   .option("--from <file:file>", "Create task from markdown file")
-  .option("--run", "Create a workspace and start execution immediately")
+  .option("--run", "Create a workspace and start execution immediately", {
+    default: true,
+  })
   .option(
     "--executor <executor:string>",
     "Executor profile ID in format <name>:<variant> (e.g., CLAUDE_CODE:DEFAULT). Required when --run is specified.",
