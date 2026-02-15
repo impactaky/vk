@@ -23,7 +23,8 @@
 - Use `resolveWorkspaceFromBranch()` from `src/utils/attempt-resolver.ts`
 - Branch pattern: `{username}/{4-char-hash}-{description}`
 - Explicit ID takes precedence over auto-detection
-- If no ID provided and not on workspace branch: error "Not in a workspace branch. Provide workspace ID."
+- If no ID provided and not on workspace branch: error "Not in a workspace
+  branch. Provide workspace ID."
 - No fzf fallback for `open` command
 
 ## Output and Feedback

@@ -31,9 +31,11 @@ must_haves:
 <objective>
 Add `--run` option to `vk attempt spin-off` command.
 
-Purpose: Allow users to create a child task AND immediately start a workspace in one command, matching the UX of `vk task create --run`.
+Purpose: Allow users to create a child task AND immediately start a workspace in
+one command, matching the UX of `vk task create --run`.
 
-Output: Updated spin-off command with --run, --executor, and --target-branch options.
+Output: Updated spin-off command with --run, --executor, and --target-branch
+options.
 </objective>
 
 <execution_context>
@@ -72,7 +74,8 @@ Output: Updated spin-off command with --run, --executor, and --target-branch opt
     Update output format when --run is used:
     - Current: `{task.id} {task.title}`
     - With --run: `{task.id} {task.title}` followed by `Workspace: {workspace.id}` and `Branch: {workspace.branch}`
-  </action>
+
+</action>
   <verify>Run `deno check src/commands/attempt.ts` - should pass with no type errors</verify>
   <done>spin-off command accepts --run, --executor, and --target-branch options; validates --executor requirement; creates workspace when --run specified</done>
 </task>
@@ -96,7 +99,8 @@ Output: Updated spin-off command with --run, --executor, and --target-branch opt
     8. Cleanup: delete child workspace, child task, parent workspace, parent task, project, test directory
 
     Follow the pattern of the existing spin-off test but add workspace verification.
-  </action>
+
+</action>
   <verify>Run `deno test --allow-all tests/cli_commands_integration_test.ts --filter "spin-off"` - both tests should pass</verify>
   <done>Integration test verifies spin-off --run creates both task and workspace</done>
 </task>
@@ -109,10 +113,13 @@ Output: Updated spin-off command with --run, --executor, and --target-branch opt
 deno check src/commands/attempt.ts
 
 # Run spin-off related tests
+
 deno test --allow-all tests/cli_commands_integration_test.ts --filter "spin-off"
 
 # Manual verification (if API available)
+
 # vk attempt spin-off <workspace-id> --run --executor CLAUDE_CODE:DEFAULT --title "Test" --message "Test message"
+
 ```
 </verification>
 
@@ -126,3 +133,4 @@ deno test --allow-all tests/cli_commands_integration_test.ts --filter "spin-off"
 <output>
 After completion, create `.planning/quick/003-add-run-option-to-vk-attempt-spin-off/003-SUMMARY.md`
 </output>
+```

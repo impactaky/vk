@@ -5,28 +5,38 @@
 ## Test Framework
 
 **Run Tests:**
+
 ```bash
 docker compose run --rm vk
 ```
-This starts the vibe-kanban server with health checks and runs all tests, matching CI.
+
+This starts the vibe-kanban server with health checks and runs all tests,
+matching CI.
 
 **Framework:**
+
 - Deno's built-in test runner via `Deno.test()`
 - Assertions from `@std/assert` (JSR)
 
 ## Test File Organization
 
 **Location:**
+
 - Unit tests: co-located with source files using `{filename}_test.ts` suffix
 - Integration tests: separate `tests/` directory at project root
 - Test helpers: `tests/helpers/` subdirectory
 
 **Naming:**
-- Unit test files: `src/utils/filter_test.ts`, `src/utils/git_test.ts`, `src/utils/markdown-parser_test.ts`
-- Integration test files: `tests/api_integration_test.ts`, `tests/filter_integration_test.ts`, `tests/project_resolver_integration_test.ts`
+
+- Unit test files: `src/utils/filter_test.ts`, `src/utils/git_test.ts`,
+  `src/utils/markdown-parser_test.ts`
+- Integration test files: `tests/api_integration_test.ts`,
+  `tests/filter_integration_test.ts`,
+  `tests/project_resolver_integration_test.ts`
 - Test functions: descriptive strings in `Deno.test()` calls
 
 **Structure:**
+
 ```
 src/
   utils/
@@ -49,6 +59,7 @@ tests/
 ## Test Structure
 
 **Suite Organization:**
+
 ```typescript
 // src/utils/filter_test.ts - Simple flat structure
 Deno.test("applyFilters - no filters returns all items", () => {
@@ -75,10 +86,13 @@ Deno.test({
 ```
 
 **Patterns:**
+
 - Test naming: descriptive string that explains what is being tested
-- No test suites/grouping; flat test naming with descriptive prefixes (e.g., "API:", "applyFilters -")
+- No test suites/grouping; flat test naming with descriptive prefixes (e.g.,
+  "API:", "applyFilters -")
 - Setup happens at test start; teardown in try-finally blocks
-- Shared test utilities in `tests/helpers/` for server configuration and test data
+- Shared test utilities in `tests/helpers/` for server configuration and test
+  data
 
 **Example Setup/Teardown Pattern from `tests/api_integration_test.ts`:**
 
@@ -124,6 +138,7 @@ try {
 ## Assertions
 
 **Common Assertions:**
+
 - `assertEquals(actual, expected)` - strict equality check
 - `assertThrows(() => fn())` - expect function to throw
 - `assertExists(value)` - check value is not null/undefined
@@ -149,6 +164,7 @@ Deno.test("parseExecutorString - invalid executor name", () => {
 ## Mocking
 
 **Framework:** No external mocking library used; tests use:
+
 - Raw API calls via `fetch()` for integration tests
 - Helper wrapper function `apiCall<T>()` for standardized API testing
 - Test server configuration via `tests/helpers/test-server.ts`
@@ -196,16 +212,20 @@ Deno.test("ApiClient - constructor strips trailing slash", () => {
 ```
 
 **What to Mock:**
+
 - Do not mock; integration tests use real HTTP calls against test server
 - Private fields accessed via `@ts-ignore` comments when needed for testing
 
 **What NOT to Mock:**
+
 - Do not mock external services; tests require real server running
-- Do not mock file system operations; use actual `Deno.mkdir()` and `Deno.remove()`
+- Do not mock file system operations; use actual `Deno.mkdir()` and
+  `Deno.remove()`
 
 ## Fixtures and Factories
 
 **Test Data:**
+
 - Simple inline objects for unit tests (see `src/utils/filter_test.ts`)
 - Timestamped unique values for integration tests to avoid conflicts:
 
@@ -216,7 +236,7 @@ const createResult = await apiCall<{ id: string; name: string }>(
   {
     method: "POST",
     body: JSON.stringify({
-      name: `test-project-${Date.now()}`,  // Unique by timestamp
+      name: `test-project-${Date.now()}`, // Unique by timestamp
       repositories: [],
     }),
   },
@@ -224,8 +244,11 @@ const createResult = await apiCall<{ id: string; name: string }>(
 ```
 
 **Location:**
-- `tests/helpers/test-data.ts` - Placeholder for shared fixtures (currently minimal usage)
-- `tests/helpers/test-server.ts` - Server configuration and waitForServer utility
+
+- `tests/helpers/test-data.ts` - Placeholder for shared fixtures (currently
+  minimal usage)
+- `tests/helpers/test-server.ts` - Server configuration and waitForServer
+  utility
 - Inline in test files for simple test data
 
 **Test Server Helper (`tests/helpers/test-server.ts`):**
@@ -253,6 +276,7 @@ export async function waitForServer(
 **Requirements:** Not enforced; no coverage configuration in `deno.json`
 
 **View Coverage:**
+
 ```bash
 deno test --coverage=./coverage/ --allow-net --allow-read --allow-write --allow-env
 ```
@@ -260,6 +284,7 @@ deno test --coverage=./coverage/ --allow-net --allow-read --allow-write --allow-
 ## Test Types
 
 **Unit Tests:**
+
 - Scope: Single utility function or module behavior
 - Approach: Direct function invocation with prepared inputs
 - Location: Co-located with source files (`*_test.ts`)
@@ -267,6 +292,7 @@ deno test --coverage=./coverage/ --allow-net --allow-read --allow-write --allow-
 - No setup/teardown; no async operations needed
 
 **Integration Tests:**
+
 - Scope: Full API workflows; project/task/workspace CRUD; git operations
 - Approach: HTTP requests to running vibe-kanban server; filesystem operations
 - Location: `tests/` directory
@@ -333,7 +359,7 @@ Deno.test("API: Create, get, and delete task", async () => {
 
     // Verify task is deleted
     const getDeletedResult = await apiCall(`/tasks/${taskId}`);
-    assertEquals(getDeletedResult.success, false);  // Now should fail
+    assertEquals(getDeletedResult.success, false); // Now should fail
   }
 });
 ```
@@ -341,6 +367,7 @@ Deno.test("API: Create, get, and delete task", async () => {
 ## Permissions
 
 **Test Permissions in `deno.json`:**
+
 - `--allow-net` - Required for API integration tests
 - `--allow-read` - Required for file operations and git commands
 - `--allow-write` - Required for creating test directories
@@ -348,6 +375,7 @@ Deno.test("API: Create, get, and delete task", async () => {
 - `--allow-run` - Required only for integration tests (used by git operations)
 
 **Example:**
+
 ```bash
 deno test --allow-net --allow-read --allow-write --allow-env
 deno test --allow-net --allow-read --allow-write --allow-env --allow-run tests/*_integration_test.ts
@@ -355,14 +383,17 @@ deno test --allow-net --allow-read --allow-write --allow-env --allow-run tests/*
 
 ## Static Analysis
 
-**Required before committing any code changes.** Static analysis catches issues that tests do not cover (formatting, lint rules, type errors in non-test code).
+**Required before committing any code changes.** Static analysis catches issues
+that tests do not cover (formatting, lint rules, type errors in non-test code).
 
 ```bash
 # Run all static analysis checks
 deno fmt --check && deno lint && deno check src/main.ts
 ```
 
-These checks are separate from `deno test` and must pass independently. The CI-equivalent workflow is:
+These checks are separate from `deno test` and must pass independently. The
+CI-equivalent workflow is:
+
 1. `deno fmt --check` -- formatting
 2. `deno lint` -- lint rules
 3. `deno check src/main.ts` -- type checking
@@ -372,4 +403,4 @@ See CONVENTIONS.md Pre-Commit Quality Checklist for full details.
 
 ---
 
-*Testing analysis: 2026-02-08*
+_Testing analysis: 2026-02-08_

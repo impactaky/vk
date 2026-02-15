@@ -26,8 +26,10 @@ must_haves:
 <objective>
 Update GSD planning documents to incorporate skill instructions from `.claude/skills/` directory.
 
-Purpose: Make `.planning/` the authoritative reference for development workflows by integrating Docker test workflow and lint command quick reference from skill files.
-Output: Updated TESTING.md and CONVENTIONS.md with complete, actionable command references.
+Purpose: Make `.planning/` the authoritative reference for development workflows
+by integrating Docker test workflow and lint command quick reference from skill
+files. Output: Updated TESTING.md and CONVENTIONS.md with complete, actionable
+command references.
 </objective>
 
 <context>
@@ -45,14 +47,18 @@ Output: Updated TESTING.md and CONVENTIONS.md with complete, actionable command 
   <action>
 Add a "Quick Start" section at the top of the Test Framework section (after the header, before "Runner:") with the Docker-based test workflow:
 
-```markdown
+````markdown
 **Quick Start (Recommended):**
+
 ```bash
 docker compose run --rm vk
 ```
-This starts the vibe-kanban server with health checks and runs all tests. Use this for the complete test experience matching CI.
-```
+````
 
+This starts the vibe-kanban server with health checks and runs all tests. Use
+this for the complete test experience matching CI.
+
+````
 This provides the simple, recommended approach before diving into framework details.
   </action>
   <verify>
@@ -80,11 +86,11 @@ deno lint
 
 # Type check
 deno check src/main.ts
-```
+````
 
 Run these checks before committing to ensure code quality.
-```
 
+```
 This provides copy-pasteable commands that match the lint skill workflow.
   </action>
   <verify>
@@ -113,3 +119,4 @@ This provides copy-pasteable commands that match the lint skill workflow.
 <output>
 After completion, create `.planning/quick/001-update-gsd-docs-skills-migration/001-SUMMARY.md`
 </output>
+```

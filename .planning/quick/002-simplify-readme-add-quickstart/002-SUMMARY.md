@@ -18,17 +18,23 @@ decisions: []
 
 # Quick Task 002: Simplify README and Add QuickStart Summary
 
-**One-liner:** Restructured README with prominent QuickStart section, reducing from 234 to 214 lines while improving new user onboarding flow.
+**One-liner:** Restructured README with prominent QuickStart section, reducing
+from 234 to 214 lines while improving new user onboarding flow.
 
 ## What Was Done
 
-Restructured README.md to prioritize new user onboarding with a clear QuickStart flow:
+Restructured README.md to prioritize new user onboarding with a clear QuickStart
+flow:
 
 1. Added QuickStart section as second h2 (immediately after intro)
-2. QuickStart provides 4 numbered steps: Install -> Completions -> Config -> Verify -> Create task
-3. Integrated shell completions into QuickStart (step 1.1) instead of standalone section
-4. Simplified Installation section by removing "Run without installing" (advanced users don't need this)
-5. Consolidated redundant filter examples in Usage section (one multi-filter example per resource type instead of many)
+2. QuickStart provides 4 numbered steps: Install -> Completions -> Config ->
+   Verify -> Create task
+3. Integrated shell completions into QuickStart (step 1.1) instead of standalone
+   section
+4. Simplified Installation section by removing "Run without installing"
+   (advanced users don't need this)
+5. Consolidated redundant filter examples in Usage section (one multi-filter
+   example per resource type instead of many)
 6. Removed verbose fzf installation instructions (now just links to fzf repo)
 
 ## Changes
@@ -36,7 +42,9 @@ Restructured README.md to prioritize new user onboarding with a clear QuickStart
 ### Modified Files
 
 **README.md**
-- Added QuickStart section with install-from-Deno and install-from-releases options
+
+- Added QuickStart section with install-from-Deno and install-from-releases
+  options
 - Embedded shell completion commands into QuickStart step 1.1
 - Simplified Installation section (moved detailed instructions after QuickStart)
 - Consolidated Usage examples (removed redundant filter pattern demonstrations)
@@ -49,6 +57,7 @@ None - plan executed exactly as written.
 ## Verification Results
 
 All verification checks passed:
+
 - QuickStart section appears as second h2 after intro
 - QuickStart contains all 4 numbered steps with correct commands
 - Shell completions integrated into step 1.1
@@ -64,9 +73,9 @@ All verification checks passed:
 
 ## Task Completion
 
-| Task | Name | Commit | Files |
-|------|------|--------|-------|
-| 1 | Restructure README with QuickStart section | 14c9e6b | README.md |
+| Task | Name                                       | Commit  | Files     |
+| ---- | ------------------------------------------ | ------- | --------- |
+| 1    | Restructure README with QuickStart section | 14c9e6b | README.md |
 
 ## Next Phase Readiness
 
@@ -75,10 +84,12 @@ No blockers. README is now optimized for new user onboarding.
 ## Notes
 
 The QuickStart flow follows a logical progression:
+
 1. Install the tool
 2. (Optional) Configure shell completions
 3. Point to API endpoint
 4. Verify connection works
 5. Create and run first task
 
-This matches how developers typically onboard to CLI tools and gets them productive quickly.
+This matches how developers typically onboard to CLI tools and gets them
+productive quickly.

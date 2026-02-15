@@ -55,44 +55,62 @@ vk/
 ## Directory Purposes
 
 **src/api/:**
+
 - Purpose: Encapsulate all backend API communication
 - Contains: HTTP client, configuration loading, type definitions
-- Key files: `client.ts` (ApiClient class), `config.ts` (config file I/O), `types.ts` (30+ type definitions)
+- Key files: `client.ts` (ApiClient class), `config.ts` (config file I/O),
+  `types.ts` (30+ type definitions)
 
 **src/commands/:**
+
 - Purpose: Map user CLI input to API client calls and output formatting
 - Contains: Five command modules, each defining a nested command tree via Cliffy
-- Key files: `project.ts` (267 lines), `attempt.ts` (767 lines, largest), `task.ts` (335 lines)
+- Key files: `project.ts` (267 lines), `attempt.ts` (767 lines, largest),
+  `task.ts` (335 lines)
 
 **src/utils/:**
-- Purpose: Shared business logic for resolving identifiers, filtering, interactive selection, parsing
+
+- Purpose: Shared business logic for resolving identifiers, filtering,
+  interactive selection, parsing
 - Contains: 11 utility modules, each handling a specific cross-cutting concern
-- Key files: `project-resolver.ts` (163 lines), `fzf.ts` (179 lines), `git.ts` (157 lines)
+- Key files: `project-resolver.ts` (163 lines), `fzf.ts` (179 lines), `git.ts`
+  (157 lines)
 
 **tests/:**
+
 - Purpose: Unit and integration tests
 - Contains: 8 test files including mock server setup
-- Strategy: Colocated with fixtures in helpers/ subdirectory, mock server allows testing API integration
+- Strategy: Colocated with fixtures in helpers/ subdirectory, mock server allows
+  testing API integration
 
 ## Key File Locations
 
 **Entry Points:**
-- `src/main.ts`: Cliffy Command initialization, global option parsing, command registration
+
+- `src/main.ts`: Cliffy Command initialization, global option parsing, command
+  registration
 - `src/api/client.ts`: ApiClient factory and all API methods
 - `src/commands/project.ts`: First command handler to demonstrate pattern
 
 **Configuration:**
-- `src/api/config.ts`: Config file path logic, loadConfig(), saveConfig(), getApiUrl()
+
+- `src/api/config.ts`: Config file path logic, loadConfig(), saveConfig(),
+  getApiUrl()
 - `deno.json`: Deno runtime configuration, task definitions, import map
 
 **Core Logic:**
-- `src/commands/project.ts`: Project CRUD operations and repository management (272 lines)
-- `src/commands/task.ts`: Task operations including markdown file parsing (335 lines)
-- `src/commands/attempt.ts`: Workspace (attempt) operations, most complex command (767 lines)
+
+- `src/commands/project.ts`: Project CRUD operations and repository management
+  (272 lines)
+- `src/commands/task.ts`: Task operations including markdown file parsing (335
+  lines)
+- `src/commands/attempt.ts`: Workspace (attempt) operations, most complex
+  command (767 lines)
 - `src/utils/project-resolver.ts`: Git-based project detection (163 lines)
 - `src/utils/fzf.ts`: Interactive selection wrapper (179 lines)
 
 **Testing:**
+
 - `tests/api_client_test.ts`: ApiClient unit tests
 - `tests/helpers/test-server.ts`: Mock backend server implementation
 - `tests/helpers/test-data.ts`: Fixture data and factory functions
@@ -100,76 +118,106 @@ vk/
 ## Naming Conventions
 
 **Files:**
-- Kebab-case for module names: `project-resolver.ts`, `error-handler.ts`, `markdown-parser.ts`
-- Test files: `{module}_test.ts` for unit tests, `{module}_integration_test.ts` for integration tests
+
+- Kebab-case for module names: `project-resolver.ts`, `error-handler.ts`,
+  `markdown-parser.ts`
+- Test files: `{module}_test.ts` for unit tests, `{module}_integration_test.ts`
+  for integration tests
 - Commands: Direct resource name: `project.ts`, `task.ts`, `attempt.ts`
 
 **Directories:**
+
 - Plural for collections: `src/commands/`, `src/utils/`, `tests/`
 - Flat structure under src (no nested command directories)
 
 **Functions:**
-- camelCase for functions: `getProjectId()`, `resolveProjectFromGit()`, `applyFilters()`
-- PascalCase for classes: `ApiClient`, `ProjectResolverError`, `FzfNotInstalledError`
-- Descriptive names with verbs: `selectProject()`, `formatTask()`, `extractRepoBasename()`
+
+- camelCase for functions: `getProjectId()`, `resolveProjectFromGit()`,
+  `applyFilters()`
+- PascalCase for classes: `ApiClient`, `ProjectResolverError`,
+  `FzfNotInstalledError`
+- Descriptive names with verbs: `selectProject()`, `formatTask()`,
+  `extractRepoBasename()`
 
 **Types:**
-- PascalCase for interfaces: `Project`, `Task`, `Workspace`, `CreateTask`, `UpdateProject`
-- Suffix pattern for variants: `Create{Resource}` (CreateProject), `Update{Resource}` (UpdateTask)
-- Union types for enums: `type TaskStatus = "todo" | "inprogress" | "inreview" | "done" | "cancelled"`
+
+- PascalCase for interfaces: `Project`, `Task`, `Workspace`, `CreateTask`,
+  `UpdateProject`
+- Suffix pattern for variants: `Create{Resource}` (CreateProject),
+  `Update{Resource}` (UpdateTask)
+- Union types for enums:
+  `type TaskStatus = "todo" | "inprogress" | "inreview" | "done" | "cancelled"`
 
 ## Where to Add New Code
 
 **New Command:**
+
 1. Create `src/commands/newresource.ts` exporting a Cliffy Command
-2. Import in `src/main.ts` and register via `.command("newresource", newResourceCommand)`
-3. Implement subcommands (list, show, create, update, delete) following existing command pattern
+2. Import in `src/main.ts` and register via
+   `.command("newresource", newResourceCommand)`
+3. Implement subcommands (list, show, create, update, delete) following existing
+   command pattern
 4. Use ApiClient for all API calls, utilities for ID resolution/filtering
 5. Use `handleCliError()` for consistent error handling
-6. Add tests in `tests/newresource_test.ts` and `tests/newresource_integration_test.ts`
+6. Add tests in `tests/newresource_test.ts` and
+   `tests/newresource_integration_test.ts`
 7. Add JSDoc comments to all exported functions and types
-8. Run pre-commit checks: `deno fmt --check && deno lint && deno check src/main.ts`
+8. Run pre-commit checks:
+   `deno fmt --check && deno lint && deno check src/main.ts`
 
 **New Utility:**
+
 1. Create `src/utils/new-utility.ts` exporting functions or classes
-2. If custom error handling needed, extend Error class with custom name (e.g., `NewUtilityError`)
+2. If custom error handling needed, extend Error class with custom name (e.g.,
+   `NewUtilityError`)
 3. Add to centralized error handler `src/utils/error-handler.ts` if user-facing
-4. Add unit tests in `src/utils/{new-utility}_test.ts` (if not integration-dependent)
+4. Add unit tests in `src/utils/{new-utility}_test.ts` (if not
+   integration-dependent)
 5. Add integration tests in `tests/new_utility_integration_test.ts`
 6. Add JSDoc comments to all exported functions and classes
 7. If the utility is part of the public API, re-export from `src/mod.ts`
-8. Run pre-commit checks: `deno fmt --check && deno lint && deno check src/main.ts`
+8. Run pre-commit checks:
+   `deno fmt --check && deno lint && deno check src/main.ts`
 
 **New API Method:**
+
 1. Add method to ApiClient class in `src/api/client.ts`
 2. Add types to `src/api/types.ts` (request/response types)
-3. Follow existing pattern: private `request<T>()` method, verbose logging support
+3. Follow existing pattern: private `request<T>()` method, verbose logging
+   support
 4. Test via `tests/api_client_test.ts` mock server
 5. Add JSDoc comment to the new method with `@param` and `@returns` tags
 6. If adding new types to `src/api/types.ts`, add JSDoc to each exported type
-7. Run pre-commit checks: `deno fmt --check && deno lint && deno check src/main.ts`
+7. Run pre-commit checks:
+   `deno fmt --check && deno lint && deno check src/main.ts`
 
 **New Configuration:**
+
 1. Add field to Config interface in `src/api/config.ts`
 2. Add to loadConfig() default values and saveConfig() serialization
 3. Add environment variable override in loadConfig()
-4. Create `config` subcommand in `src/commands/config.ts` to expose getter/setter
+4. Create `config` subcommand in `src/commands/config.ts` to expose
+   getter/setter
 5. Add JSDoc to new Config fields and any new exported functions
-6. Run pre-commit checks: `deno fmt --check && deno lint && deno check src/main.ts`
+6. Run pre-commit checks:
+   `deno fmt --check && deno lint && deno check src/main.ts`
 
 ## Special Directories
 
 **`.planning/codebase/`:**
+
 - Purpose: GSD (Generation-Spawn-Decide) codebase analysis documents
 - Generated: Automatically by gsd-map-codebase orchestrator
 - Committed: Yes, provides architectural reference for future development
 
 **`openspec/changes/`:**
+
 - Purpose: Change proposals and specifications (OpenSpec format)
 - Generated: Manually via pull requests
 - Committed: Yes, historical record of changes
 
 **`.claude/`, `.cursor/`, `.gemini/`:**
+
 - Purpose: AI editor-specific configuration and preferences
 - Generated: Via editor settings
 - Committed: Yes, for team consistency
@@ -177,24 +225,28 @@ vk/
 ## Import Organization
 
 **Pattern:**
+
 1. Cliffy and external libraries: `import { Command } from "@cliffy/command"`
 2. Deno standard library: `import { join } from "@std/path"`
 3. Project internal (api): `import { ApiClient } from "../api/client.ts"`
-4. Project internal (utils): `import { getProjectId } from "../utils/project-resolver.ts"`
+4. Project internal (utils):
+   `import { getProjectId } from "../utils/project-resolver.ts"`
 5. Type-only imports: `import type { Project } from "../api/types.ts"`
 
 **Example from src/commands/task.ts:**
+
 ```typescript
-import { Command } from "@cliffy/command";          // External CLI library
-import { open } from "@opensrc/deno-open";          // External deno package
-import { ApiClient } from "../api/client.ts";       // API layer
-import { getProjectId } from "../utils/project-resolver.ts";  // Utils
-import type { CreateTask } from "../api/types.ts";  // Types only
+import { Command } from "@cliffy/command"; // External CLI library
+import { open } from "@opensrc/deno-open"; // External deno package
+import { ApiClient } from "../api/client.ts"; // API layer
+import { getProjectId } from "../utils/project-resolver.ts"; // Utils
+import type { CreateTask } from "../api/types.ts"; // Types only
 ```
 
 **Path Aliases:**
+
 - No aliases defined. Relative imports only (../api, ../utils)
 
 ---
 
-*Structure analysis: 2026-01-30*
+_Structure analysis: 2026-01-30_

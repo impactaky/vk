@@ -1,6 +1,8 @@
 # vibe-kanban CLI
 
-A command-line interface for [vibe-kanban](https://github.com/BloopAI/vibe-kanban), similar to how `gh` works for GitHub.
+A command-line interface for
+[vibe-kanban](https://github.com/BloopAI/vibe-kanban), similar to how `gh` works
+for GitHub.
 
 ## QuickStart
 
@@ -9,12 +11,13 @@ Get started with `vk` in under 2 minutes:
 ### 1. Install vk
 
 **From Deno:**
+
 ```bash
 deno install -g --allow-net --allow-read --allow-write --allow-env --allow-run=git,fzf -n vk https://raw.githubusercontent.com/BloopAI/vk/main/src/main.ts
 ```
 
-**From GitHub releases:**
-Download pre-built binaries from the [releases page](https://github.com/BloopAI/vk/releases).
+**From GitHub releases:** Download pre-built binaries from the
+[releases page](https://github.com/BloopAI/vk/releases).
 
 #### 1.1 Configure shell completion (optional)
 
@@ -53,7 +56,8 @@ Requires [Deno](https://deno.land/) v2.x.
 
 ### Optional: Install fzf for interactive selection
 
-For interactive project/task/attempt selection, install [fzf](https://github.com/junegunn/fzf).
+For interactive project/task/attempt selection, install
+[fzf](https://github.com/junegunn/fzf).
 
 ### Install from source
 
@@ -176,13 +180,18 @@ vk attempt branch-status <attempt-id>
 
 ### Interactive Selection (with fzf)
 
-When fzf is installed, you can omit IDs from commands to get an interactive fuzzy-search selection:
+When fzf is installed, you can omit IDs from commands to get an interactive
+fuzzy-search selection:
 
-- **Project selection**: Triggered when not in a git repository or when no matching project is found
-- **Task selection**: Triggered when task ID is omitted from `task show/update/delete` commands
-- **Attempt selection**: Triggered when attempt ID is omitted from `attempt` commands
+- **Project selection**: Triggered when not in a git repository or when no
+  matching project is found
+- **Task selection**: Triggered when task ID is omitted from
+  `task show/update/delete` commands
+- **Attempt selection**: Triggered when attempt ID is omitted from `attempt`
+  commands
 
 Example workflow:
+
 ```bash
 # Select project interactively, then select task, then show details
 vk task show
