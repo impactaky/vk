@@ -177,15 +177,19 @@ taskCommand
         title = parsed.title;
         description = parsed.description;
       } else {
-        if (!title) {
-          title = await Input.prompt("Task title:");
-        }
-
         if (!description) {
           description = await Input.prompt({
             message: "Task description (optional):",
             default: "",
           });
+        }
+
+        if (!title || title.trim() === "") {
+          title = description.split("\n")[0]?.trim() || "";
+        }
+
+        if (!title) {
+          title = await Input.prompt("Task title:");
         }
       }
 
