@@ -27,6 +27,7 @@ import { parseExecutorString } from "../utils/executor-parser.ts";
 import { handleCliError } from "../utils/error-handler.ts";
 import { getApiUrl, loadConfig } from "../api/config.ts";
 import { isLocalhost } from "../utils/localhost.ts";
+import { parseTaskFromFile } from "../utils/markdown-parser.ts";
 
 export const attemptCommand = new Command()
   .description("Manage workspaces (task attempts)")
@@ -1106,9 +1107,12 @@ attemptCommand
     "Project ID (for fzf selection, auto-detected from git if omitted)",
   )
   .option("--title <title:string>", "Task title")
-  .option("--message <message:string>", "Initial message for the new task")
+  .option("--description <description:string>", "Task description")
+  .option("--message <message:string>", "Deprecated alias for --description")
   .option("--from <file:file>", "Load message from file")
-  .option("--run", "Create a workspace and start execution immediately")
+  .option("--run", "Create a workspace and start execution immediately", {
+    default: true,
+  })
   .option(
     "--executor <executor:string>",
     "Executor profile ID in format <name>:<variant> (e.g., CLAUDE_CODE:DEFAULT). Required when --run is specified unless default-executor is configured.",
@@ -1152,25 +1156,34 @@ attemptCommand
       const workspace = await client.getWorkspace(workspaceId);
       const parentTask = await client.getTask(workspace.task_id);
 
-      // Handle input (title and message)
+      // Handle input (title and description)
       let title = options.title;
-      let message = options.message;
+      let description = options.description || options.message;
 
       if (options.from) {
-        if (options.title || options.message) {
-          console.error("Error: Cannot use --from with --title or --message");
+        if (options.title || options.description || options.message) {
+          console.error(
+            "Error: Cannot use --from with --title, --message, or --description",
+          );
           Deno.exit(1);
         }
-        message = await Deno.readTextFile(options.from);
-        if (!title) {
-          title = message.split("\n")[0].trim();
-        }
+
+        const parsedTask = await parseTaskFromFile(options.from);
+        title = parsedTask.title;
+        description = parsedTask.description;
       } else {
-        if (!message) {
-          message = await Input.prompt("Message for new agent:");
+        if (!description) {
+          description = await Input.prompt({
+            message: "Task description (optional):",
+            default: "",
+          });
         }
         if (!title) {
-          title = message.split("\n")[0].trim();
+          title = description.split("\n")[0]?.trim() || "";
+        }
+
+        if (!title) {
+          title = await Input.prompt("Task title:");
         }
       }
 
@@ -1178,7 +1191,7 @@ attemptCommand
       const createTask: CreateTask = {
         project_id: parentTask.project_id,
         title,
-        description: message,
+        description,
         parent_workspace_id: workspaceId,
       };
 
