@@ -14,6 +14,8 @@ export interface Config {
   apiUrl: string;
   /** User's preferred shell for workspace sessions. */
   shell?: string;
+  /** Default executor profile used when commands don't provide one. */
+  defaultExecutor?: string;
 }
 
 const CONFIG_FILE = "vk-config.json";

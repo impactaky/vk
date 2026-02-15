@@ -151,9 +151,6 @@ attemptCommand
   .option(
     "--executor <executor:string>",
     "Executor profile ID in format <name>:<variant> (e.g., CLAUDE_CODE:DEFAULT)",
-    {
-      required: true,
-    },
   )
   .option(
     "--target-branch <branch:string>",
@@ -161,10 +158,21 @@ attemptCommand
   )
   .action(async (options) => {
     try {
+      let executorString = options.executor;
+      if (!executorString) {
+        executorString = (await loadConfig()).defaultExecutor;
+        if (!executorString) {
+          console.error(
+            "Error: --executor is required unless a default is set via `vk config set default-executor <name>:<variant>`.",
+          );
+          Deno.exit(1);
+        }
+      }
+
       const client = await ApiClient.create();
 
       // Parse executor string into profile ID
-      const executorProfileId = parseExecutorString(options.executor);
+      const executorProfileId = parseExecutorString(executorString);
 
       // Get task to find project_id
       const task = await client.getTask(options.task);
@@ -722,16 +730,21 @@ attemptCommand
           : await selectSession(sessions);
       }
 
-      // Determine executor: use provided --executor flag, or default to CLAUDE_CODE
+      // Determine executor: use provided --executor flag, configured default, or fallback to CLAUDE_CODE
       let executorProfileId;
       if (options.executor) {
         executorProfileId = parseExecutorString(options.executor);
       } else {
-        // Default executor for follow-up - use CLAUDE_CODE as safe default
-        executorProfileId = {
-          executor: "CLAUDE_CODE" as const,
-          variant: null,
-        };
+        const config = await loadConfig();
+        if (config.defaultExecutor) {
+          executorProfileId = parseExecutorString(config.defaultExecutor);
+        } else {
+          // Default executor for follow-up - use CLAUDE_CODE as safe default
+          executorProfileId = {
+            executor: "CLAUDE_CODE" as const,
+            variant: null,
+          };
+        }
       }
 
       const request: FollowUpRequest = {
@@ -1065,7 +1078,7 @@ attemptCommand
   .option("--run", "Create a workspace and start execution immediately")
   .option(
     "--executor <executor:string>",
-    "Executor profile ID in format <name>:<variant> (e.g., CLAUDE_CODE:DEFAULT). Required when --run is specified.",
+    "Executor profile ID in format <name>:<variant> (e.g., CLAUDE_CODE:DEFAULT). Required when --run is specified unless default-executor is configured.",
   )
   .option(
     "--target-branch <branch:string>",
@@ -1073,10 +1086,19 @@ attemptCommand
   )
   .action(async (options, id) => {
     try {
-      // Validate option combinations
-      if (options.run && !options.executor) {
-        console.error("Error: --executor is required when --run is specified");
-        Deno.exit(1);
+      let executorString: string | undefined;
+      if (options.run) {
+        if (options.executor) {
+          executorString = options.executor;
+        } else {
+          executorString = (await loadConfig()).defaultExecutor;
+          if (!executorString) {
+            console.error(
+              "Error: --executor is required when --run is specified. Set a default with `vk config set default-executor <name>:<variant>`.",
+            );
+            Deno.exit(1);
+          }
+        }
       }
 
       const client = await ApiClient.create();
@@ -1133,8 +1155,8 @@ attemptCommand
       console.log(`${task.id} ${task.title}`);
 
       // If --run is specified, create a workspace and start execution
-      if (options.run && options.executor) {
-        const executorProfileId = parseExecutorString(options.executor);
+      if (options.run && executorString) {
+        const executorProfileId = parseExecutorString(executorString);
 
         // Get project repos to build repos[] array
         const projectRepos = await client.listProjectRepos(
