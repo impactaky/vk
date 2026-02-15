@@ -1,5 +1,6 @@
 import { Command } from "@cliffy/command";
 import { loadConfig, saveConfig } from "../api/config.ts";
+import { parseExecutorString } from "../utils/executor-parser.ts";
 
 export const configCommand = new Command()
   .description("Manage CLI configuration")
@@ -15,12 +16,15 @@ configCommand
     const config = await loadConfig();
     console.log(`API URL: ${config.apiUrl}`);
     console.log(`Shell: ${config.shell || "(default: bash)"}`);
+    console.log(`Default executor: ${config.defaultExecutor || "(not set)"}`);
   });
 
 // Set config value
 configCommand
   .command("set")
-  .description("Set a configuration value. Available keys: api-url, shell")
+  .description(
+    "Set a configuration value. Available keys: api-url, shell, default-executor",
+  )
   .arguments("<key:string> <value:string>")
   .action(async (_options, key, value) => {
     const config = await loadConfig();
@@ -32,9 +36,13 @@ configCommand
       case "shell":
         config.shell = value;
         break;
+      case "default-executor":
+        parseExecutorString(value);
+        config.defaultExecutor = value;
+        break;
       default:
         console.error(`Unknown configuration key: ${key}`);
-        console.log("Available keys: api-url, shell");
+        console.log("Available keys: api-url, shell, default-executor");
         Deno.exit(1);
     }
 

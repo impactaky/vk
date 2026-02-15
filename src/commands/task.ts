@@ -3,7 +3,7 @@ import { Confirm, Input } from "@cliffy/prompt";
 import { Table } from "@cliffy/table";
 import { open } from "@opensrc/deno-open";
 import { ApiClient } from "../api/client.ts";
-import { getApiUrl } from "../api/config.ts";
+import { getApiUrl, loadConfig } from "../api/config.ts";
 import type {
   CreateTask,
   CreateWorkspace,
@@ -133,7 +133,7 @@ taskCommand
   .option("--run", "Create a workspace and start execution immediately")
   .option(
     "--executor <executor:string>",
-    "Executor profile ID in format <name>:<variant> (e.g., CLAUDE_CODE:DEFAULT). Required when --run is specified.",
+    "Executor profile ID in format <name>:<variant> (e.g., CLAUDE_CODE:DEFAULT). Required when --run is specified unless default-executor is configured.",
   )
   .option(
     "--target-branch <branch:string>",
@@ -141,10 +141,19 @@ taskCommand
   )
   .action(async (options) => {
     try {
-      // Validate option combinations
-      if (options.run && !options.executor) {
-        console.error("Error: --executor is required when --run is specified");
-        Deno.exit(1);
+      let executorString: string | undefined;
+      if (options.run) {
+        if (options.executor) {
+          executorString = options.executor;
+        } else {
+          executorString = (await loadConfig()).defaultExecutor;
+          if (!executorString) {
+            console.error(
+              "Error: --executor is required when --run is specified. Set a default with `vk config set default-executor <name>:<variant>`.",
+            );
+            Deno.exit(1);
+          }
+        }
       }
 
       const client = await ApiClient.create();
@@ -190,8 +199,8 @@ taskCommand
       console.log(`ID: ${task.id}`);
 
       // If --run is specified, create a workspace and start execution
-      if (options.run && options.executor) {
-        const executorProfileId = parseExecutorString(options.executor);
+      if (options.run && executorString) {
+        const executorProfileId = parseExecutorString(executorString);
 
         // Get project repos to build repos[] array
         const projectRepos = await client.listProjectRepos(projectId);

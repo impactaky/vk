@@ -80,6 +80,7 @@ Set the API endpoint (defaults to `http://localhost:3000`):
 
 ```bash
 vk config set api-url http://localhost:3000
+vk config set default-executor CLAUDE_CODE:DEFAULT
 vk config show
 ```
 
