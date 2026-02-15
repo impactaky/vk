@@ -1,14 +1,19 @@
 # Sessions and Execution Model Research
 
-**Researched:** 2026-01-30
-**Confidence:** HIGH (verified via DeepWiki official documentation)
-**Scope:** Sessions/Execution Model for vibe-kanban CLI alignment
+**Researched:** 2026-01-30 **Confidence:** HIGH (verified via DeepWiki official
+documentation) **Scope:** Sessions/Execution Model for vibe-kanban CLI alignment
 
 ## Executive Summary
 
-The vibe-kanban API has a three-level hierarchy for execution management: **Workspace -> Session -> ExecutionProcess**. The current CLI only understands Workspaces (exposed as "task-attempts") and lacks awareness of Sessions entirely.
+The vibe-kanban API has a three-level hierarchy for execution management:
+**Workspace -> Session -> ExecutionProcess**. The current CLI only understands
+Workspaces (exposed as "task-attempts") and lacks awareness of Sessions
+entirely.
 
-The critical finding is that **follow-up messages must now be sent to Sessions, not Workspaces**. The CLI's current `vk attempt follow-up` command calls the wrong endpoint (`/api/task-attempts/{id}/follow-up`) when it should call `/api/sessions/{id}/follow-up`.
+The critical finding is that **follow-up messages must now be sent to Sessions,
+not Workspaces**. The CLI's current `vk attempt follow-up` command calls the
+wrong endpoint (`/api/task-attempts/{id}/follow-up`) when it should call
+`/api/sessions/{id}/follow-up`.
 
 ## Entity Hierarchy
 
@@ -24,15 +29,18 @@ Workspace (task-attempt)
 
 ### Workspace
 
-**Definition:** An isolated Git worktree environment allocated for a task attempt.
+**Definition:** An isolated Git worktree environment allocated for a task
+attempt.
 
 **Key characteristics:**
+
 - Created via `POST /api/task-attempts`
 - Contains filesystem path and repository state
 - Has a dedicated branch per workspace
 - Can contain MULTIPLE sessions
 
 **Fields (from current CLI types):**
+
 ```typescript
 interface Workspace {
   id: string;
@@ -54,16 +62,19 @@ interface Workspace {
 **Definition:** Tracks an individual agent conversation within a workspace.
 
 **Key characteristics:**
+
 - Created automatically when execution begins
 - Multiple sessions can exist per workspace
 - Follow-up messages go to SESSIONS, not workspaces
 - Each session can spawn multiple execution processes
 
 **Relationship:**
+
 - `workspace_id` foreign key links session to parent workspace
 - One workspace -> Many sessions
 
 **API Presence (needs CLI integration):**
+
 ```
 GET  /api/sessions?workspace_id={uuid}     -- List sessions for workspace
 GET  /api/sessions/:id                     -- Get session details
@@ -76,17 +87,20 @@ POST /api/sessions/:id/follow-up           -- Send follow-up message
 **Definition:** Records a specific agent execution event within a session.
 
 **Key characteristics:**
+
 - Created when agent is spawned
 - Tracks status, exit code, run reason
 - Multiple per session (initial + follow-ups)
 
 **Run Reason Values:**
+
 - `setupscript` - Repository setup operations
 - `codingagent` - AI agent execution
 - `cleanupscript` - Post-execution cleanup
 - `devserver` - Development server process
 
 **Relationship:**
+
 - `session_id` foreign key links to parent session
 - One session -> Many execution processes
 
@@ -140,16 +154,19 @@ Response: ExecutionProcess
 ### Current CLI Bug
 
 The CLI currently calls:
+
 ```
 POST /api/task-attempts/{workspace_id}/follow-up
 ```
 
 It should call:
+
 ```
 POST /api/sessions/{session_id}/follow-up
 ```
 
 This requires:
+
 1. Knowing which session to target
 2. Either: Getting the "active" session for a workspace
 3. Or: Listing sessions and letting user choose
@@ -193,20 +210,25 @@ Response: ApiResponse<ExecutionProcess>
 
 ### Option A: Transparent Session Handling (Recommended)
 
-The CLI abstracts sessions away from users. Most users care about workspaces, not sessions.
+The CLI abstracts sessions away from users. Most users care about workspaces,
+not sessions.
 
 **Implementation:**
+
 1. When user calls `vk attempt follow-up <workspace_id>`:
    - CLI fetches sessions for workspace: `GET /api/sessions?workspace_id={id}`
    - CLI selects the most recent/active session
-   - CLI sends follow-up to that session: `POST /api/sessions/{session_id}/follow-up`
+   - CLI sends follow-up to that session:
+     `POST /api/sessions/{session_id}/follow-up`
 
 **Pros:**
+
 - Minimal UX change for users
 - Backward compatible command structure
 - Sessions are implementation detail
 
 **Cons:**
+
 - Loses ability to target specific sessions (rarely needed)
 
 ### Option B: Explicit Session Commands
@@ -214,6 +236,7 @@ The CLI abstracts sessions away from users. Most users care about workspaces, no
 Add new `session` command group to CLI.
 
 **New commands:**
+
 ```bash
 vk session list [workspace_id]       # List sessions for workspace
 vk session show <session_id>         # Show session details
@@ -221,15 +244,18 @@ vk session follow-up <session_id> --message "..."  # Send follow-up
 ```
 
 **Modify existing:**
+
 ```bash
 vk attempt follow-up  # Deprecated, points to vk session follow-up
 ```
 
 **Pros:**
+
 - Full session control
 - Matches API structure
 
 **Cons:**
+
 - More commands for users to learn
 - Breaking change to existing workflows
 
@@ -293,11 +319,13 @@ sessionFollowUp(sessionId: string, request: FollowUpRequest): Promise<ExecutionP
 ### 3. Fix `vk attempt follow-up` Command
 
 Current implementation (BROKEN):
+
 ```typescript
-await client.followUp(workspaceId, request);  // Calls /task-attempts/{id}/follow-up
+await client.followUp(workspaceId, request); // Calls /task-attempts/{id}/follow-up
 ```
 
 Fixed implementation:
+
 ```typescript
 // Get latest session for workspace
 const sessions = await client.listSessions(workspaceId);
@@ -305,9 +333,10 @@ if (sessions.length === 0) {
   throw new Error("No sessions found for this workspace");
 }
 // Use most recent session (last created or last updated)
-const latestSession = sessions.sort((a, b) =>
-  new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-)[0];
+const latestSession =
+  sessions.sort((a, b) =>
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  )[0];
 
 // Send follow-up to session
 await client.sessionFollowUp(latestSession.id, request);
@@ -325,7 +354,11 @@ attemptCommand
   .option("--json", "Output as JSON")
   .action(async (options, workspaceId) => {
     const client = await ApiClient.create();
-    const id = await getAttemptIdWithAutoDetect(client, workspaceId, options.project);
+    const id = await getAttemptIdWithAutoDetect(
+      client,
+      workspaceId,
+      options.project,
+    );
     const sessions = await client.listSessions(id);
     // ... display sessions
   });
@@ -335,19 +368,25 @@ attemptCommand
 
 ### LOW confidence items requiring verification:
 
-1. **Session fields:** What exact fields does the Session response include? Need to verify against actual API response.
+1. **Session fields:** What exact fields does the Session response include? Need
+   to verify against actual API response.
 
-2. **Active session selection:** Is there a concept of "active" or "current" session? Or should we always use most recent?
+2. **Active session selection:** Is there a concept of "active" or "current"
+   session? Or should we always use most recent?
 
-3. **Session creation:** When is a session created? Only on workspace creation, or can users manually create sessions?
+3. **Session creation:** When is a session created? Only on workspace creation,
+   or can users manually create sessions?
 
-4. **Execution process listing:** Is there an endpoint to list execution processes for a session? (For showing execution history)
+4. **Execution process listing:** Is there an endpoint to list execution
+   processes for a session? (For showing execution history)
 
-5. **Session statuses:** What statuses can a session have? Running, Completed, Failed?
+5. **Session statuses:** What statuses can a session have? Running, Completed,
+   Failed?
 
 ### Recommendations for phase-specific research:
 
-- Before implementing, test the actual API responses to confirm Session type fields
+- Before implementing, test the actual API responses to confirm Session type
+  fields
 - Verify if `/api/task-attempts/{id}/follow-up` is deprecated or removed
 - Check if there's a "latest session" convenience endpoint
 
@@ -365,4 +404,5 @@ attemptCommand
   - /var/tmp/vibe-kanban/worktrees/b708-gsd-new-mileston/vk/src/commands/attempt.ts
 
 ---
-*Research completed: 2026-01-30*
+
+_Research completed: 2026-01-30_

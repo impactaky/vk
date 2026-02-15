@@ -29,7 +29,8 @@ completed: 2026-01-31
 
 # Quick Task 001: Update GSD Docs - Skills Migration Summary
 
-**Docker test workflow and lint quick reference commands migrated from skill files to GSD planning docs**
+**Docker test workflow and lint quick reference commands migrated from skill
+files to GSD planning docs**
 
 ## Performance
 
@@ -40,6 +41,7 @@ completed: 2026-01-31
 - **Files modified:** 2
 
 ## Accomplishments
+
 - Added Docker test workflow to TESTING.md as Quick Start section
 - Added lint/format/typecheck quick reference to CONVENTIONS.md
 - Commands exactly match authoritative skill definitions
@@ -49,23 +51,31 @@ completed: 2026-01-31
 Each task was committed atomically:
 
 1. **Task 1: Add Docker test workflow to TESTING.md** - `41ca1a0` (docs)
-2. **Task 2: Add lint command quick reference to CONVENTIONS.md** - `7c017d6` (docs)
+2. **Task 2: Add lint command quick reference to CONVENTIONS.md** - `7c017d6`
+   (docs)
 
 ## Files Created/Modified
-- `.planning/codebase/TESTING.md` - Added Quick Start section with Docker compose test command before Runner section
-- `.planning/codebase/CONVENTIONS.md` - Added Quick Reference Commands section in Linting subsection with fmt/lint/typecheck commands
+
+- `.planning/codebase/TESTING.md` - Added Quick Start section with Docker
+  compose test command before Runner section
+- `.planning/codebase/CONVENTIONS.md` - Added Quick Reference Commands section
+  in Linting subsection with fmt/lint/typecheck commands
 
 ## Decisions Made
 
 **1. Position Docker command as "Quick Start" before framework details**
+
 - Rationale: Developers want the simplest path first, details second
-- Makes TESTING.md match the skill's approach of leading with the recommended command
+- Makes TESTING.md match the skill's approach of leading with the recommended
+  command
 
 **2. Include fix hint in fmt command comment**
+
 - Rationale: Common workflow is check → see errors → fix
 - Matches skill pattern of showing the fix command inline
 
 **3. Keep commands in Linting section rather than top-level**
+
 - Rationale: Commands are quality checks, not build/run commands
 - Maintains document structure while adding quick reference
 
@@ -83,8 +93,9 @@ None - documentation updates only.
 
 ## Next Phase Readiness
 
-GSD planning documents now include complete command references from skills directory, making `.planning/` a comprehensive development workflow reference.
+GSD planning documents now include complete command references from skills
+directory, making `.planning/` a comprehensive development workflow reference.
 
 ---
-*Type: quick*
-*Completed: 2026-01-31*
+
+_Type: quick_ _Completed: 2026-01-31_

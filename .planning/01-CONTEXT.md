@@ -1,8 +1,7 @@
 # Phase 1 Context: Critical Fix
 
 **Phase goal:** Users can send follow-up messages to running workspaces
-**Created:** 2026-01-30
-**Status:** Ready for planning
+**Created:** 2026-01-30 **Status:** Ready for planning
 
 ## Decisions
 
@@ -10,19 +9,23 @@
 
 **How to find the right session for a workspace:**
 
-1. **Multiple sessions exist** → Launch fzf interactive selection (matches existing CLI patterns)
+1. **Multiple sessions exist** → Launch fzf interactive selection (matches
+   existing CLI patterns)
 2. **No sessions exist** → Error: "No sessions found for this workspace"
 3. **Session not running** → Error (verify session is active before sending)
-4. **Auto-detected workspace (from git branch)** → Same resolution logic as explicit ID
+4. **Auto-detected workspace (from git branch)** → Same resolution logic as
+   explicit ID
 
 ### Executor Handling
 
 **How to handle executor_profile_id requirement:**
 
 1. **Default behavior** → Re-use executor from the target session
-2. **Override** → Accept optional `--executor` flag to specify different executor
+2. **Override** → Accept optional `--executor` flag to specify different
+   executor
 3. **Mismatched executor** → Allow it (let API decide if valid)
-4. **Additional flags** (`force_when_dirty`, `perform_git_reset`) → Defer, add only if clear use case emerges
+4. **Additional flags** (`force_when_dirty`, `perform_git_reset`) → Defer, add
+   only if clear use case emerges
 
 ## Implementation Notes
 
@@ -41,4 +44,5 @@
 None captured during discussion.
 
 ---
-*Context captured: 2026-01-30*
+
+_Context captured: 2026-01-30_

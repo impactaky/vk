@@ -10,7 +10,12 @@ services:
     volumes:
       - shared-test-data:/shared
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/projects', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      test: [
+        "CMD",
+        "node",
+        "-e",
+        "require('http').get('http://localhost:3000/api/projects', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))",
+      ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -20,7 +25,10 @@ services:
     image: denoland/deno:latest
     environment:
       - VK_API_URL=http://vibe-kanban:3000
-    command: deno test --allow-net --allow-read --allow-write --allow-env --allow-run
+      - HOME=/tmp/vk-home
+      - VK_DEFAULT_EXECUTOR=CLAUDE_CODE:DEFAULT
+    command: >
+      sh -c "deno test --allow-net --allow-read --allow-write --allow-env --allow-run"
     working_dir: /app
     volumes:
       - .:/app
@@ -31,4 +39,3 @@ services:
 
 volumes:
   shared-test-data:
-
