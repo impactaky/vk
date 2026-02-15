@@ -12,8 +12,8 @@ import type {
   MergeWorkspaceRequest,
   PushWorkspaceRequest,
   RebaseWorkspaceRequest,
-  Session,
   RepoBranchStatus,
+  Session,
   UpdateWorkspace,
 } from "../api/types.ts";
 import { applyFilters } from "../utils/filter.ts";
