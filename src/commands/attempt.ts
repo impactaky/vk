@@ -13,6 +13,7 @@ import type {
   PushWorkspaceRequest,
   RebaseWorkspaceRequest,
   RepoBranchStatus,
+  Session,
   UpdateWorkspace,
 } from "../api/types.ts";
 import { applyFilters } from "../utils/filter.ts";
@@ -32,6 +33,35 @@ export const attemptCommand = new Command()
   .action(function () {
     this.showHelp();
   });
+
+function resolveSessionIdFromCurrentAttempt(
+  sessions: Session[],
+  sessionInput: string,
+): string {
+  const exactMatch = sessions.find((session) => session.id === sessionInput);
+  if (exactMatch) {
+    return exactMatch.id;
+  }
+
+  const matches = sessions.filter((session) =>
+    session.id.startsWith(sessionInput)
+  );
+  if (matches.length === 1) {
+    return matches[0].id;
+  }
+
+  if (matches.length > 1) {
+    const candidates = matches.map((session) => `  - ${session.id}`).join("\n");
+    throw new Error(
+      `Session ID "${sessionInput}" is ambiguous.\n` +
+        `Did you mean one of these?:\n${candidates}`,
+    );
+  }
+
+  throw new Error(
+    `No session ID matching "${sessionInput}" was found for this attempt.`,
+  );
+}
 
 // List workspaces
 attemptCommand
@@ -699,7 +729,7 @@ attemptCommand
   )
   .option(
     "--session <id:string>",
-    "Target a specific session ID (skips auto-detection)",
+    "Session ID (exact match or unique prefix) within the selected workspace",
   )
   .action(async (options, id) => {
     try {
@@ -707,23 +737,26 @@ attemptCommand
 
       let sessionId: string;
 
+      // Resolve workspace ID (from arg, auto-detect, or fzf)
+      const workspaceId = await getAttemptIdWithAutoDetect(
+        client,
+        id,
+        options.project,
+      );
+
+      // Get sessions for the workspace
+      const sessions = await client.listSessions(workspaceId);
+      if (sessions.length === 0) {
+        throw new Error("No sessions found for this workspace");
+      }
+
       if (options.session) {
-        // Use explicitly provided session ID
-        sessionId = options.session;
-      } else {
-        // Resolve workspace ID (from arg, auto-detect, or fzf)
-        const workspaceId = await getAttemptIdWithAutoDetect(
-          client,
-          id,
-          options.project,
+        // Resolve provided session ID from current workspace sessions (exact or unique prefix)
+        sessionId = resolveSessionIdFromCurrentAttempt(
+          sessions,
+          options.session,
         );
-
-        // Get sessions for the workspace
-        const sessions = await client.listSessions(workspaceId);
-        if (sessions.length === 0) {
-          throw new Error("No sessions found for this workspace");
-        }
-
+      } else {
         // Auto-select if single session, otherwise use fzf
         sessionId = sessions.length === 1
           ? sessions[0].id
