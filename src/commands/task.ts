@@ -12,6 +12,7 @@ import type {
 } from "../api/types.ts";
 import { getProjectId } from "../utils/project-resolver.ts";
 import { parseTaskFromFile } from "../utils/markdown-parser.ts";
+import { parseTaskFromEditor } from "../utils/editor.ts";
 import { applyFilters } from "../utils/filter.ts";
 import { getTaskIdWithAutoDetect } from "../utils/attempt-resolver.ts";
 import { parseExecutorString } from "../utils/executor-parser.ts";
@@ -176,14 +177,15 @@ taskCommand
         const parsed = await parseTaskFromFile(options.from);
         title = parsed.title;
         description = parsed.description;
-      } else {
-        if (!description) {
-          description = await Input.prompt({
-            message: "Task description (optional):",
-            default: "",
-          });
+      } else if (!description) {
+        const parsed = await parseTaskFromEditor(
+          `# ${title || "Task title"}\n\n`,
+        );
+        if (!title || title.trim() === "") {
+          title = parsed.title;
         }
-
+        description = parsed.description;
+      } else {
         if (!title || title.trim() === "") {
           title = description.split("\n")[0]?.trim() || "";
         }
