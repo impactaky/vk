@@ -571,10 +571,6 @@ Deno.test({
           method: "POST",
           body: JSON.stringify({
             task_id: taskId,
-            executor_profile_id: {
-              executor: "CLAUDE_CODE",
-              variant: null,
-            },
             repos: [{ repo_id: repoId, target_branch: "main" }],
           }),
         },
@@ -732,10 +728,6 @@ Deno.test({
           method: "POST",
           body: JSON.stringify({
             task_id: task1Id,
-            executor_profile_id: {
-              executor: "CLAUDE_CODE",
-              variant: null,
-            },
             repos: [{ repo_id: repoId, target_branch: "main" }],
           }),
         },
@@ -754,10 +746,6 @@ Deno.test({
           method: "POST",
           body: JSON.stringify({
             task_id: task2Id,
-            executor_profile_id: {
-              executor: "CLAUDE_CODE",
-              variant: null,
-            },
             repos: [{ repo_id: repoId, target_branch: "main" }],
           }),
         },
@@ -815,11 +803,11 @@ Deno.test({
 });
 
 // ============================================================================
-// Workspace Git Operations Tests (merge, push, rebase with repo_id)
+// Workspace Git Operations Tests (merge, push, rebase)
 // ============================================================================
 
 Deno.test({
-  name: "API: Workspace merge requires repo_id",
+  name: "API: Workspace merge accepts commit_message and use_pr",
   fn: async () => {
     // Create a test repo directory
     const testRepoPath = await createTestRepoDir("merge-repo");
@@ -866,7 +854,6 @@ Deno.test({
         method: "POST",
         body: JSON.stringify({
           task_id: taskId,
-          executor_profile_id: { executor: "CLAUDE_CODE", variant: null },
           repos: [{ repo_id: repoId, target_branch: "main" }],
         }),
       });
@@ -877,15 +864,15 @@ Deno.test({
       );
       const workspaceId = workspaceResult.data!.id;
 
-      // Test merge with repo_id
-      const mergeResult = await apiCall<{ success: boolean; message?: string }>(
+      // Test merge with commit_message and use_pr
+      const mergeResult = await apiCall(
         `/task-attempts/${workspaceId}/merge`,
         {
           method: "POST",
-          body: JSON.stringify({ repo_id: repoId }),
+          body: JSON.stringify({ commit_message: "test merge", use_pr: false }),
         },
       );
-      // Note: May fail if branch doesn't exist, but validates API accepts repo_id
+      // Note: May fail if branch doesn't exist, but validates API accepts the payload
       assertExists(mergeResult);
 
       // Cleanup
@@ -903,7 +890,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "API: Workspace push requires repo_id",
+  name: "API: Workspace push and force-push",
   fn: async () => {
     const testRepoPath = await createTestRepoDir("push-repo");
 
@@ -945,7 +932,6 @@ Deno.test({
         method: "POST",
         body: JSON.stringify({
           task_id: taskId,
-          executor_profile_id: { executor: "CLAUDE_CODE", variant: null },
           repos: [{ repo_id: repoId, target_branch: "main" }],
         }),
       });
@@ -956,19 +942,17 @@ Deno.test({
       );
       const workspaceId = workspaceResult.data!.id;
 
-      // Test push with repo_id
+      // Test push (no request body)
       const pushResult = await apiCall(`/task-attempts/${workspaceId}/push`, {
         method: "POST",
-        body: JSON.stringify({ repo_id: repoId }),
       });
       assertExists(pushResult);
 
-      // Test force push with repo_id
+      // Test force push (no request body)
       const forcePushResult = await apiCall(
         `/task-attempts/${workspaceId}/push/force`,
         {
           method: "POST",
-          body: JSON.stringify({ repo_id: repoId }),
         },
       );
       assertExists(forcePushResult);
@@ -987,7 +971,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "API: Workspace rebase requires repo_id with optional base branches",
+  name: "API: Workspace rebase",
   fn: async () => {
     const testRepoPath = await createTestRepoDir("rebase-repo");
 
@@ -1029,7 +1013,6 @@ Deno.test({
         method: "POST",
         body: JSON.stringify({
           task_id: taskId,
-          executor_profile_id: { executor: "CLAUDE_CODE", variant: null },
           repos: [{ repo_id: repoId, target_branch: "main" }],
         }),
       });
@@ -1040,29 +1023,14 @@ Deno.test({
       );
       const workspaceId = workspaceResult.data!.id;
 
-      // Test rebase with repo_id only
-      const rebaseResult1 = await apiCall(
+      // Test rebase (no request body)
+      const rebaseResult = await apiCall(
         `/task-attempts/${workspaceId}/rebase`,
         {
           method: "POST",
-          body: JSON.stringify({ repo_id: repoId }),
         },
       );
-      assertExists(rebaseResult1);
-
-      // Test rebase with repo_id and base branches
-      const rebaseResult2 = await apiCall(
-        `/task-attempts/${workspaceId}/rebase`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            repo_id: repoId,
-            old_base_branch: "main",
-            new_base_branch: "develop",
-          }),
-        },
-      );
-      assertExists(rebaseResult2);
+      assertExists(rebaseResult);
 
       await apiCall(`/task-attempts/${workspaceId}`, { method: "DELETE" });
       await apiCall(`/tasks/${taskId}`, { method: "DELETE" });

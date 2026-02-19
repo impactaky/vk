@@ -73,10 +73,11 @@ sessionCommand
       }
 
       const table = new Table()
-        .header(["ID", "Created", "Updated"])
+        .header(["ID", "Executor", "Created", "Updated"])
         .body(
           sessions.map((s) => [
             s.id,
+            s.executor || "-",
             s.created_at,
             s.updated_at,
           ]),
@@ -128,6 +129,7 @@ sessionCommand
 
       console.log(`Session ID:    ${session.id}`);
       console.log(`Workspace ID:  ${session.workspace_id}`);
+      console.log(`Executor:      ${session.executor || "-"}`);
       console.log(`Created:       ${session.created_at}`);
       console.log(`Updated:       ${session.updated_at}`);
     } catch (error) {

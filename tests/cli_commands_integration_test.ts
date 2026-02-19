@@ -102,7 +102,6 @@ Deno.test("CLI: vk attempt spin-off creates task with parent_workspace_id", asyn
       method: "POST",
       body: JSON.stringify({
         task_id: taskId,
-        executor_profile_id: { executor: "CLAUDE_CODE", variant: null },
         repos: [{ repo_id: repoId, target_branch: "main" }],
       }),
     });
@@ -229,7 +228,6 @@ Deno.test("CLI: vk attempt spin-off --run creates task and workspace", async () 
       method: "POST",
       body: JSON.stringify({
         task_id: taskId,
-        executor_profile_id: { executor: "CLAUDE_CODE", variant: null },
         repos: [{ repo_id: repoId, target_branch: "main" }],
       }),
     });
