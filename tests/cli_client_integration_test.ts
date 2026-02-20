@@ -287,6 +287,10 @@ Deno.test({
         const followUpPayload = {
           prompt: "Test follow-up message",
           executor_profile_id: { executor: "CLAUDE_CODE", variant: null },
+          executor_config: { executor: "CLAUDE_CODE", variant: null },
+          retry_process_id: null,
+          force_when_dirty: null,
+          perform_git_reset: null,
         };
 
         const followUpResult = await apiCall(

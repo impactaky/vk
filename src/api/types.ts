@@ -230,6 +230,10 @@ export interface RenameBranchRequest {
 export interface CreatePRRequest {
   title?: string;
   body?: string;
+  target_branch?: string | null;
+  draft?: boolean | null;
+  repo_id?: string;
+  auto_generate_description?: boolean;
 }
 
 /** @deprecated Use RepoBranchStatus instead - API now returns array of repo statuses */
@@ -298,12 +302,28 @@ export type PRResult = string;
 /** Request body for sending a follow-up message to a running session. */
 export interface FollowUpRequest {
   prompt: string;
-  executor_profile_id: ExecutorProfileID;
+  executor_profile_id?: ExecutorProfileID;
+  executor_config?: ExecutorConfig;
+  retry_process_id?: string | null;
+  force_when_dirty?: boolean | null;
+  perform_git_reset?: boolean | null;
 }
 
 /** Request body for attaching an existing pull request to a workspace. */
 export interface AttachPRRequest {
-  pr_number: number;
+  repo_id: string;
+  pr_number?: number;
+}
+
+export interface AttachPRResponse {
+  pr_attached: boolean;
+  pr_url: string | null;
+  pr_number: bigint | null;
+  pr_status: string | null;
+}
+
+export interface AbortConflictsRequest {
+  repo_id: string;
 }
 
 /** A comment on a pull request. */
@@ -330,6 +350,17 @@ export interface UnifiedPRComment {
   line?: number;
   side?: string;
   in_reply_to_id?: number;
+}
+
+export type PermissionPolicy = "AUTO" | "SUPERVISED" | "PLAN";
+
+export interface ExecutorConfig {
+  executor: BaseCodingAgent;
+  variant?: string | null;
+  model_id?: string | null;
+  agent_id?: string | null;
+  reasoning_id?: string | null;
+  permission_policy?: PermissionPolicy | null;
 }
 
 /** A git repository registered with vibe-kanban. */

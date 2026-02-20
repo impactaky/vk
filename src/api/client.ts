@@ -12,6 +12,8 @@ import { isVerbose, verboseLog } from "../utils/verbose.ts";
 import type {
   ApiResponse,
   AttachPRRequest,
+  AttachPRResponse,
+  AbortConflictsRequest,
   CreateProject,
   CreatePRRequest,
   CreateTask,
@@ -19,7 +21,6 @@ import type {
   FollowUpRequest,
   GitBranch,
   InitRepoRequest,
-  MergeResult,
   MergeWorkspaceRequest,
   Project,
   PRResult,
@@ -235,9 +236,16 @@ export class ApiClient {
     });
   }
 
-  /** Delete a workspace. Calls DELETE /api/task-attempts/:id. */
-  deleteWorkspace(id: string): Promise<void> {
-    return this.request<void>(`/task-attempts/${id}`, {
+  /** Delete a workspace. Calls DELETE /api/task-attempts/:id with optional delete_branches query. */
+  deleteWorkspace(id: string, deleteBranches = false): Promise<void> {
+    const params = new URLSearchParams();
+    if (deleteBranches) {
+      params.set("delete_branches", "true");
+    }
+    const query = params.toString();
+    const url = `/task-attempts/${id}${query ? `?${query}` : ""}`;
+
+    return this.request<void>(url, {
       method: "DELETE",
     });
   }
@@ -261,8 +269,8 @@ export class ApiClient {
   mergeWorkspace(
     id: string,
     request: MergeWorkspaceRequest,
-  ): Promise<MergeResult> {
-    return this.request<MergeResult>(`/task-attempts/${id}/merge`, {
+  ): Promise<void> {
+    return this.request<void>(`/task-attempts/${id}/merge`, {
       method: "POST",
       body: JSON.stringify(request),
     });
@@ -315,15 +323,16 @@ export class ApiClient {
   }
 
   /** Abort ongoing git conflicts in a workspace. Calls POST /api/task-attempts/:id/conflicts/abort. */
-  abortConflicts(id: string): Promise<void> {
+  abortConflicts(id: string, request: AbortConflictsRequest): Promise<void> {
     return this.request<void>(`/task-attempts/${id}/conflicts/abort`, {
       method: "POST",
+      body: JSON.stringify(request),
     });
   }
 
   /** Attach an existing pull request to a workspace. Calls POST /api/task-attempts/:id/pr/attach. */
-  attachPR(id: string, request: AttachPRRequest): Promise<PRResult> {
-    return this.request<PRResult>(`/task-attempts/${id}/pr/attach`, {
+  attachPR(id: string, request: AttachPRRequest): Promise<AttachPRResponse> {
+    return this.request<AttachPRResponse>(`/task-attempts/${id}/pr/attach`, {
       method: "POST",
       body: JSON.stringify(request),
     });

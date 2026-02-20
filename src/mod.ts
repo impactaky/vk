@@ -26,6 +26,7 @@ export type { Config } from "./api/config.ts";
 export type {
   ApiResponse,
   AttachPRRequest,
+  AttachPRResponse,
   BranchStatus,
   ConflictOp,
   CreateProject,
@@ -38,7 +39,10 @@ export type {
   ExecutionProcessStatus,
   ExecutorProfileID,
   FollowUpRequest,
+  PermissionPolicy,
   GitBranch,
+  ExecutorConfig,
+  AbortConflictsRequest,
   InitRepoRequest,
   Merge,
   MergeResult,

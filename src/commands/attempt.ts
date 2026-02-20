@@ -250,6 +250,7 @@ attemptCommand
     "--project <id:string>",
     "Project ID (for fzf selection, auto-detected from git if omitted)",
   )
+  .option("--delete-branches", "Delete associated branches when deleting workspace")
   .option("--force", "Delete without confirmation")
   .action(async (options, id) => {
     try {
@@ -270,7 +271,7 @@ attemptCommand
         }
       }
 
-      await client.deleteWorkspace(workspaceId);
+      await client.deleteWorkspace(workspaceId, options.deleteBranches);
       console.log(`Workspace ${workspaceId} deleted successfully.`);
     } catch (error) {
       handleCliError(error);
@@ -433,24 +434,14 @@ attemptCommand
         options.repo,
       );
       const request: MergeWorkspaceRequest = { repo_id: repoId };
-      const result = await client.mergeWorkspace(workspaceId, request);
+      await client.mergeWorkspace(workspaceId, request);
 
       if (options.json) {
-        console.log(JSON.stringify(result, null, 2));
+        console.log(JSON.stringify({ success: true }, null, 2));
         return;
       }
 
-      if (result.success) {
-        console.log("Merge successful!");
-        if (result.message) {
-          console.log(result.message);
-        }
-      } else {
-        console.log("Merge failed.");
-        if (result.message) {
-          console.log(result.message);
-        }
-      }
+      console.log("Merge successful!");
     } catch (error) {
       handleCliError(error);
       throw error;
@@ -782,8 +773,15 @@ attemptCommand
       }
 
       const request: FollowUpRequest = {
-        prompt: options.message, // Map --message flag to prompt field
+        prompt: options.message,
         executor_profile_id: executorProfileId,
+        executor_config: {
+          executor: executorProfileId.executor,
+          variant: executorProfileId.variant,
+        },
+        retry_process_id: null,
+        force_when_dirty: null,
+        perform_git_reset: null,
       };
 
       await client.sessionFollowUp(sessionId, request);
@@ -850,6 +848,10 @@ attemptCommand
     "--project <id:string>",
     "Project ID (for fzf selection, auto-detected from git if omitted)",
   )
+  .option(
+    "--repo <id:string>",
+    "Repository ID (auto-detected if workspace has only one repo)",
+  )
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
@@ -858,8 +860,15 @@ attemptCommand
         id,
         options.project,
       );
+      const repoId = await getRepoIdForWorkspace(
+        client,
+        workspaceId,
+        options.repo,
+      );
 
-      await client.abortConflicts(workspaceId);
+      await client.abortConflicts(workspaceId, {
+        repo_id: repoId,
+      });
       console.log(`Conflicts aborted successfully.`);
     } catch (error) {
       handleCliError(error);
@@ -876,9 +885,11 @@ attemptCommand
     "--project <id:string>",
     "Project ID (for fzf selection, auto-detected from git if omitted)",
   )
-  .option("--pr-number <number:number>", "PR number to attach", {
-    required: true,
-  })
+  .option("--repo <id:string>", "Repository ID for this workspace")
+  .option(
+    "--pr-number <number:number>",
+    "PR number to attach (deprecated: kept for compatibility)",
+  )
   .option("--json", "Output as JSON")
   .action(async (options, id) => {
     try {
@@ -888,20 +899,35 @@ attemptCommand
         id,
         options.project,
       );
+      const repoId = await getRepoIdForWorkspace(
+        client,
+        workspaceId,
+        options.repo,
+      );
 
       const request: AttachPRRequest = {
-        pr_number: options.prNumber,
+        repo_id: repoId,
+        ...(options.prNumber !== undefined ? { pr_number: options.prNumber } : {}),
       };
 
-      const prUrl = await client.attachPR(workspaceId, request);
+      const result = await client.attachPR(workspaceId, request);
 
       if (options.json) {
-        console.log(JSON.stringify({ url: prUrl }, null, 2));
+        console.log(JSON.stringify(result, null, 2));
         return;
       }
 
-      console.log(`PR #${options.prNumber} attached successfully!`);
-      console.log(`URL: ${prUrl}`);
+      if (result.pr_number !== null) {
+        console.log(`PR #${result.pr_number} attached successfully!`);
+      } else {
+        console.log("PR attached successfully!");
+      }
+      if (result.pr_url) {
+        console.log(`URL: ${result.pr_url}`);
+      }
+      if (result.pr_status !== null) {
+        console.log(`Status: ${result.pr_status}`);
+      }
     } catch (error) {
       handleCliError(error);
       throw error;
