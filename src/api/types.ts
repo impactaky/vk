@@ -144,6 +144,7 @@ export type WorkspaceStatus =
 export interface Session {
   id: string;
   workspace_id: string;
+  executor: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -184,7 +185,7 @@ export type BaseCodingAgent =
   | "GEMINI"
   | "CODEX"
   | "OPENCODE"
-  | "CURSOR_AGENT"
+  | "CURSOR"
   | "QWEN_CODE"
   | "COPILOT"
   | "DROID";
@@ -196,7 +197,7 @@ export const VALID_EXECUTORS: BaseCodingAgent[] = [
   "GEMINI",
   "CODEX",
   "OPENCODE",
-  "CURSOR_AGENT",
+  "CURSOR",
   "QWEN_CODE",
   "COPILOT",
   "DROID",
@@ -217,7 +218,6 @@ export interface WorkspaceRepoInput {
 /** Request body for creating a new workspace. */
 export interface CreateWorkspace {
   task_id: string;
-  executor_profile_id: ExecutorProfileID;
   repos: WorkspaceRepoInput[];
 }
 
@@ -230,13 +230,6 @@ export interface RenameBranchRequest {
 export interface CreatePRRequest {
   title?: string;
   body?: string;
-}
-
-/** @deprecated Use RepoBranchStatus instead - API now returns array of repo statuses */
-export interface BranchStatus {
-  ahead: number;
-  behind: number;
-  has_conflicts: boolean;
 }
 
 /** Type of git operation that resulted in conflicts. */
@@ -269,31 +262,11 @@ export interface RepoBranchStatus {
   is_target_remote: boolean;
 }
 
-/** Result of attempting to merge a workspace branch. */
-export interface MergeResult {
-  success: boolean;
-  message?: string;
-}
-
 /** Request body for merging a workspace branch with its target. */
 export interface MergeWorkspaceRequest {
-  repo_id: string;
+  commit_message?: string | null;
+  use_pr?: boolean;
 }
-
-/** Request body for pushing a workspace branch to remote. */
-export interface PushWorkspaceRequest {
-  repo_id: string;
-}
-
-/** Request body for rebasing a workspace branch. */
-export interface RebaseWorkspaceRequest {
-  repo_id: string;
-  old_base_branch?: string;
-  new_base_branch?: string;
-}
-
-/** Pull request creation returns the URL of the created PR. */
-export type PRResult = string;
 
 /** Request body for sending a follow-up message to a running session. */
 export interface FollowUpRequest {
@@ -301,9 +274,12 @@ export interface FollowUpRequest {
   executor_profile_id: ExecutorProfileID;
 }
 
+/** Pull request creation returns the URL of the created PR. */
+export type PRResult = string;
+
 /** Request body for attaching an existing pull request to a workspace. */
 export interface AttachPRRequest {
-  pr_number: number;
+  pr_url: string;
 }
 
 /** A comment on a pull request. */
@@ -340,8 +316,7 @@ export interface Repo {
   display_name: string;
   setup_script: string | null;
   cleanup_script: string | null;
-  copy_files: string | null;
-  parallel_setup_script: boolean;
+  archive_script: string | null;
   dev_server_script: string | null;
   default_target_branch: string | null;
   default_working_dir: string | null;
@@ -354,9 +329,10 @@ export interface UpdateRepo {
   display_name?: string | null;
   setup_script?: string | null;
   cleanup_script?: string | null;
-  copy_files?: string | null;
-  parallel_setup_script?: boolean | null;
+  archive_script?: string | null;
   dev_server_script?: string | null;
+  default_target_branch?: string | null;
+  default_working_dir?: string | null;
 }
 
 /** Request body for registering an existing git repository. */
@@ -367,14 +343,11 @@ export interface RegisterRepoRequest {
 
 /** Request body for initializing a new git repository. */
 export interface InitRepoRequest {
-  parent_path: string;
-  folder_name: string;
+  repo_path: string;
 }
 
 /** Information about a git branch. */
 export interface GitBranch {
   name: string;
-  is_current: boolean;
-  is_remote: boolean;
-  last_commit_date: string;
+  is_local: boolean;
 }

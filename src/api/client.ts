@@ -19,12 +19,9 @@ import type {
   FollowUpRequest,
   GitBranch,
   InitRepoRequest,
-  MergeResult,
   MergeWorkspaceRequest,
   Project,
   PRResult,
-  PushWorkspaceRequest,
-  RebaseWorkspaceRequest,
   RegisterRepoRequest,
   RenameBranchRequest,
   Repo,
@@ -260,27 +257,27 @@ export class ApiClient {
   /** Merge workspace branch with its target branch. Calls POST /api/task-attempts/:id/merge. */
   mergeWorkspace(
     id: string,
-    request: MergeWorkspaceRequest,
-  ): Promise<MergeResult> {
-    return this.request<MergeResult>(`/task-attempts/${id}/merge`, {
+    request?: MergeWorkspaceRequest,
+  ): Promise<void> {
+    return this.request<void>(`/task-attempts/${id}/merge`, {
       method: "POST",
-      body: JSON.stringify(request),
+      body: JSON.stringify(request || {}),
     });
   }
 
   /** Push workspace branch to remote. Calls POST /api/task-attempts/:id/push. */
-  pushWorkspace(id: string, request: PushWorkspaceRequest): Promise<void> {
+  pushWorkspace(id: string): Promise<void> {
     return this.request<void>(`/task-attempts/${id}/push`, {
       method: "POST",
-      body: JSON.stringify(request),
+      body: JSON.stringify({}),
     });
   }
 
-  /** Rebase workspace branch onto a new base. Calls POST /api/task-attempts/:id/rebase. */
-  rebaseWorkspace(id: string, request: RebaseWorkspaceRequest): Promise<void> {
+  /** Rebase workspace branch onto target. Calls POST /api/task-attempts/:id/rebase. */
+  rebaseWorkspace(id: string): Promise<void> {
     return this.request<void>(`/task-attempts/${id}/rebase`, {
       method: "POST",
-      body: JSON.stringify(request),
+      body: JSON.stringify({}),
     });
   }
 
@@ -307,10 +304,10 @@ export class ApiClient {
   }
 
   /** Force push workspace branch to remote. Calls POST /api/task-attempts/:id/push/force. */
-  forcePushWorkspace(id: string, request: PushWorkspaceRequest): Promise<void> {
+  forcePushWorkspace(id: string): Promise<void> {
     return this.request<void>(`/task-attempts/${id}/push/force`, {
       method: "POST",
-      body: JSON.stringify(request),
+      body: JSON.stringify({}),
     });
   }
 

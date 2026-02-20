@@ -10,8 +10,6 @@ import type {
   CreateWorkspace,
   FollowUpRequest,
   MergeWorkspaceRequest,
-  PushWorkspaceRequest,
-  RebaseWorkspaceRequest,
   RepoBranchStatus,
   Session,
   UpdateWorkspace,
@@ -61,6 +59,28 @@ function resolveSessionIdFromCurrentAttempt(
 
   throw new Error(
     `No session ID matching "${sessionInput}" was found for this attempt.`,
+  );
+}
+
+// Helper function to get repo_id with auto-detection for single-repo workspaces
+async function getRepoIdForWorkspace(
+  client: ApiClient,
+  workspaceId: string,
+  explicitRepoId?: string,
+): Promise<string> {
+  if (explicitRepoId) {
+    return explicitRepoId;
+  }
+
+  const repos = await client.getWorkspaceRepos(workspaceId);
+  if (repos.length === 0) {
+    throw new Error("Workspace has no repositories");
+  }
+  if (repos.length === 1) {
+    return repos[0].repo_id;
+  }
+  throw new Error(
+    `Workspace has ${repos.length} repositories. Please specify --repo <repo-id>`,
   );
 }
 
@@ -180,30 +200,12 @@ attemptCommand
   .description("Create a new workspace for a task")
   .option("--task <id:string>", "Task ID", { required: true })
   .option(
-    "--executor <executor:string>",
-    "Executor profile ID in format <name>:<variant> (e.g., CLAUDE_CODE:DEFAULT)",
-  )
-  .option(
     "--target-branch <branch:string>",
     "Target branch for workspace repos (default: repo's default or 'main')",
   )
   .action(async (options) => {
     try {
-      let executorString = options.executor;
-      if (!executorString) {
-        executorString = (await loadConfig()).defaultExecutor;
-        if (!executorString) {
-          console.error(
-            "Error: --executor is required unless a default is set via `vk config set default-executor <name>:<variant>`.",
-          );
-          Deno.exit(1);
-        }
-      }
-
       const client = await ApiClient.create();
-
-      // Parse executor string into profile ID
-      const executorProfileId = parseExecutorString(executorString);
 
       // Get task to find project_id
       const task = await client.getTask(options.task);
@@ -226,7 +228,6 @@ attemptCommand
 
       const createWorkspace: CreateWorkspace = {
         task_id: options.task,
-        executor_profile_id: executorProfileId,
         repos,
       };
 
@@ -383,28 +384,6 @@ attemptCommand
     }
   });
 
-// Helper function to get repo_id with auto-detection for single-repo workspaces
-async function getRepoIdForWorkspace(
-  client: ApiClient,
-  workspaceId: string,
-  explicitRepoId?: string,
-): Promise<string> {
-  if (explicitRepoId) {
-    return explicitRepoId;
-  }
-
-  const repos = await client.getWorkspaceRepos(workspaceId);
-  if (repos.length === 0) {
-    throw new Error("Workspace has no repositories");
-  }
-  if (repos.length === 1) {
-    return repos[0].repo_id;
-  }
-  throw new Error(
-    `Workspace has ${repos.length} repositories. Please specify --repo <repo-id>`,
-  );
-}
-
 // Merge workspace
 attemptCommand
   .command("merge")
@@ -414,10 +393,8 @@ attemptCommand
     "--project <id:string>",
     "Project ID (for fzf selection, auto-detected from git if omitted)",
   )
-  .option(
-    "--repo <id:string>",
-    "Repository ID (auto-detected if workspace has only one repo)",
-  )
+  .option("--commit-message <message:string>", "Custom merge commit message")
+  .option("--use-pr", "Merge via pull request")
   .option("--json", "Output as JSON")
   .action(async (options, id) => {
     try {
@@ -427,30 +404,21 @@ attemptCommand
         id,
         options.project,
       );
-      const repoId = await getRepoIdForWorkspace(
-        client,
-        workspaceId,
-        options.repo,
-      );
-      const request: MergeWorkspaceRequest = { repo_id: repoId };
-      const result = await client.mergeWorkspace(workspaceId, request);
+      const request: MergeWorkspaceRequest = {};
+      if (options.commitMessage !== undefined) {
+        request.commit_message = options.commitMessage;
+      }
+      if (options.usePr !== undefined) {
+        request.use_pr = options.usePr;
+      }
+      await client.mergeWorkspace(workspaceId, request);
 
       if (options.json) {
-        console.log(JSON.stringify(result, null, 2));
+        console.log(JSON.stringify({ success: true }, null, 2));
         return;
       }
 
-      if (result.success) {
-        console.log("Merge successful!");
-        if (result.message) {
-          console.log(result.message);
-        }
-      } else {
-        console.log("Merge failed.");
-        if (result.message) {
-          console.log(result.message);
-        }
-      }
+      console.log("Merge successful!");
     } catch (error) {
       handleCliError(error);
       throw error;
@@ -466,10 +434,6 @@ attemptCommand
     "--project <id:string>",
     "Project ID (for fzf selection, auto-detected from git if omitted)",
   )
-  .option(
-    "--repo <id:string>",
-    "Repository ID (auto-detected if workspace has only one repo)",
-  )
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
@@ -478,13 +442,7 @@ attemptCommand
         id,
         options.project,
       );
-      const repoId = await getRepoIdForWorkspace(
-        client,
-        workspaceId,
-        options.repo,
-      );
-      const request: PushWorkspaceRequest = { repo_id: repoId };
-      await client.pushWorkspace(workspaceId, request);
+      await client.pushWorkspace(workspaceId);
       console.log(`Branch pushed successfully.`);
     } catch (error) {
       handleCliError(error);
@@ -501,12 +459,6 @@ attemptCommand
     "--project <id:string>",
     "Project ID (for fzf selection, auto-detected from git if omitted)",
   )
-  .option(
-    "--repo <id:string>",
-    "Repository ID (auto-detected if workspace has only one repo)",
-  )
-  .option("--old-base <branch:string>", "Old base branch to rebase from")
-  .option("--new-base <branch:string>", "New base branch to rebase onto")
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
@@ -515,17 +467,7 @@ attemptCommand
         id,
         options.project,
       );
-      const repoId = await getRepoIdForWorkspace(
-        client,
-        workspaceId,
-        options.repo,
-      );
-      const request: RebaseWorkspaceRequest = {
-        repo_id: repoId,
-        old_base_branch: options.oldBase,
-        new_base_branch: options.newBase,
-      };
-      await client.rebaseWorkspace(workspaceId, request);
+      await client.rebaseWorkspace(workspaceId);
       console.log(`Branch rebased successfully.`);
     } catch (error) {
       handleCliError(error);
@@ -614,7 +556,7 @@ attemptCommand
   )
   .option(
     "--repo <id:string>",
-    "Repository ID (auto-detected if workspace has only one repo)",
+    "Repository ID (show detailed view for a specific repo)",
   )
   .option("--json", "Output as JSON")
   .action(async (options, id) => {
@@ -803,10 +745,6 @@ attemptCommand
     "--project <id:string>",
     "Project ID (for fzf selection, auto-detected from git if omitted)",
   )
-  .option(
-    "--repo <id:string>",
-    "Repository ID (auto-detected if workspace has only one repo)",
-  )
   .option("--force", "Skip confirmation prompt")
   .action(async (options, id) => {
     try {
@@ -815,11 +753,6 @@ attemptCommand
         client,
         id,
         options.project,
-      );
-      const repoId = await getRepoIdForWorkspace(
-        client,
-        workspaceId,
-        options.repo,
       );
 
       if (!options.force) {
@@ -832,8 +765,7 @@ attemptCommand
         }
       }
 
-      const request: PushWorkspaceRequest = { repo_id: repoId };
-      await client.forcePushWorkspace(workspaceId, request);
+      await client.forcePushWorkspace(workspaceId);
       console.log(`Branch force pushed successfully.`);
     } catch (error) {
       handleCliError(error);
@@ -876,7 +808,7 @@ attemptCommand
     "--project <id:string>",
     "Project ID (for fzf selection, auto-detected from git if omitted)",
   )
-  .option("--pr-number <number:number>", "PR number to attach", {
+  .option("--pr-url <url:string>", "PR URL to attach", {
     required: true,
   })
   .option("--json", "Output as JSON")
@@ -890,7 +822,7 @@ attemptCommand
       );
 
       const request: AttachPRRequest = {
-        pr_number: options.prNumber,
+        pr_url: options.prUrl,
       };
 
       const prUrl = await client.attachPR(workspaceId, request);
@@ -900,7 +832,7 @@ attemptCommand
         return;
       }
 
-      console.log(`PR #${options.prNumber} attached successfully!`);
+      console.log(`PR attached successfully!`);
       console.log(`URL: ${prUrl}`);
     } catch (error) {
       handleCliError(error);
@@ -1114,30 +1046,11 @@ attemptCommand
     default: true,
   })
   .option(
-    "--executor <executor:string>",
-    "Executor profile ID in format <name>:<variant> (e.g., CLAUDE_CODE:DEFAULT). Required when --run is specified unless default-executor is configured.",
-  )
-  .option(
     "--target-branch <branch:string>",
     "Target branch for workspace repos (default: repo's default or 'main')",
   )
   .action(async (options, id) => {
     try {
-      let executorString: string | undefined;
-      if (options.run) {
-        if (options.executor) {
-          executorString = options.executor;
-        } else {
-          executorString = (await loadConfig()).defaultExecutor;
-          if (!executorString) {
-            console.error(
-              "Error: --executor is required when --run is specified. Set a default with `vk config set default-executor <name>:<variant>`.",
-            );
-            Deno.exit(1);
-          }
-        }
-      }
-
       const client = await ApiClient.create();
 
       // Resolve workspace ID (explicit > branch > error - NO fzf fallback, like open/cd)
@@ -1200,10 +1113,8 @@ attemptCommand
       // Simple output (per CONTEXT.md decision)
       console.log(`${task.id} ${task.title}`);
 
-      // If --run is specified, create a workspace and start execution
-      if (options.run && executorString) {
-        const executorProfileId = parseExecutorString(executorString);
-
+      // If --run is specified, create a workspace
+      if (options.run) {
         // Get project repos to build repos[] array
         const projectRepos = await client.listProjectRepos(
           parentTask.project_id,
@@ -1224,7 +1135,6 @@ attemptCommand
 
         const createWorkspace: CreateWorkspace = {
           task_id: task.id,
-          executor_profile_id: executorProfileId,
           repos,
         };
 
