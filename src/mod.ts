@@ -9,7 +9,7 @@
  * import { ApiClient } from "@vibe-kanban/cli";
  *
  * const client = await ApiClient.create();
- * const projects = await client.listProjects();
+ * const workspaces = await client.listAllWorkspaces();
  * ```
  *
  * @module
@@ -26,26 +26,23 @@ export type { Config } from "./api/config.ts";
 export type {
   ApiResponse,
   AttachPRRequest,
-  BranchStatus,
   ConflictOp,
-  CreateProject,
-  CreateProjectRepo,
+  CreateAndStartWorkspaceRequest,
+  CreateAndStartWorkspaceResponse,
   CreatePRRequest,
-  CreateTask,
-  CreateWorkspace,
   ExecutionProcess,
   ExecutionProcessRunReason,
   ExecutionProcessStatus,
+  ExecutorConfig,
   ExecutorProfileID,
   FollowUpRequest,
   GitBranch,
   InitRepoRequest,
+  LinkedIssue,
   Merge,
   MergeResult,
   MergeWorkspaceRequest,
   PRComment,
-  Project,
-  ProjectRepo,
   PRResult,
   PushWorkspaceRequest,
   RebaseWorkspaceRequest,
@@ -54,13 +51,8 @@ export type {
   Repo,
   RepoBranchStatus,
   Session,
-  Task,
-  TaskStatus,
-  TaskWithAttemptStatus,
   UnifiedPRComment,
-  UpdateProject,
   UpdateRepo,
-  UpdateTask,
   UpdateWorkspace,
   Workspace,
   WorkspaceRepo,

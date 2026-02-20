@@ -5,9 +5,8 @@ import { open } from "@opensrc/deno-open";
 import { ApiClient } from "../api/client.ts";
 import type {
   AttachPRRequest,
+  CreateAndStartWorkspaceRequest,
   CreatePRRequest,
-  CreateTask,
-  CreateWorkspace,
   FollowUpRequest,
   MergeWorkspaceRequest,
   PushWorkspaceRequest,
@@ -19,7 +18,6 @@ import type {
 import { applyFilters } from "../utils/filter.ts";
 import {
   getAttemptIdWithAutoDetect,
-  getTaskIdWithAutoDetect,
   resolveWorkspaceFromBranch,
 } from "../utils/attempt-resolver.ts";
 import { selectSession } from "../utils/fzf.ts";
@@ -67,14 +65,10 @@ function resolveSessionIdFromCurrentAttempt(
 // List workspaces
 attemptCommand
   .command("list")
-  .description("List workspaces for a task")
+  .description("List workspaces")
   .option(
     "--task <id:string>",
-    "Task ID (auto-detected from current branch if omitted)",
-  )
-  .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
+    "Task ID to filter by",
   )
   .option("--branch <branch:string>", "Filter by branch name")
   .option("--json", "Output as JSON")
@@ -82,13 +76,9 @@ attemptCommand
     try {
       const client = await ApiClient.create();
 
-      const taskId = await getTaskIdWithAutoDetect(
-        client,
-        options.task,
-        options.project,
-      );
-
-      let workspaces = await client.listWorkspaces(taskId);
+      let workspaces = options.task
+        ? await client.listWorkspaces(options.task)
+        : await client.listAllWorkspaces();
 
       // Build filter object from provided options
       const filters: Record<string, unknown> = {};
@@ -133,19 +123,11 @@ attemptCommand
   .command("show")
   .description("Show workspace details")
   .arguments("[id:string]")
-  .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
-  )
   .option("--json", "Output as JSON")
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const workspaceId = await getAttemptIdWithAutoDetect(
-        client,
-        id,
-        options.project,
-      );
+      const workspaceId = await getAttemptIdWithAutoDetect(client, id);
       const workspace = await client.getWorkspace(workspaceId);
 
       if (options.json) {
@@ -154,7 +136,7 @@ attemptCommand
       }
 
       console.log(`ID:              ${workspace.id}`);
-      console.log(`Task ID:         ${workspace.task_id}`);
+      console.log(`Task ID:         ${workspace.task_id || "-"}`);
       console.log(`Branch:          ${workspace.branch}`);
       console.log(`Name:            ${workspace.name || "-"}`);
       console.log(`Working Dir:     ${workspace.agent_working_dir || "-"}`);
@@ -177,8 +159,10 @@ attemptCommand
 // Create workspace
 attemptCommand
   .command("create")
-  .description("Create a new workspace for a task")
-  .option("--task <id:string>", "Task ID", { required: true })
+  .description("Create a new workspace and start execution")
+  .option("--title <title:string>", "Task title for the linked issue")
+  .option("--description <description:string>", "Task description")
+  .option("--from <file:file>", "Load task from markdown file")
   .option(
     "--executor <executor:string>",
     "Executor profile ID in format <name>:<variant> (e.g., CLAUDE_CODE:DEFAULT)",
@@ -187,6 +171,12 @@ attemptCommand
     "--target-branch <branch:string>",
     "Target branch for workspace repos (default: repo's default or 'main')",
   )
+  .option(
+    "--repo <id:string>",
+    "Repository ID (can be specified multiple times)",
+    { collect: true },
+  )
+  .option("--prompt <prompt:string>", "Initial prompt for the executor")
   .action(async (options) => {
     try {
       let executorString = options.executor;
@@ -202,39 +192,77 @@ attemptCommand
 
       const client = await ApiClient.create();
 
-      // Parse executor string into profile ID
+      // Parse executor string into config
       const executorProfileId = parseExecutorString(executorString);
-
-      // Get task to find project_id
-      const task = await client.getTask(options.task);
-
-      // Get project repos to build repos[] array
-      const projectRepos = await client.listProjectRepos(task.project_id);
-      if (projectRepos.length === 0) {
-        console.error(
-          "Error: Project has no repositories. Add a repository first.",
-        );
-        Deno.exit(1);
-      }
-
-      // Build repos array with target branches
-      const repos = projectRepos.map((repo) => ({
-        repo_id: repo.id,
-        target_branch: options.targetBranch || repo.default_target_branch ||
-          "main",
-      }));
-
-      const createWorkspace: CreateWorkspace = {
-        task_id: options.task,
-        executor_profile_id: executorProfileId,
-        repos,
+      const executorConfig = {
+        executor: executorProfileId.executor,
+        variant: executorProfileId.variant,
       };
 
-      const workspace = await client.createWorkspace(createWorkspace);
+      // Handle input (title and description)
+      let title = options.title;
+      let description = options.description;
+
+      if (options.from) {
+        if (options.title || options.description) {
+          console.error(
+            "Error: Cannot use --from with --title or --description",
+          );
+          Deno.exit(1);
+        }
+        const parsedTask = await parseTaskFromFile(options.from);
+        title = parsedTask.title;
+        description = parsedTask.description;
+      } else {
+        if (!description) {
+          description = await Input.prompt({
+            message: "Task description (optional):",
+            default: "",
+          });
+        }
+        if (!title) {
+          title = description.split("\n")[0]?.trim() || "";
+        }
+        if (!title) {
+          title = await Input.prompt("Task title:");
+        }
+      }
+
+      // Determine repos: from --repo flags or list all repos
+      let repoIds: string[] = options.repo || [];
+      if (repoIds.length === 0) {
+        const allRepos = await client.listRepos();
+        if (allRepos.length === 0) {
+          console.error(
+            "Error: No repositories found. Register a repository first.",
+          );
+          Deno.exit(1);
+        }
+        repoIds = allRepos.map((r) => r.id);
+      }
+
+      const repos = repoIds.map((repoId) => ({
+        repo_id: repoId,
+        target_branch: options.targetBranch || "main",
+      }));
+
+      const prompt = options.prompt || description || title;
+
+      const request: CreateAndStartWorkspaceRequest = {
+        repos,
+        executor_config: executorConfig,
+        prompt,
+        linked_issue: {
+          title,
+          description,
+        },
+      };
+
+      const response = await client.createAndStartWorkspace(request);
 
       console.log(`Workspace created successfully!`);
-      console.log(`ID: ${workspace.id}`);
-      console.log(`Branch: ${workspace.branch}`);
+      console.log(`ID: ${response.workspace.id}`);
+      console.log(`Branch: ${response.workspace.branch}`);
     } catch (error) {
       handleCliError(error);
       throw error;
@@ -246,19 +274,11 @@ attemptCommand
   .command("delete")
   .description("Delete a workspace")
   .arguments("[id:string]")
-  .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
-  )
   .option("--force", "Delete without confirmation")
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const workspaceId = await getAttemptIdWithAutoDetect(
-        client,
-        id,
-        options.project,
-      );
+      const workspaceId = await getAttemptIdWithAutoDetect(client, id);
 
       if (!options.force) {
         const confirmed = await Confirm.prompt(
@@ -283,10 +303,6 @@ attemptCommand
   .command("update")
   .description("Update workspace properties")
   .arguments("[id:string]")
-  .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
-  )
   .option("--name <name:string>", "New workspace name")
   .option("--archived", "Archive the workspace")
   .option("--no-archived", "Unarchive the workspace")
@@ -296,11 +312,7 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const workspaceId = await getAttemptIdWithAutoDetect(
-        client,
-        id,
-        options.project,
-      );
+      const workspaceId = await getAttemptIdWithAutoDetect(client, id);
 
       // Handle workspace property updates
       const update: UpdateWorkspace = {};
@@ -343,19 +355,11 @@ attemptCommand
   .command("repos")
   .description("List repositories associated with this workspace")
   .arguments("[id:string]")
-  .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
-  )
   .option("--json", "Output as JSON")
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const workspaceId = await getAttemptIdWithAutoDetect(
-        client,
-        id,
-        options.project,
-      );
+      const workspaceId = await getAttemptIdWithAutoDetect(client, id);
 
       const repos = await client.getWorkspaceRepos(workspaceId);
 
@@ -411,10 +415,6 @@ attemptCommand
   .description("Merge workspace branch into target branch")
   .arguments("[id:string]")
   .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
-  )
-  .option(
     "--repo <id:string>",
     "Repository ID (auto-detected if workspace has only one repo)",
   )
@@ -422,11 +422,7 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const workspaceId = await getAttemptIdWithAutoDetect(
-        client,
-        id,
-        options.project,
-      );
+      const workspaceId = await getAttemptIdWithAutoDetect(client, id);
       const repoId = await getRepoIdForWorkspace(
         client,
         workspaceId,
@@ -463,21 +459,13 @@ attemptCommand
   .description("Push workspace branch to remote")
   .arguments("[id:string]")
   .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
-  )
-  .option(
     "--repo <id:string>",
     "Repository ID (auto-detected if workspace has only one repo)",
   )
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const workspaceId = await getAttemptIdWithAutoDetect(
-        client,
-        id,
-        options.project,
-      );
+      const workspaceId = await getAttemptIdWithAutoDetect(client, id);
       const repoId = await getRepoIdForWorkspace(
         client,
         workspaceId,
@@ -498,10 +486,6 @@ attemptCommand
   .description("Rebase workspace branch onto target branch")
   .arguments("[id:string]")
   .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
-  )
-  .option(
     "--repo <id:string>",
     "Repository ID (auto-detected if workspace has only one repo)",
   )
@@ -510,11 +494,7 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const workspaceId = await getAttemptIdWithAutoDetect(
-        client,
-        id,
-        options.project,
-      );
+      const workspaceId = await getAttemptIdWithAutoDetect(client, id);
       const repoId = await getRepoIdForWorkspace(
         client,
         workspaceId,
@@ -538,18 +518,10 @@ attemptCommand
   .command("stop")
   .description("Stop workspace execution")
   .arguments("[id:string]")
-  .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
-  )
-  .action(async (options, id) => {
+  .action(async (_options, id) => {
     try {
       const client = await ApiClient.create();
-      const workspaceId = await getAttemptIdWithAutoDetect(
-        client,
-        id,
-        options.project,
-      );
+      const workspaceId = await getAttemptIdWithAutoDetect(client, id);
       await client.stopWorkspace(workspaceId);
       console.log(`Workspace execution stopped.`);
     } catch (error) {
@@ -563,30 +535,21 @@ attemptCommand
   .command("pr")
   .description("Create a GitHub PR for the workspace")
   .arguments("[id:string]")
-  .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
-  )
-  .option("--title <title:string>", "PR title (defaults to task title)")
-  .option("--body <body:string>", "PR body (defaults to task description)")
+  .option("--title <title:string>", "PR title")
+  .option("--body <body:string>", "PR body")
   .option("--json", "Output as JSON")
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const workspaceId = await getAttemptIdWithAutoDetect(
-        client,
-        id,
-        options.project,
-      );
+      const workspaceId = await getAttemptIdWithAutoDetect(client, id);
 
-      // Get workspace to find task_id, then get task for defaults
-      const workspace = await client.getWorkspace(workspaceId);
-      const task = await client.getTask(workspace.task_id);
-
-      const request: CreatePRRequest = {
-        title: options.title || task.title,
-        body: options.body || task.description || "",
-      };
+      const request: CreatePRRequest = {};
+      if (options.title) {
+        request.title = options.title;
+      }
+      if (options.body) {
+        request.body = options.body;
+      }
 
       const prUrl = await client.createPR(workspaceId, request);
 
@@ -609,10 +572,6 @@ attemptCommand
   .description("Show branch status for a workspace")
   .arguments("[id:string]")
   .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
-  )
-  .option(
     "--repo <id:string>",
     "Repository ID (auto-detected if workspace has only one repo)",
   )
@@ -620,11 +579,7 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const workspaceId = await getAttemptIdWithAutoDetect(
-        client,
-        id,
-        options.project,
-      );
+      const workspaceId = await getAttemptIdWithAutoDetect(client, id);
       const statuses = await client.getBranchStatus(workspaceId);
 
       if (options.json) {
@@ -717,10 +672,6 @@ attemptCommand
   .command("follow-up")
   .description("Send a follow-up message to a running workspace")
   .arguments("[id:string]")
-  .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
-  )
   .option("--message <message:string>", "Message to send to the executor", {
     required: true,
   })
@@ -739,11 +690,7 @@ attemptCommand
       let sessionId: string;
 
       // Resolve workspace ID (from arg, auto-detect, or fzf)
-      const workspaceId = await getAttemptIdWithAutoDetect(
-        client,
-        id,
-        options.project,
-      );
+      const workspaceId = await getAttemptIdWithAutoDetect(client, id);
 
       // Get sessions for the workspace
       const sessions = await client.listSessions(workspaceId);
@@ -765,25 +712,28 @@ attemptCommand
       }
 
       // Determine executor: use provided --executor flag, configured default, or fallback to CLAUDE_CODE
-      let executorProfileId;
+      let executorConfig;
       if (options.executor) {
-        executorProfileId = parseExecutorString(options.executor);
+        const parsed = parseExecutorString(options.executor);
+        executorConfig = { executor: parsed.executor, variant: parsed.variant };
       } else {
         const config = await loadConfig();
         if (config.defaultExecutor) {
-          executorProfileId = parseExecutorString(config.defaultExecutor);
+          const parsed = parseExecutorString(config.defaultExecutor);
+          executorConfig = {
+            executor: parsed.executor,
+            variant: parsed.variant,
+          };
         } else {
-          // Default executor for follow-up - use CLAUDE_CODE as safe default
-          executorProfileId = {
+          executorConfig = {
             executor: "CLAUDE_CODE" as const,
-            variant: null,
           };
         }
       }
 
       const request: FollowUpRequest = {
-        prompt: options.message, // Map --message flag to prompt field
-        executor_profile_id: executorProfileId,
+        prompt: options.message,
+        executor_config: executorConfig,
       };
 
       await client.sessionFollowUp(sessionId, request);
@@ -800,10 +750,6 @@ attemptCommand
   .description("Force push workspace branch to remote")
   .arguments("[id:string]")
   .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
-  )
-  .option(
     "--repo <id:string>",
     "Repository ID (auto-detected if workspace has only one repo)",
   )
@@ -811,11 +757,7 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const workspaceId = await getAttemptIdWithAutoDetect(
-        client,
-        id,
-        options.project,
-      );
+      const workspaceId = await getAttemptIdWithAutoDetect(client, id);
       const repoId = await getRepoIdForWorkspace(
         client,
         workspaceId,
@@ -846,18 +788,10 @@ attemptCommand
   .command("abort-conflicts")
   .description("Abort git conflicts for a workspace")
   .arguments("[id:string]")
-  .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
-  )
-  .action(async (options, id) => {
+  .action(async (_options, id) => {
     try {
       const client = await ApiClient.create();
-      const workspaceId = await getAttemptIdWithAutoDetect(
-        client,
-        id,
-        options.project,
-      );
+      const workspaceId = await getAttemptIdWithAutoDetect(client, id);
 
       await client.abortConflicts(workspaceId);
       console.log(`Conflicts aborted successfully.`);
@@ -872,10 +806,6 @@ attemptCommand
   .command("attach-pr")
   .description("Attach an existing GitHub PR to a workspace")
   .arguments("[id:string]")
-  .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
-  )
   .option("--pr-number <number:number>", "PR number to attach", {
     required: true,
   })
@@ -883,11 +813,7 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const workspaceId = await getAttemptIdWithAutoDetect(
-        client,
-        id,
-        options.project,
-      );
+      const workspaceId = await getAttemptIdWithAutoDetect(client, id);
 
       const request: AttachPRRequest = {
         pr_number: options.prNumber,
@@ -914,10 +840,6 @@ attemptCommand
   .description("View comments on the PR associated with a workspace")
   .arguments("[id:string]")
   .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
-  )
-  .option(
     "--repo <id:string>",
     "Repository ID (auto-detected if workspace has only one repo)",
   )
@@ -925,11 +847,7 @@ attemptCommand
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const workspaceId = await getAttemptIdWithAutoDetect(
-        client,
-        id,
-        options.project,
-      );
+      const workspaceId = await getAttemptIdWithAutoDetect(client, id);
 
       // Resolve repo_id (auto-detect for single-repo, require flag for multi-repo)
       const repoId = await getRepoIdForWorkspace(
@@ -973,10 +891,6 @@ attemptCommand
   .command("open")
   .description("Open a workspace in the browser")
   .arguments("[id:string]")
-  .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
-  )
   .action(async (_options, id) => {
     try {
       const client = await ApiClient.create();
@@ -1015,10 +929,6 @@ attemptCommand
   .command("cd")
   .description("Navigate into a workspace's working directory")
   .arguments("[id:string]")
-  .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
-  )
   .action(async (_options, id) => {
     try {
       const client = await ApiClient.create();
@@ -1053,7 +963,6 @@ attemptCommand
 
         const command = new Deno.Command(shell, {
           cwd: workspace.agent_working_dir,
-          // stdio defaults to "inherit" for spawn() - interactive terminal
         });
 
         const process = command.spawn();
@@ -1066,20 +975,17 @@ attemptCommand
         }
       } else {
         // Remote: SSH into host with cd to workspace directory
-        // Extract host from API URL
         const apiUrl = new URL(config.apiUrl);
         const host = apiUrl.hostname;
 
         console.log(`Entering workspace: ${workspace.branch}`);
 
-        // Use exec to replace ssh process with shell for clean exit
         const command = new Deno.Command("ssh", {
           args: [
             "-t",
             host,
             `cd "${workspace.agent_working_dir}" && exec ${shell}`,
           ],
-          // stdio inherited by default for spawn()
         });
 
         const process = command.spawn();
@@ -1097,25 +1003,18 @@ attemptCommand
     }
   });
 
-// Spin-off command - create child task from current workspace
+// Spin-off command - create child workspace from current workspace
 attemptCommand
   .command("spin-off")
-  .description("Create a new task from current workspace")
+  .description("Create a new workspace from current workspace")
   .arguments("[id:string]")
-  .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
-  )
   .option("--title <title:string>", "Task title")
   .option("--description <description:string>", "Task description")
   .option("--message <message:string>", "Deprecated alias for --description")
   .option("--from <file:file>", "Load message from file")
-  .option("--run", "Create a workspace and start execution immediately", {
-    default: true,
-  })
   .option(
     "--executor <executor:string>",
-    "Executor profile ID in format <name>:<variant> (e.g., CLAUDE_CODE:DEFAULT). Required when --run is specified unless default-executor is configured.",
+    "Executor profile ID in format <name>:<variant> (e.g., CLAUDE_CODE:DEFAULT).",
   )
   .option(
     "--target-branch <branch:string>",
@@ -1124,17 +1023,15 @@ attemptCommand
   .action(async (options, id) => {
     try {
       let executorString: string | undefined;
-      if (options.run) {
-        if (options.executor) {
-          executorString = options.executor;
-        } else {
-          executorString = (await loadConfig()).defaultExecutor;
-          if (!executorString) {
-            console.error(
-              "Error: --executor is required when --run is specified. Set a default with `vk config set default-executor <name>:<variant>`.",
-            );
-            Deno.exit(1);
-          }
+      if (options.executor) {
+        executorString = options.executor;
+      } else {
+        executorString = (await loadConfig()).defaultExecutor;
+        if (!executorString) {
+          console.error(
+            "Error: --executor is required. Set a default with `vk config set default-executor <name>:<variant>`.",
+          );
+          Deno.exit(1);
         }
       }
 
@@ -1152,9 +1049,8 @@ attemptCommand
         workspaceId = workspace.id;
       }
 
-      // Get workspace and task for project_id
-      const workspace = await client.getWorkspace(workspaceId);
-      const parentTask = await client.getTask(workspace.task_id);
+      // Get workspace repos for the target branch
+      const workspaceRepos = await client.getWorkspaceRepos(workspaceId);
 
       // Handle input (title and description)
       let title = options.title;
@@ -1187,52 +1083,40 @@ attemptCommand
         }
       }
 
-      // Create task with parent_workspace_id
-      const createTask: CreateTask = {
-        project_id: parentTask.project_id,
-        title,
-        description,
-        parent_workspace_id: workspaceId,
+      const executorProfileId = parseExecutorString(executorString);
+
+      // Build repos array from parent workspace repos
+      const repos = workspaceRepos.map((wr) => ({
+        repo_id: wr.repo_id,
+        target_branch: options.targetBranch || wr.target_branch || "main",
+      }));
+
+      if (repos.length === 0) {
+        console.error(
+          "Error: Parent workspace has no repositories.",
+        );
+        Deno.exit(1);
+      }
+
+      const prompt = description || title;
+
+      const request: CreateAndStartWorkspaceRequest = {
+        repos,
+        executor_config: {
+          executor: executorProfileId.executor,
+          variant: executorProfileId.variant,
+        },
+        prompt,
+        linked_issue: {
+          title,
+          description,
+        },
       };
 
-      const task = await client.createTask(createTask);
+      const response = await client.createAndStartWorkspace(request);
 
-      // Simple output (per CONTEXT.md decision)
-      console.log(`${task.id} ${task.title}`);
-
-      // If --run is specified, create a workspace and start execution
-      if (options.run && executorString) {
-        const executorProfileId = parseExecutorString(executorString);
-
-        // Get project repos to build repos[] array
-        const projectRepos = await client.listProjectRepos(
-          parentTask.project_id,
-        );
-        if (projectRepos.length === 0) {
-          console.error(
-            "Error: Project has no repositories. Add a repository first.",
-          );
-          Deno.exit(1);
-        }
-
-        // Build repos array with target branches
-        const repos = projectRepos.map((repo) => ({
-          repo_id: repo.id,
-          target_branch: options.targetBranch || repo.default_target_branch ||
-            "main",
-        }));
-
-        const createWorkspace: CreateWorkspace = {
-          task_id: task.id,
-          executor_profile_id: executorProfileId,
-          repos,
-        };
-
-        const newWorkspace = await client.createWorkspace(createWorkspace);
-
-        console.log(`Workspace: ${newWorkspace.id}`);
-        console.log(`Branch: ${newWorkspace.branch}`);
-      }
+      console.log(`${response.workspace.id} ${title}`);
+      console.log(`Branch: ${response.workspace.branch}`);
     } catch (error) {
       handleCliError(error);
       throw error;

@@ -11,88 +11,9 @@
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
+  error_data?: unknown;
   error?: string;
   message?: string;
-}
-
-/** A project represents a collection of tasks and repositories. */
-export interface Project {
-  id: string;
-  name: string;
-  default_agent_working_dir: string | null;
-  remote_project_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-/** Repository configuration for creating projects with attached repositories. */
-export interface CreateProjectRepo {
-  display_name: string;
-  git_repo_path: string;
-}
-
-/** Request body for creating a new project. */
-export interface CreateProject {
-  name: string;
-  repositories: CreateProjectRepo[];
-}
-
-/** Request body for updating project properties. */
-export interface UpdateProject {
-  name?: string | null;
-}
-
-/** Join table linking projects to their repositories. */
-export interface ProjectRepo {
-  project_id: string;
-  repo_id: string;
-  is_main: boolean;
-  created_at: string;
-}
-
-/** A task represents a unit of work within a project. */
-export interface Task {
-  id: string;
-  project_id: string;
-  title: string;
-  description: string | null;
-  status: TaskStatus;
-  parent_workspace_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-/** Status of a task in its lifecycle. */
-export type TaskStatus =
-  | "todo"
-  | "inprogress"
-  | "inreview"
-  | "done"
-  | "cancelled";
-
-/** Task with additional workspace/attempt status information. */
-export interface TaskWithAttemptStatus extends Task {
-  has_in_progress_attempt: boolean;
-  last_attempt_failed: boolean;
-  executor: string;
-}
-
-/** Request body for creating a new task. */
-export interface CreateTask {
-  project_id: string;
-  title: string;
-  description?: string;
-  parent_workspace_id?: string | null;
-  image_ids?: string[] | null;
-}
-
-/** Request body for updating task properties. */
-export interface UpdateTask {
-  title?: string;
-  description?: string | null;
-  status?: TaskStatus;
-  parent_workspace_id?: string | null;
-  image_ids?: string[] | null;
 }
 
 /**
@@ -101,7 +22,7 @@ export interface UpdateTask {
  */
 export interface Workspace {
   id: string;
-  task_id: string;
+  task_id: string | null;
   /** Docker container reference for the workspace environment. */
   container_ref: string | null;
   branch: string;
@@ -144,6 +65,7 @@ export type WorkspaceStatus =
 export interface Session {
   id: string;
   workspace_id: string;
+  executor: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -159,6 +81,7 @@ export type ExecutionProcessStatus =
 export type ExecutionProcessRunReason =
   | "setupscript"
   | "cleanupscript"
+  | "archivescript"
   | "codingagent"
   | "devserver";
 
@@ -208,17 +131,41 @@ export interface ExecutorProfileID {
   variant: string | null;
 }
 
+/**
+ * Executor configuration used for create-and-start and follow-up requests.
+ * Superset of ExecutorProfileID with additional agent-specific options.
+ */
+export interface ExecutorConfig {
+  executor: BaseCodingAgent;
+  variant?: string | null;
+}
+
 /** Input for attaching a repository to a workspace during creation. */
 export interface WorkspaceRepoInput {
   repo_id: string;
   target_branch: string;
 }
 
-/** Request body for creating a new workspace. */
-export interface CreateWorkspace {
-  task_id: string;
-  executor_profile_id: ExecutorProfileID;
+/** Linked issue for creating a workspace with an associated task. */
+export interface LinkedIssue {
+  title: string;
+  description?: string;
+  remote_project_id?: string;
+}
+
+/** Request body for creating and starting a new workspace. */
+export interface CreateAndStartWorkspaceRequest {
   repos: WorkspaceRepoInput[];
+  executor_config: ExecutorConfig;
+  prompt: string;
+  name?: string;
+  linked_issue?: LinkedIssue;
+}
+
+/** Response from creating and starting a new workspace. */
+export interface CreateAndStartWorkspaceResponse {
+  workspace: Workspace;
+  execution_process: ExecutionProcess;
 }
 
 /** Request body for renaming a workspace's git branch. */
@@ -230,13 +177,10 @@ export interface RenameBranchRequest {
 export interface CreatePRRequest {
   title?: string;
   body?: string;
-}
-
-/** @deprecated Use RepoBranchStatus instead - API now returns array of repo statuses */
-export interface BranchStatus {
-  ahead: number;
-  behind: number;
-  has_conflicts: boolean;
+  target_branch?: string;
+  draft?: boolean;
+  repo_id?: string;
+  auto_generate_description?: boolean;
 }
 
 /** Type of git operation that resulted in conflicts. */
@@ -298,7 +242,7 @@ export type PRResult = string;
 /** Request body for sending a follow-up message to a running session. */
 export interface FollowUpRequest {
   prompt: string;
-  executor_profile_id: ExecutorProfileID;
+  executor_config: ExecutorConfig;
 }
 
 /** Request body for attaching an existing pull request to a workspace. */
@@ -340,6 +284,7 @@ export interface Repo {
   display_name: string;
   setup_script: string | null;
   cleanup_script: string | null;
+  archive_script: string | null;
   copy_files: string | null;
   parallel_setup_script: boolean;
   dev_server_script: string | null;
@@ -354,6 +299,7 @@ export interface UpdateRepo {
   display_name?: string | null;
   setup_script?: string | null;
   cleanup_script?: string | null;
+  archive_script?: string | null;
   copy_files?: string | null;
   parallel_setup_script?: boolean | null;
   dev_server_script?: string | null;

@@ -46,10 +46,6 @@ sessionCommand
   .command("list")
   .description("List all sessions for a workspace")
   .arguments("[workspace-id:string]")
-  .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
-  )
   .option("--json", "Output as JSON")
   .action(async (options, workspaceId) => {
     try {
@@ -57,7 +53,6 @@ sessionCommand
       const resolvedWorkspaceId = await getAttemptIdWithAutoDetect(
         client,
         workspaceId,
-        options.project,
       );
 
       const sessions = await client.listSessions(resolvedWorkspaceId);
@@ -73,10 +68,11 @@ sessionCommand
       }
 
       const table = new Table()
-        .header(["ID", "Created", "Updated"])
+        .header(["ID", "Executor", "Created", "Updated"])
         .body(
           sessions.map((s) => [
             s.id,
+            s.executor || "-",
             s.created_at,
             s.updated_at,
           ]),
@@ -94,10 +90,6 @@ sessionCommand
   .command("show")
   .description("Show details for a session")
   .arguments("[session-id:string]")
-  .option(
-    "--project <id:string>",
-    "Project ID (for fzf selection, auto-detected from git if omitted)",
-  )
   .option("--json", "Output as JSON")
   .action(async (options, sessionId) => {
     try {
@@ -105,7 +97,6 @@ sessionCommand
       const workspaceId = await getAttemptIdWithAutoDetect(
         client,
         undefined,
-        options.project,
       );
 
       const sessions = await client.listSessions(workspaceId);
@@ -128,6 +119,7 @@ sessionCommand
 
       console.log(`Session ID:    ${session.id}`);
       console.log(`Workspace ID:  ${session.workspace_id}`);
+      console.log(`Executor:      ${session.executor || "-"}`);
       console.log(`Created:       ${session.created_at}`);
       console.log(`Updated:       ${session.updated_at}`);
     } catch (error) {

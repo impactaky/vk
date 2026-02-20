@@ -1,7 +1,5 @@
 import { Command } from "@cliffy/command";
 import { CompletionsCommand } from "@cliffy/command/completions";
-import { projectCommand } from "./commands/project.ts";
-import { taskCommand } from "./commands/task.ts";
 import { configCommand } from "./commands/config.ts";
 import { attemptCommand } from "./commands/attempt.ts";
 import { repositoryCommand } from "./commands/repository.ts";
@@ -14,14 +12,12 @@ const VERSION = "0.1.0";
 const cli = new Command()
   .name("vk")
   .version(VERSION)
-  .description("CLI for vibe-kanban - manage projects and tasks")
+  .description("CLI for vibe-kanban - manage workspaces and repositories")
   .option("--ai", "Output AI-friendly CLI documentation as JSON")
   .globalOption(
     "-v, --verbose",
     "Show detailed API request/response information",
   )
-  .command("project", projectCommand)
-  .command("task", taskCommand)
   .command("attempt", attemptCommand)
   .command("session", sessionCommand)
   .command("repository", repositoryCommand)

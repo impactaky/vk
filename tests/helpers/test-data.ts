@@ -8,17 +8,10 @@ import type { ApiClient } from "../../src/api/client.ts";
 const TEST_PREFIX = "test-";
 
 /**
- * Generate a unique project name for testing.
+ * Generate a unique workspace name for testing.
  */
-export function generateProjectName(): string {
-  return `${TEST_PREFIX}project-${Date.now()}-${randomSuffix()}`;
-}
-
-/**
- * Generate a unique task title for testing.
- */
-export function generateTaskTitle(): string {
-  return `${TEST_PREFIX}task-${Date.now()}-${randomSuffix()}`;
+export function generateWorkspaceName(): string {
+  return `${TEST_PREFIX}workspace-${Date.now()}-${randomSuffix()}`;
 }
 
 /**
@@ -29,15 +22,15 @@ export function isTestResource(name: string): boolean {
 }
 
 /**
- * Cleanup all test projects created during testing.
- * Deletes projects whose names start with the test prefix.
+ * Cleanup all test workspaces created during testing.
+ * Deletes workspaces whose names start with the test prefix.
  */
-export async function cleanupTestProjects(client: ApiClient): Promise<void> {
-  const projects = await client.listProjects();
-  for (const project of projects) {
-    if (isTestResource(project.name)) {
+export async function cleanupTestWorkspaces(client: ApiClient): Promise<void> {
+  const workspaces = await client.listAllWorkspaces();
+  for (const workspace of workspaces) {
+    if (workspace.name && isTestResource(workspace.name)) {
       try {
-        await client.deleteProject(project.id);
+        await client.deleteWorkspace(workspace.id);
       } catch {
         // Ignore cleanup errors
       }

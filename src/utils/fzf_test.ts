@@ -1,57 +1,6 @@
 import { assertEquals } from "@std/assert";
-import { formatProject, formatTask, formatWorkspace } from "./fzf.ts";
-import type {
-  Project,
-  TaskWithAttemptStatus,
-  Workspace,
-} from "../api/types.ts";
-
-Deno.test("formatProject formats project correctly", () => {
-  const project: Project = {
-    id: "proj-123",
-    name: "Test Project",
-    default_agent_working_dir: "/path/to/dir",
-    remote_project_id: null,
-    created_at: "2024-01-01T00:00:00Z",
-    updated_at: "2024-01-01T00:00:00Z",
-  };
-
-  const result = formatProject(project);
-  assertEquals(result, "proj-123\tTest Project\t/path/to/dir");
-});
-
-Deno.test("formatProject formats project with null working dir", () => {
-  const project: Project = {
-    id: "proj-123",
-    name: "Test Project",
-    default_agent_working_dir: null,
-    remote_project_id: null,
-    created_at: "2024-01-01T00:00:00Z",
-    updated_at: "2024-01-01T00:00:00Z",
-  };
-
-  const result = formatProject(project);
-  assertEquals(result, "proj-123\tTest Project\t-");
-});
-
-Deno.test("formatTask formats task correctly", () => {
-  const task: TaskWithAttemptStatus = {
-    id: "task-456",
-    project_id: "proj-123",
-    title: "Fix bug",
-    description: null,
-    status: "inprogress",
-    parent_workspace_id: null,
-    has_in_progress_attempt: true,
-    last_attempt_failed: false,
-    executor: "CLAUDE_CODE",
-    created_at: "2024-01-01T00:00:00Z",
-    updated_at: "2024-01-01T00:00:00Z",
-  };
-
-  const result = formatTask(task);
-  assertEquals(result, "task-456\tFix bug\t[inprogress]");
-});
+import { formatWorkspace } from "./fzf.ts";
+import type { Workspace } from "../api/types.ts";
 
 Deno.test("formatWorkspace formats workspace correctly", () => {
   const workspace: Workspace = {
@@ -75,7 +24,7 @@ Deno.test("formatWorkspace formats workspace correctly", () => {
 Deno.test("formatWorkspace formats workspace with null name", () => {
   const workspace: Workspace = {
     id: "workspace-789",
-    task_id: "task-456",
+    task_id: null,
     branch: "feature/fix-bug",
     container_ref: null,
     agent_working_dir: null,
