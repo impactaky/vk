@@ -105,7 +105,14 @@ export class ApiClient {
 
   /** List all projects. Calls GET /api/projects. */
   listProjects(): Promise<Project[]> {
-    return this.request<Project[]>("/projects");
+    return this.request<Project[]>("/projects").catch(async (error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      // Some backend deployments expose projects at /api/migration/projects.
+      if (message.includes("Unexpected token '<'")) {
+        return this.request<Project[]>("/migration/projects");
+      }
+      throw error;
+    });
   }
 
   /** Get a single project by ID. Calls GET /api/projects/:id. */
