@@ -25,6 +25,14 @@ export interface Project {
   updated_at: string;
 }
 
+/** An organization represents a tenant/grouping unit in the system. */
+export interface Organization {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
 /** Repository configuration for creating projects with attached repositories. */
 export interface CreateProjectRepo {
   display_name: string;

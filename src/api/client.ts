@@ -21,6 +21,7 @@ import type {
   InitRepoRequest,
   MergeResult,
   MergeWorkspaceRequest,
+  Organization,
   Project,
   PRResult,
   PushWorkspaceRequest,
@@ -105,6 +106,39 @@ export class ApiClient {
   /** List all projects. Calls GET /api/projects. */
   listProjects(): Promise<Project[]> {
     return this.request<Project[]>("/projects");
+  }
+
+  /** List all organizations. Calls GET /api/organizations. */
+  listOrganizations(): Promise<Organization[]> {
+    return (async () => {
+      const response = await this.request<
+        Organization[] | { organizations: Organization[] }
+      >("/organizations");
+      if (Array.isArray(response)) {
+        return response;
+      }
+      if (
+        response &&
+        "organizations" in response &&
+        Array.isArray(response.organizations)
+      ) {
+        return response.organizations;
+      }
+      return [];
+    })();
+  }
+
+  /** Get a single organization by ID. Calls GET /api/organizations/:id. */
+  getOrganization(id: string): Promise<Organization> {
+    return (async () => {
+      const response = await this.request<
+        Organization | { organization: Organization }
+      >(`/organizations/${id}`);
+      if (response && "organization" in response) {
+        return response.organization;
+      }
+      return response;
+    })();
   }
 
   /** Get a single project by ID. Calls GET /api/projects/:id. */
