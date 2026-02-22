@@ -128,6 +128,19 @@ export class ApiClient {
     })();
   }
 
+  /** Get a single organization by ID. Calls GET /api/organizations/:id. */
+  getOrganization(id: string): Promise<Organization> {
+    return (async () => {
+      const response = await this.request<
+        Organization | { organization: Organization }
+      >(`/organizations/${id}`);
+      if (response && "organization" in response) {
+        return response.organization;
+      }
+      return response;
+    })();
+  }
+
   /** Get a single project by ID. Calls GET /api/projects/:id. */
   getProject(id: string): Promise<Project> {
     return this.request<Project>(`/projects/${id}`);

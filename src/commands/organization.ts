@@ -53,3 +53,29 @@ organizationCommand
       throw error;
     }
   });
+
+// Show organization
+organizationCommand
+  .command("show")
+  .description("Show organization details")
+  .arguments("<id:string>")
+  .option("--json", "Output as JSON")
+  .action(async (options, id) => {
+    try {
+      const client = await ApiClient.create();
+      const organization = await client.getOrganization(id);
+
+      if (options.json) {
+        console.log(JSON.stringify(organization, null, 2));
+        return;
+      }
+
+      console.log(`ID:       ${organization.id}`);
+      console.log(`Name:     ${organization.name}`);
+      console.log(`Created:  ${organization.created_at}`);
+      console.log(`Updated:  ${organization.updated_at}`);
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
