@@ -1,6 +1,7 @@
 import { Command } from "@cliffy/command";
 import { CompletionsCommand } from "@cliffy/command/completions";
 import { projectCommand } from "./commands/project.ts";
+import { organizationCommand } from "./commands/organization.ts";
 import { taskCommand } from "./commands/task.ts";
 import { configCommand } from "./commands/config.ts";
 import { attemptCommand } from "./commands/attempt.ts";
@@ -21,6 +22,7 @@ const cli = new Command()
     "Show detailed API request/response information",
   )
   .command("project", projectCommand)
+  .command("organization", organizationCommand)
   .command("task", taskCommand)
   .command("attempt", attemptCommand)
   .command("session", sessionCommand)
