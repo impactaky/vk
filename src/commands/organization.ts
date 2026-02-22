@@ -2,6 +2,7 @@ import { Command } from "@cliffy/command";
 import { Table } from "@cliffy/table";
 import { ApiClient } from "../api/client.ts";
 import { applyFilters } from "../utils/filter.ts";
+import { getOrganizationId } from "../utils/organization-resolver.ts";
 import { handleCliError } from "../utils/error-handler.ts";
 
 export const organizationCommand = new Command()
@@ -58,12 +59,13 @@ organizationCommand
 organizationCommand
   .command("show")
   .description("Show organization details")
-  .arguments("<id:string>")
+  .arguments("[id:string]")
   .option("--json", "Output as JSON")
   .action(async (options, id) => {
     try {
       const client = await ApiClient.create();
-      const organization = await client.getOrganization(id);
+      const organizationId = await getOrganizationId(id, client);
+      const organization = await client.getOrganization(organizationId);
 
       if (options.json) {
         console.log(JSON.stringify(organization, null, 2));
