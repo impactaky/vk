@@ -1,12 +1,12 @@
 ## 1. Foundation and Resolver Baseline
 
-- [ ] 1.1 Run `docker compose run --rm vk` and bucket current failures by API, CLI, resolver, and other (Owner: Test Triage Agent).
-- [ ] 1.2 Add or update `specs/cli.md` entries for optional `[id]` auto-detect behavior before resolver implementation (Owner: Spec and Docs Agent).
-- [ ] 1.3 Add failing tests for `resolveWorkspaceFromBranch()` branch-match behavior and no-match behavior (Owner: Resolver Agent).
-- [ ] 1.4 Implement `resolveWorkspaceFromBranch()` in resolver utilities using current branch and workspace search APIs (Owner: Resolver Agent).
-- [ ] 1.5 Add failing tests for `getAttemptIdWithAutoDetect()` resolution order: explicit id, branch match, interactive fallback, clear failure (Owner: Resolver Agent).
-- [ ] 1.6 Implement `getAttemptIdWithAutoDetect()` and required fzf selection flow wiring in resolver utilities (Owner: Resolver Agent).
-- [ ] 1.7 Add failing CLI test for `vk task-attempts show [id]` with omitted id auto-detection, then implement the command wiring change (Owner: CLI Behavior Agent).
+- [x] 1.1 Run `docker compose run --rm vk` and bucket current failures by API, CLI, resolver, and other (Owner: Test Triage Agent).
+- [x] 1.2 Add or update `specs/cli.md` entries for optional `[id]` auto-detect behavior before resolver implementation (Owner: Spec and Docs Agent).
+- [x] 1.3 Add failing tests for `resolveWorkspaceFromBranch()` branch-match behavior and no-match behavior (Owner: Resolver Agent).
+- [x] 1.4 Implement `resolveWorkspaceFromBranch()` in resolver utilities using current branch and workspace search APIs (Owner: Resolver Agent).
+- [x] 1.5 Add failing tests for `getAttemptIdWithAutoDetect()` resolution order: explicit id, branch match, interactive fallback, clear failure (Owner: Resolver Agent).
+- [x] 1.6 Implement `getAttemptIdWithAutoDetect()` and required fzf selection flow wiring in resolver utilities (Owner: Resolver Agent).
+- [x] 1.7 Add failing CLI test for `vk task-attempts show [id]` with omitted id auto-detection, then implement the command wiring change (Owner: CLI Behavior Agent).
 
 ## 2. Phase 1 CRUD Subcommands
 

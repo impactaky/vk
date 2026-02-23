@@ -23,6 +23,6 @@
 ## Impact
 
 - CLI command surface: `src/commands/task-attempts.ts`, related command wiring in `src/main.ts`.
-- Resolver and selection logic: `src/utils/project-resolver.ts`, `src/utils/repository-resolver.ts`, and task-attempt resolver/fzf selection helpers.
+- Resolver and selection logic: `src/utils/repository-resolver.ts` and task-attempt resolver/fzf selection helpers.
 - API contract usage: `src/api/client.ts` and `src/api/types.ts` for request/response shape coverage.
 - Test and docs alignment: integration/CLI tests plus `specs/cli.md` updates per delivered subcommand.

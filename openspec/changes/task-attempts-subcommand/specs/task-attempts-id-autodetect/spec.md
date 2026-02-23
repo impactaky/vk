@@ -12,11 +12,11 @@ For task-attempt commands that accept an optional `[id]`, the CLI SHALL resolve 
 - **THEN** the CLI uses the mapped workspace ID automatically
 
 ### Requirement: Interactive fallback for omitted id
-When `[id]` is omitted and branch mapping does not resolve a target, the CLI SHALL provide interactive selection flow to choose project, task, and workspace.
+When `[id]` is omitted and branch mapping does not resolve a target, the CLI SHALL provide interactive selection flow to choose a workspace.
 
 #### Scenario: No branch match and interactive mode is available
 - **WHEN** `[id]` is omitted and no workspace is resolved from branch context
-- **THEN** the CLI prompts for project, task, and workspace selection and uses the selected workspace ID
+- **THEN** the CLI prompts for workspace selection and uses the selected workspace ID
 
 ### Requirement: Clear failure when id cannot be resolved
 If `[id]` is omitted and no target can be resolved automatically or interactively, the CLI MUST fail with a clear actionable error instructing the user to provide a workspace ID.

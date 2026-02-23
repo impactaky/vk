@@ -1,24 +1,26 @@
 import { assertEquals } from "@std/assert";
-import { formatTask, formatWorkspace } from "./fzf.ts";
-import type { TaskWithAttemptStatus, Workspace } from "../api/types.ts";
+import { formatRepository, formatWorkspace } from "./fzf.ts";
+import type { Repo, Workspace } from "../api/types.ts";
 
-Deno.test("formatTask formats task correctly", () => {
-  const task: TaskWithAttemptStatus = {
-    id: "task-123",
-    project_id: "proj-1",
-    title: "Test Task",
-    description: null,
-    status: "todo",
-    parent_workspace_id: null,
-    has_in_progress_attempt: false,
-    last_attempt_failed: false,
-    executor: "CLAUDE_CODE",
+Deno.test("formatRepository formats repository correctly", () => {
+  const repo: Repo = {
+    id: "repo-123",
+    path: "/tmp/repo",
+    name: "demo-repo",
+    display_name: "Demo Repo",
+    setup_script: null,
+    cleanup_script: null,
+    copy_files: null,
+    parallel_setup_script: false,
+    dev_server_script: null,
+    default_target_branch: null,
+    default_working_dir: null,
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",
   };
 
-  const result = formatTask(task);
-  assertEquals(result, "task-123\tTest Task\ttodo");
+  const result = formatRepository(repo);
+  assertEquals(result, "repo-123\tdemo-repo\t/tmp/repo");
 });
 
 Deno.test("formatWorkspace formats workspace with null name", () => {

@@ -23,51 +23,6 @@ export interface Organization {
   updated_at: string;
 }
 
-/** A task represents a unit of work within a project. */
-export interface Task {
-  id: string;
-  project_id: string;
-  title: string;
-  description: string | null;
-  status: TaskStatus;
-  parent_workspace_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-/** Status of a task in its lifecycle. */
-export type TaskStatus =
-  | "todo"
-  | "inprogress"
-  | "inreview"
-  | "done"
-  | "cancelled";
-
-/** Task with additional workspace/attempt status information. */
-export interface TaskWithAttemptStatus extends Task {
-  has_in_progress_attempt: boolean;
-  last_attempt_failed: boolean;
-  executor: string;
-}
-
-/** Request body for creating a new task. */
-export interface CreateTask {
-  project_id: string;
-  title: string;
-  description?: string;
-  parent_workspace_id?: string | null;
-  image_ids?: string[] | null;
-}
-
-/** Request body for updating task properties. */
-export interface UpdateTask {
-  title?: string;
-  description?: string | null;
-  status?: TaskStatus;
-  parent_workspace_id?: string | null;
-  image_ids?: string[] | null;
-}
-
 /**
  * Workspace (formerly TaskAttempt) represents an isolated development environment
  * for working on a task, with its own git branch and optional container.

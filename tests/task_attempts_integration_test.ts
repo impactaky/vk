@@ -41,6 +41,19 @@ async function apiCall<T>(
   }
 }
 
+async function isGitInstalled(): Promise<boolean> {
+  try {
+    const output = await new Deno.Command("git", {
+      args: ["--version"],
+      stdout: "null",
+      stderr: "null",
+    }).output();
+    return output.code === 0;
+  } catch {
+    return false;
+  }
+}
+
 Deno.test("API: task-attempts endpoint returns array when accessible", async () => {
   const result = await apiCall<unknown[]>("/task-attempts");
 
@@ -136,4 +149,83 @@ Deno.test("CLI: vk task-attempts show <id> --json", async () => {
 
   const parsed = JSON.parse(new TextDecoder().decode(stdout));
   assertEquals(parsed.id, firstId);
+});
+
+Deno.test("CLI: vk task-attempts show --json auto-detects ID from branch", async () => {
+  if (!(await isGitInstalled())) {
+    return;
+  }
+
+  const listResult = await apiCall<Array<{ id: string; branch: string }>>(
+    "/task-attempts",
+  );
+  if (
+    listResult.status === 401 || !listResult.success || !listResult.data ||
+    listResult.data.length === 0
+  ) {
+    return;
+  }
+
+  const branchWorkspace = listResult.data.find((item) => Boolean(item.branch));
+  if (!branchWorkspace) {
+    return;
+  }
+
+  const tempDir = await Deno.makeTempDir({
+    prefix: "vk-task-attempts-branch-autodetect-",
+  });
+
+  try {
+    const initCommand = new Deno.Command("git", {
+      args: ["init"],
+      cwd: tempDir,
+      stdout: "null",
+      stderr: "null",
+    });
+    const initResult = await initCommand.output();
+    assertEquals(initResult.code, 0);
+
+    const checkoutCommand = new Deno.Command("git", {
+      args: ["checkout", "-b", branchWorkspace.branch],
+      cwd: tempDir,
+      stdout: "null",
+      stderr: "null",
+    });
+    const checkoutResult = await checkoutCommand.output();
+    assertEquals(checkoutResult.code, 0);
+
+    const output = await new Deno.Command("deno", {
+      args: [
+        "run",
+        "--allow-net",
+        "--allow-read",
+        "--allow-write",
+        "--allow-env",
+        "--allow-run",
+        `${Deno.cwd()}/src/main.ts`,
+        "task-attempts",
+        "show",
+        "--json",
+      ],
+      cwd: tempDir,
+      stdout: "piped",
+      stderr: "piped",
+      env: {
+        VK_API_URL: config.apiUrl,
+        HOME: "/tmp/test-home-task-attempts-show-autodetect",
+      },
+    }).output();
+
+    const stderrText = new TextDecoder().decode(output.stderr);
+    assertEquals(
+      output.code,
+      0,
+      `Expected exit code 0 for auto-detected task-attempt show. stderr: ${stderrText}`,
+    );
+
+    const parsed = JSON.parse(new TextDecoder().decode(output.stdout));
+    assertEquals(parsed.id, branchWorkspace.id);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
 });

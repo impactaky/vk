@@ -136,7 +136,11 @@ Current top-level commands:
 
 ### `vk task-attempts show [id]`
 - Shows one task attempt.
-- If `id` is missing, resolver auto-detects from current workspace branch.
+- If `id` is missing, resolver uses this order:
+  - explicit `id` argument (when present)
+  - workspace match for current git branch
+  - interactive workspace selection (fzf)
+  - error: `Not in a workspace branch. Provide workspace ID.`
 - Output:
   - `--json`: prints JSON object
   - default: prints key attempt fields (`ID`, `Task ID`, `Name`, `Branch`, `Agent Working Dir`, `Archived`, `Pinned`, `Created`, `Updated`)
