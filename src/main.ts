@@ -1,12 +1,8 @@
 import { Command } from "@cliffy/command";
 import { CompletionsCommand } from "@cliffy/command/completions";
-import { projectCommand } from "./commands/project.ts";
 import { organizationCommand } from "./commands/organization.ts";
-import { taskCommand } from "./commands/task.ts";
 import { configCommand } from "./commands/config.ts";
-import { attemptCommand } from "./commands/attempt.ts";
 import { repositoryCommand } from "./commands/repository.ts";
-import { sessionCommand } from "./commands/session.ts";
 import { generateAIHelp } from "./utils/ai-help.ts";
 import { setVerbose } from "./utils/verbose.ts";
 
@@ -21,11 +17,7 @@ const cli = new Command()
     "-v, --verbose",
     "Show detailed API request/response information",
   )
-  .command("project", projectCommand)
   .command("organization", organizationCommand)
-  .command("task", taskCommand)
-  .command("attempt", attemptCommand)
-  .command("session", sessionCommand)
   .command("repository", repositoryCommand)
   .command("config", configCommand)
   .command("completions", new CompletionsCommand());

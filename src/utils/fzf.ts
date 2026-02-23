@@ -5,9 +5,6 @@
 import type {
   Project,
   Repo,
-  Session,
-  TaskWithAttemptStatus,
-  Workspace,
 } from "../api/types.ts";
 
 export class FzfNotInstalledError extends Error {
@@ -96,20 +93,6 @@ export function formatProject(project: Project): string {
 }
 
 /**
- * Format task for fzf display
- */
-export function formatTask(task: TaskWithAttemptStatus): string {
-  return `${task.id}\t${task.title}\t[${task.status}]`;
-}
-
-/**
- * Format workspace for fzf display
- */
-export function formatWorkspace(workspace: Workspace): string {
-  return `${workspace.id}\t${workspace.branch}\t${workspace.name || "-"}`;
-}
-
-/**
  * Format repository for fzf display
  */
 export function formatRepository(repo: Repo): string {
@@ -137,36 +120,6 @@ export async function selectProject(projects: Project[]): Promise<string> {
 }
 
 /**
- * Select a task using fzf
- */
-export async function selectTask(
-  tasks: TaskWithAttemptStatus[],
-): Promise<string> {
-  if (tasks.length === 0) {
-    throw new Error("No tasks available.");
-  }
-
-  const items = tasks.map(formatTask);
-  const selected = await runFzf(items, "Select task:");
-  return extractId(selected);
-}
-
-/**
- * Select a workspace using fzf
- */
-export async function selectWorkspace(
-  workspaces: Workspace[],
-): Promise<string> {
-  if (workspaces.length === 0) {
-    throw new Error("No workspaces available.");
-  }
-
-  const items = workspaces.map(formatWorkspace);
-  const selected = await runFzf(items, "Select workspace:");
-  return extractId(selected);
-}
-
-/**
  * Select a repository using fzf
  */
 export async function selectRepository(repos: Repo[]): Promise<string> {
@@ -179,22 +132,3 @@ export async function selectRepository(repos: Repo[]): Promise<string> {
   return extractId(selected);
 }
 
-/**
- * Format session for fzf display
- */
-export function formatSession(session: Session): string {
-  return `${session.id}\t${session.created_at}\t${session.workspace_id}`;
-}
-
-/**
- * Select a session using fzf
- */
-export async function selectSession(sessions: Session[]): Promise<string> {
-  if (sessions.length === 0) {
-    throw new Error("No sessions available.");
-  }
-
-  const items = sessions.map(formatSession);
-  const selected = await runFzf(items, "Select session:");
-  return extractId(selected);
-}
