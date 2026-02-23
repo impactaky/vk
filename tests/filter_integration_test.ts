@@ -1,101 +1,13 @@
 import { assertEquals } from "@std/assert";
 import { applyFilters } from "../src/utils/filter.ts";
 
-Deno.test("Integration - Project filtering by name", () => {
-  const projects = [
-    {
-      id: "1",
-      name: "Frontend",
-      default_agent_working_dir: "/workdir",
-      remote_project_id: null,
-      created_at: "2024-01-01T00:00:00Z",
-      updated_at: "2024-01-01T00:00:00Z",
-    },
-    {
-      id: "2",
-      name: "Backend",
-      default_agent_working_dir: null,
-      remote_project_id: null,
-      created_at: "2024-01-01T00:00:00Z",
-      updated_at: "2024-01-01T00:00:00Z",
-    },
-  ];
-
-  const result = applyFilters(projects, { name: "Frontend" });
-  assertEquals(result.length, 1);
-  assertEquals(result[0].name, "Frontend");
-});
-
-Deno.test("Integration - Project filtering by working dir", () => {
-  const projects = [
-    {
-      id: "1",
-      name: "Project1",
-      default_agent_working_dir: "/workdir1",
-      remote_project_id: null,
-      created_at: "2024-01-01T00:00:00Z",
-      updated_at: "2024-01-01T00:00:00Z",
-    },
-    {
-      id: "2",
-      name: "Project2",
-      default_agent_working_dir: "/workdir2",
-      remote_project_id: null,
-      created_at: "2024-01-01T00:00:00Z",
-      updated_at: "2024-01-01T00:00:00Z",
-    },
-  ];
-
-  const result = applyFilters(projects, {
-    default_agent_working_dir: "/workdir1",
-  });
-  assertEquals(result.length, 1);
-  assertEquals(result[0].name, "Project1");
-});
-
-Deno.test("Integration - Project filtering with multiple conditions", () => {
-  const projects = [
-    {
-      id: "1",
-      name: "Frontend",
-      default_agent_working_dir: "/workdir",
-      remote_project_id: "remote-1",
-      created_at: "2024-01-01T00:00:00Z",
-      updated_at: "2024-01-01T00:00:00Z",
-    },
-    {
-      id: "2",
-      name: "Frontend",
-      default_agent_working_dir: "/workdir2",
-      remote_project_id: null,
-      created_at: "2024-01-01T00:00:00Z",
-      updated_at: "2024-01-01T00:00:00Z",
-    },
-    {
-      id: "3",
-      name: "Backend",
-      default_agent_working_dir: "/workdir",
-      remote_project_id: null,
-      created_at: "2024-01-01T00:00:00Z",
-      updated_at: "2024-01-01T00:00:00Z",
-    },
-  ];
-
-  const result = applyFilters(projects, {
-    name: "Frontend",
-    default_agent_working_dir: "/workdir",
-  });
-  assertEquals(result.length, 1);
-  assertEquals(result[0].id, "1");
-});
-
 Deno.test("Integration - Task filtering by status", () => {
   const tasks = [
     {
       id: "1",
       title: "Task 1",
       status: "done",
-      project_id: "p1",
+      board_id: "p1",
       description: null,
       parent_workspace_id: null,
       shared_task_id: null,
@@ -106,7 +18,7 @@ Deno.test("Integration - Task filtering by status", () => {
       id: "2",
       title: "Task 2",
       status: "inprogress",
-      project_id: "p1",
+      board_id: "p1",
       description: null,
       parent_workspace_id: null,
       shared_task_id: null,
@@ -117,7 +29,7 @@ Deno.test("Integration - Task filtering by status", () => {
       id: "3",
       title: "Task 3",
       status: "done",
-      project_id: "p1",
+      board_id: "p1",
       description: null,
       parent_workspace_id: null,
       shared_task_id: null,
@@ -132,13 +44,13 @@ Deno.test("Integration - Task filtering by status", () => {
   assertEquals(result[1].status, "done");
 });
 
-Deno.test("Integration - Task filtering by project_id", () => {
+Deno.test("Integration - Task filtering by board_id", () => {
   const tasks = [
     {
       id: "1",
       title: "Task 1",
       status: "todo",
-      project_id: "p1",
+      board_id: "p1",
       description: null,
       parent_workspace_id: null,
       shared_task_id: null,
@@ -149,7 +61,7 @@ Deno.test("Integration - Task filtering by project_id", () => {
       id: "2",
       title: "Task 2",
       status: "todo",
-      project_id: "p2",
+      board_id: "p2",
       description: null,
       parent_workspace_id: null,
       shared_task_id: null,
@@ -160,7 +72,7 @@ Deno.test("Integration - Task filtering by project_id", () => {
       id: "3",
       title: "Task 3",
       status: "todo",
-      project_id: "p1",
+      board_id: "p1",
       description: null,
       parent_workspace_id: null,
       shared_task_id: null,
@@ -169,10 +81,10 @@ Deno.test("Integration - Task filtering by project_id", () => {
     },
   ];
 
-  const result = applyFilters(tasks, { project_id: "p1" });
+  const result = applyFilters(tasks, { board_id: "p1" });
   assertEquals(result.length, 2);
-  assertEquals(result[0].project_id, "p1");
-  assertEquals(result[1].project_id, "p1");
+  assertEquals(result[0].board_id, "p1");
+  assertEquals(result[1].board_id, "p1");
 });
 
 Deno.test("Integration - Task filtering with multiple conditions", () => {
@@ -181,7 +93,7 @@ Deno.test("Integration - Task filtering with multiple conditions", () => {
       id: "1",
       title: "Task 1",
       status: "done",
-      project_id: "p1",
+      board_id: "p1",
       description: null,
       parent_workspace_id: null,
       shared_task_id: null,
@@ -192,7 +104,7 @@ Deno.test("Integration - Task filtering with multiple conditions", () => {
       id: "2",
       title: "Task 2",
       status: "inprogress",
-      project_id: "p1",
+      board_id: "p1",
       description: null,
       parent_workspace_id: null,
       shared_task_id: null,
@@ -203,7 +115,7 @@ Deno.test("Integration - Task filtering with multiple conditions", () => {
       id: "3",
       title: "Task 3",
       status: "done",
-      project_id: "p2",
+      board_id: "p2",
       description: null,
       parent_workspace_id: null,
       shared_task_id: null,
@@ -214,7 +126,7 @@ Deno.test("Integration - Task filtering with multiple conditions", () => {
 
   const result = applyFilters(tasks, {
     status: "done",
-    project_id: "p1",
+    board_id: "p1",
   });
   assertEquals(result.length, 1);
   assertEquals(result[0].id, "1");
@@ -226,7 +138,7 @@ Deno.test("Integration - Task filtering by parent workspace", () => {
       id: "1",
       title: "Task 1",
       status: "todo",
-      project_id: "p1",
+      board_id: "p1",
       description: null,
       parent_workspace_id: "ws-1",
       shared_task_id: null,
@@ -237,7 +149,7 @@ Deno.test("Integration - Task filtering by parent workspace", () => {
       id: "2",
       title: "Task 2",
       status: "todo",
-      project_id: "p1",
+      board_id: "p1",
       description: null,
       parent_workspace_id: null,
       shared_task_id: null,
@@ -427,7 +339,7 @@ Deno.test("Integration - Empty results after filtering", () => {
       id: "1",
       title: "Task 1",
       status: "done",
-      project_id: "p1",
+      board_id: "p1",
       description: null,
       parent_workspace_id: null,
       shared_task_id: null,
@@ -438,7 +350,7 @@ Deno.test("Integration - Empty results after filtering", () => {
       id: "2",
       title: "Task 2",
       status: "inprogress",
-      project_id: "p1",
+      board_id: "p1",
       description: null,
       parent_workspace_id: null,
       shared_task_id: null,
@@ -457,7 +369,7 @@ Deno.test("Integration - Filters with JSON output simulation", () => {
       id: "1",
       title: "Task 1",
       status: "done",
-      project_id: "p1",
+      board_id: "p1",
       description: null,
       parent_workspace_id: null,
       shared_task_id: null,
@@ -468,7 +380,7 @@ Deno.test("Integration - Filters with JSON output simulation", () => {
       id: "2",
       title: "Task 2",
       status: "inprogress",
-      project_id: "p1",
+      board_id: "p1",
       description: null,
       parent_workspace_id: null,
       shared_task_id: null,

@@ -14,7 +14,7 @@ const POLL_INTERVAL_MS = 500;
 export const config = await loadConfig();
 
 /**
- * Wait for the vibe-kanban server to be ready by polling the projects endpoint.
+ * Wait for the vibe-kanban server to be ready by polling the health endpoint.
  * Throws an error if the server is not ready within the timeout period.
  */
 export async function waitForServer(
@@ -22,7 +22,7 @@ export async function waitForServer(
   timeoutMs: number = DEFAULT_TIMEOUT_MS,
 ): Promise<void> {
   const startTime = Date.now();
-  const healthUrl = `${apiUrl}/api/projects`;
+  const healthUrl = `${apiUrl}/api/health`;
 
   while (Date.now() - startTime < timeoutMs) {
     try {

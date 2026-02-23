@@ -15,92 +15,12 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
-/** A project represents a collection of tasks and repositories. */
-export interface Project {
-  id: string;
-  name: string;
-  default_agent_working_dir: string | null;
-  remote_project_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 /** An organization represents a tenant/grouping unit in the system. */
 export interface Organization {
   id: string;
   name: string;
   created_at: string;
   updated_at: string;
-}
-
-/** Repository configuration for creating projects with attached repositories. */
-export interface CreateProjectRepo {
-  display_name: string;
-  git_repo_path: string;
-}
-
-/** Request body for creating a new project. */
-export interface CreateProject {
-  name: string;
-  repositories: CreateProjectRepo[];
-}
-
-/** Request body for updating project properties. */
-export interface UpdateProject {
-  name?: string | null;
-}
-
-/** Join table linking projects to their repositories. */
-export interface ProjectRepo {
-  project_id: string;
-  repo_id: string;
-  is_main: boolean;
-  created_at: string;
-}
-
-/** A task represents a unit of work within a project. */
-export interface Task {
-  id: string;
-  project_id: string;
-  title: string;
-  description: string | null;
-  status: TaskStatus;
-  parent_workspace_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-/** Status of a task in its lifecycle. */
-export type TaskStatus =
-  | "todo"
-  | "inprogress"
-  | "inreview"
-  | "done"
-  | "cancelled";
-
-/** Task with additional workspace/attempt status information. */
-export interface TaskWithAttemptStatus extends Task {
-  has_in_progress_attempt: boolean;
-  last_attempt_failed: boolean;
-  executor: string;
-}
-
-/** Request body for creating a new task. */
-export interface CreateTask {
-  project_id: string;
-  title: string;
-  description?: string;
-  parent_workspace_id?: string | null;
-  image_ids?: string[] | null;
-}
-
-/** Request body for updating task properties. */
-export interface UpdateTask {
-  title?: string;
-  description?: string | null;
-  status?: TaskStatus;
-  parent_workspace_id?: string | null;
-  image_ids?: string[] | null;
 }
 
 /**
@@ -236,7 +156,8 @@ export interface RenameBranchRequest {
 
 /** Request body for creating a pull request from a workspace. */
 export interface CreatePRRequest {
-  title?: string;
+  repo_id: string;
+  title: string;
   body?: string;
 }
 
@@ -303,6 +224,14 @@ export interface RebaseWorkspaceRequest {
 /** Pull request creation returns the URL of the created PR. */
 export type PRResult = string;
 
+/** Result payload when attaching an existing PR to a workspace. */
+export interface PRAttachResult {
+  pr_attached: boolean;
+  pr_url: string;
+  pr_number: number;
+  pr_status: string;
+}
+
 /** Request body for sending a follow-up message to a running session. */
 export interface FollowUpRequest {
   prompt: string;
@@ -311,6 +240,7 @@ export interface FollowUpRequest {
 
 /** Request body for attaching an existing pull request to a workspace. */
 export interface AttachPRRequest {
+  repo_id: string;
   pr_number: number;
 }
 
@@ -338,6 +268,11 @@ export interface UnifiedPRComment {
   line?: number;
   side?: string;
   in_reply_to_id?: number;
+}
+
+/** Response payload for PR comments endpoint. */
+export interface PRCommentsResponse {
+  comments: UnifiedPRComment[];
 }
 
 /** A git repository registered with vibe-kanban. */

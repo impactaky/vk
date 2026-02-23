@@ -2,9 +2,7 @@
  * Common error handling utilities for CLI commands
  */
 
-import { ProjectResolverError } from "./project-resolver.ts";
 import { FzfCancelledError, FzfNotInstalledError } from "./fzf.ts";
-import { MarkdownParseError } from "./markdown-parser.ts";
 
 /**
  * Handle common CLI errors and exit appropriately
@@ -12,10 +10,8 @@ import { MarkdownParseError } from "./markdown-parser.ts";
  */
 export function handleCliError(error: unknown): boolean {
   if (
-    error instanceof ProjectResolverError ||
     error instanceof FzfNotInstalledError ||
-    error instanceof FzfCancelledError ||
-    error instanceof MarkdownParseError
+    error instanceof FzfCancelledError
   ) {
     console.error(`Error: ${error.message}`);
     Deno.exit(1);

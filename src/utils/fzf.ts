@@ -2,13 +2,7 @@
  * FZF utility for interactive selection
  */
 
-import type {
-  Project,
-  Repo,
-  Session,
-  TaskWithAttemptStatus,
-  Workspace,
-} from "../api/types.ts";
+import type { Repo, Workspace } from "../api/types.ts";
 
 export class FzfNotInstalledError extends Error {
   constructor() {
@@ -87,19 +81,10 @@ async function runFzf(items: string[], prompt?: string): Promise<string> {
 }
 
 /**
- * Format project for fzf display
+ * Format repository for fzf display
  */
-export function formatProject(project: Project): string {
-  return `${project.id}\t${project.name}\t${
-    project.default_agent_working_dir || "-"
-  }`;
-}
-
-/**
- * Format task for fzf display
- */
-export function formatTask(task: TaskWithAttemptStatus): string {
-  return `${task.id}\t${task.title}\t[${task.status}]`;
+export function formatRepository(repo: Repo): string {
+  return `${repo.id}\t${repo.name}\t${repo.path}`;
 }
 
 /**
@@ -110,60 +95,10 @@ export function formatWorkspace(workspace: Workspace): string {
 }
 
 /**
- * Format repository for fzf display
- */
-export function formatRepository(repo: Repo): string {
-  return `${repo.id}\t${repo.name}\t${repo.path}`;
-}
-
-/**
  * Extract ID from fzf selection (first column)
  */
 function extractId(selection: string): string {
   return selection.split("\t")[0];
-}
-
-/**
- * Select a project using fzf
- */
-export async function selectProject(projects: Project[]): Promise<string> {
-  if (projects.length === 0) {
-    throw new Error("No projects available.");
-  }
-
-  const items = projects.map(formatProject);
-  const selected = await runFzf(items, "Select project:");
-  return extractId(selected);
-}
-
-/**
- * Select a task using fzf
- */
-export async function selectTask(
-  tasks: TaskWithAttemptStatus[],
-): Promise<string> {
-  if (tasks.length === 0) {
-    throw new Error("No tasks available.");
-  }
-
-  const items = tasks.map(formatTask);
-  const selected = await runFzf(items, "Select task:");
-  return extractId(selected);
-}
-
-/**
- * Select a workspace using fzf
- */
-export async function selectWorkspace(
-  workspaces: Workspace[],
-): Promise<string> {
-  if (workspaces.length === 0) {
-    throw new Error("No workspaces available.");
-  }
-
-  const items = workspaces.map(formatWorkspace);
-  const selected = await runFzf(items, "Select workspace:");
-  return extractId(selected);
 }
 
 /**
@@ -180,21 +115,16 @@ export async function selectRepository(repos: Repo[]): Promise<string> {
 }
 
 /**
- * Format session for fzf display
+ * Select a workspace using fzf
  */
-export function formatSession(session: Session): string {
-  return `${session.id}\t${session.created_at}\t${session.workspace_id}`;
-}
-
-/**
- * Select a session using fzf
- */
-export async function selectSession(sessions: Session[]): Promise<string> {
-  if (sessions.length === 0) {
-    throw new Error("No sessions available.");
+export async function selectWorkspace(
+  workspaces: Workspace[],
+): Promise<string> {
+  if (workspaces.length === 0) {
+    throw new Error("No workspaces available.");
   }
 
-  const items = sessions.map(formatSession);
-  const selected = await runFzf(items, "Select session:");
+  const items = workspaces.map(formatWorkspace);
+  const selected = await runFzf(items, "Select workspace:");
   return extractId(selected);
 }
