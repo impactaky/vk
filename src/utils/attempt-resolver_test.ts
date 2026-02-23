@@ -27,10 +27,10 @@ Deno.test("resolveWorkspaceFromBranch: returns first workspace for current branc
   const client = {} as ApiClient;
 
   const workspace = await resolveWorkspaceFromBranch(client, {
-    getCurrentBranch: async () => "feature/branch-match",
-    searchWorkspacesByBranch: async (_client, branchName) => {
+    getCurrentBranch: () => Promise.resolve("feature/branch-match"),
+    searchWorkspacesByBranch: (_client, branchName) => {
       searchedBranch = branchName;
-      return [createWorkspace("ws-1", branchName)];
+      return Promise.resolve([createWorkspace("ws-1", branchName)]);
     },
   });
 
@@ -40,8 +40,8 @@ Deno.test("resolveWorkspaceFromBranch: returns first workspace for current branc
 
 Deno.test("resolveWorkspaceFromBranch: returns null when no workspace matches branch", async () => {
   const workspace = await resolveWorkspaceFromBranch({} as ApiClient, {
-    getCurrentBranch: async () => "feature/no-match",
-    searchWorkspacesByBranch: async () => [],
+    getCurrentBranch: () => Promise.resolve("feature/no-match"),
+    searchWorkspacesByBranch: () => Promise.resolve([]),
   });
 
   assertEquals(workspace, null);
@@ -52,9 +52,10 @@ Deno.test("getAttemptIdWithAutoDetect: prefers explicit ID", async () => {
     {} as ApiClient,
     "explicit-id",
     {
-      resolveWorkspaceFromBranch: async () => createWorkspace("ws-branch", "b"),
-      listWorkspaces: async () => [createWorkspace("ws-list", "b")],
-      selectWorkspace: async () => "ws-list",
+      resolveWorkspaceFromBranch: () =>
+        Promise.resolve(createWorkspace("ws-branch", "b")),
+      listWorkspaces: () => Promise.resolve([createWorkspace("ws-list", "b")]),
+      selectWorkspace: () => Promise.resolve("ws-list"),
     },
   );
 
@@ -66,10 +67,11 @@ Deno.test("getAttemptIdWithAutoDetect: uses branch match when ID omitted", async
     {} as ApiClient,
     undefined,
     {
-      resolveWorkspaceFromBranch: async () =>
-        createWorkspace("ws-branch-match", "feature/x"),
-      listWorkspaces: async () => [createWorkspace("ws-list", "feature/y")],
-      selectWorkspace: async () => "ws-list",
+      resolveWorkspaceFromBranch: () =>
+        Promise.resolve(createWorkspace("ws-branch-match", "feature/x")),
+      listWorkspaces: () =>
+        Promise.resolve([createWorkspace("ws-list", "feature/y")]),
+      selectWorkspace: () => Promise.resolve("ws-list"),
     },
   );
 
@@ -82,14 +84,14 @@ Deno.test("getAttemptIdWithAutoDetect: falls back to interactive workspace selec
     {} as ApiClient,
     undefined,
     {
-      resolveWorkspaceFromBranch: async () => null,
-      listWorkspaces: async () => [
+      resolveWorkspaceFromBranch: () => Promise.resolve(null),
+      listWorkspaces: () => Promise.resolve([
         createWorkspace("ws-1", "feature/a"),
         createWorkspace("ws-2", "feature/b"),
-      ],
-      selectWorkspace: async (workspaces: Workspace[]) => {
+      ]),
+      selectWorkspace: (workspaces: Workspace[]) => {
         selectCalled = true;
-        return workspaces[1].id;
+        return Promise.resolve(workspaces[1].id);
       },
     },
   );
@@ -105,11 +107,10 @@ Deno.test("getAttemptIdWithAutoDetect: throws clear error when unresolved", asyn
         {} as ApiClient,
         undefined,
         {
-          resolveWorkspaceFromBranch: async () => null,
-          listWorkspaces: async () => [],
-          selectWorkspace: async () => {
-            throw new Error("should not be called");
-          },
+          resolveWorkspaceFromBranch: () => Promise.resolve(null),
+          listWorkspaces: () => Promise.resolve([]),
+          selectWorkspace: () =>
+            Promise.reject(new Error("should not be called")),
         },
       ),
     Error,

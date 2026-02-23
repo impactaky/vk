@@ -134,7 +134,7 @@ function jsonApiResponse(payload: unknown, status = 200): Response {
   });
 }
 
-async function startTaskAttemptCreateMockApi(): Promise<TaskAttemptCreateMockApi> {
+function startTaskAttemptCreateMockApi(): TaskAttemptCreateMockApi {
   const repoId = "repo-1";
   const repoName = "repo-one";
   const requests: CreateTaskAttemptRequest[] = [];

@@ -11,7 +11,8 @@ Scope:
 Workflow:
 1) Update or confirm specs/cli.md behavior first when behavior changes.
 2) Make one failing test pass with the smallest change.
-3) Re-run tests with: docker compose run --rm vk
+3) Re-run lint with: deno lint
+4) Re-run tests with: docker compose run --rm vk
 
 Keep changes focused and minimal.
 """

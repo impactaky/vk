@@ -10,5 +10,6 @@ Scope:
 Rules:
 - Keep text simple and readable.
 - Keep docs aligned with actual behavior and tests.
+- Keep lint command references aligned with CI (`deno lint`).
 - Do not introduce speculative behavior.
 """
