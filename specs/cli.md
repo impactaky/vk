@@ -145,6 +145,18 @@ Current top-level commands:
   - `--json`: prints JSON object
   - default: prints key attempt fields (`ID`, `Task ID`, `Name`, `Branch`, `Agent Working Dir`, `Archived`, `Pinned`, `Created`, `Updated`)
 
+### `vk task-attempts create`
+- Creates a new task attempt.
+- Required options:
+  - `--task-id <id>`
+  - `--repo <id-or-name>`
+- Optional options:
+  - `--target-branch <name>` (defaults to `main`)
+  - `--executor <name:variant>` (defaults to configured `defaultExecutor`, otherwise `CLAUDE_CODE:DEFAULT`)
+- Output:
+  - `--json`: prints created task-attempt JSON
+  - default: prints `Task attempt <id> created.`
+
 ### `vk task-attempts update [id]`
 - Updates task-attempt fields.
 - Supported options:

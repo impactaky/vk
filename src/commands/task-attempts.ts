@@ -1,9 +1,11 @@
 import { Command } from "@cliffy/command";
 import { Table } from "@cliffy/table";
+import { loadConfig } from "../api/config.ts";
 import { ApiClient } from "../api/client.ts";
 import type { UpdateWorkspace } from "../api/types.ts";
 import { getAttemptIdWithAutoDetect } from "../utils/attempt-resolver.ts";
 import { handleCliError } from "../utils/error-handler.ts";
+import { parseExecutorString } from "../utils/executor-parser.ts";
 import { getRepositoryId } from "../utils/repository-resolver.ts";
 
 export const taskAttemptsCommand = new Command()
@@ -75,6 +77,52 @@ taskAttemptsCommand
       console.log(`Pinned:            ${attempt.pinned ? "Yes" : "No"}`);
       console.log(`Created:           ${attempt.created_at}`);
       console.log(`Updated:           ${attempt.updated_at}`);
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+taskAttemptsCommand
+  .command("create")
+  .description("Create task attempt")
+  .option("--task-id <id:string>", "Task ID")
+  .option("--repo <repo:string>", "Repository ID or name")
+  .option("--target-branch <name:string>", "Target branch name")
+  .option(
+    "--executor <executor:string>",
+    "Executor profile in <name>:<variant> format",
+  )
+  .option("--json", "Output as JSON")
+  .action(async (options) => {
+    try {
+      if (!options.taskId) {
+        throw new Error("Option --task-id is required.");
+      }
+      if (!options.repo) {
+        throw new Error("Option --repo is required.");
+      }
+
+      const client = await ApiClient.create();
+      const repoId = await getRepositoryId(options.repo, client);
+      const config = await loadConfig();
+      const executor = parseExecutorString(
+        options.executor || config.defaultExecutor || "CLAUDE_CODE:DEFAULT",
+      );
+      const targetBranch = options.targetBranch || "main";
+
+      const attempt = await client.createWorkspace({
+        task_id: options.taskId,
+        executor_profile_id: executor,
+        repos: [{ repo_id: repoId, target_branch: targetBranch }],
+      });
+
+      if (options.json) {
+        console.log(JSON.stringify(attempt, null, 2));
+        return;
+      }
+
+      console.log(`Task attempt ${attempt.id} created.`);
     } catch (error) {
       handleCliError(error);
       throw error;
