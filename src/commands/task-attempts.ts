@@ -132,6 +132,38 @@ taskAttemptsCommand
   });
 
 taskAttemptsCommand
+  .command("spin-off")
+  .description("Create task attempt by spinning off from a parent task attempt")
+  .arguments("[id:string]")
+  .option("--description <text:string>", "Task description/prompt")
+  .option("--json", "Output as JSON")
+  .action(async (options, id?: string) => {
+    try {
+      if (!options.description) {
+        throw new Error("Option --description is required.");
+      }
+
+      const client = await ApiClient.create();
+      const attemptId = await getAttemptIdWithAutoDetect(client, id);
+      const spinOffResult = await client.spinOffWorkspace(attemptId, {
+        description: options.description,
+      });
+
+      if (options.json) {
+        console.log(JSON.stringify(spinOffResult, null, 2));
+        return;
+      }
+
+      console.log(
+        `Task attempt ${spinOffResult.workspace.id} spun off from ${attemptId}.`,
+      );
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+taskAttemptsCommand
   .command("update")
   .description("Update task attempt details")
   .arguments("[id:string]")

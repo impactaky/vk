@@ -164,6 +164,11 @@ export interface CreateAndStartWorkspaceResponse {
   execution_process: ExecutionProcess;
 }
 
+/** Request body for spinning off a new workspace from a parent workspace branch. */
+export interface SpinOffWorkspaceRequest {
+  description: string;
+}
+
 /** Request body for renaming a workspace's git branch. */
 export interface RenameBranchRequest {
   new_branch_name: string;

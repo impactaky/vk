@@ -177,6 +177,19 @@ Current top-level commands:
   - `--json`: prints `{ workspace, execution_process }`
   - default: prints `Task attempt <id> created and started.`
 
+### `vk task-attempts spin-off [id]`
+
+- Creates and starts a new task attempt from a parent task-attempt branch.
+- If `id` is missing, uses the same resolver order as `show`.
+- Required option:
+  - `--description <text>`
+- API request:
+  - `POST /api/task-attempts/:id/spin-off`
+  - body includes `description`
+- Output:
+  - `--json`: prints `{ workspace, execution_process }`
+  - default: prints `Task attempt <new-id> spun off from <id>.`
+
 ### `vk task-attempts update [id]`
 
 - Updates task-attempt fields.

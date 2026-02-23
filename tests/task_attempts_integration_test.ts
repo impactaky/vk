@@ -139,6 +139,21 @@ type TaskAttemptCreateMockApi = {
   shutdown: () => Promise<void>;
 };
 
+type SpinOffWorkspaceRequest = {
+  description: string;
+};
+
+type SpinOffWorkspaceRecordedRequest = {
+  parentAttemptId: string;
+  body: SpinOffWorkspaceRequest;
+};
+
+type TaskAttemptSpinOffMockApi = {
+  apiUrl: string;
+  requests: SpinOffWorkspaceRecordedRequest[];
+  shutdown: () => Promise<void>;
+};
+
 function jsonApiResponse(payload: unknown, status = 200): Response {
   return new Response(JSON.stringify(payload), {
     status,
@@ -221,6 +236,83 @@ function startTaskAttemptCreateMockApi(): TaskAttemptCreateMockApi {
     apiUrl: `http://127.0.0.1:${port}`,
     repoId,
     repoName,
+    requests,
+    shutdown: async () => {
+      abortController.abort();
+      await server.finished.catch(() => undefined);
+    },
+  };
+}
+
+function startTaskAttemptSpinOffMockApi(): TaskAttemptSpinOffMockApi {
+  const requests: SpinOffWorkspaceRecordedRequest[] = [];
+  const abortController = new AbortController();
+  const server = Deno.serve(
+    {
+      hostname: "127.0.0.1",
+      port: 0,
+      signal: abortController.signal,
+      onListen: () => {},
+    },
+    async (request: Request) => {
+      const url = new URL(request.url);
+
+      if (request.method === "POST") {
+        const match = url.pathname.match(
+          /^\/api\/task-attempts\/([^/]+)\/spin-off$/,
+        );
+        if (match) {
+          const body = await request.json() as SpinOffWorkspaceRequest;
+          requests.push({
+            parentAttemptId: match[1],
+            body,
+          });
+          return jsonApiResponse({
+            success: true,
+            data: {
+              workspace: {
+                id: "ws-spin-off-1",
+                task_id: "",
+                container_ref: null,
+                branch: "feature/ws-spin-off-1",
+                agent_working_dir: null,
+                setup_completed_at: null,
+                created_at: "2026-01-01T00:00:00.000Z",
+                updated_at: "2026-01-01T00:00:00.000Z",
+                archived: false,
+                pinned: false,
+                name: null,
+              },
+              execution_process: {
+                id: "exec-spin-off-1",
+                session_id: "session-spin-off-1",
+                run_reason: "codingagent",
+                status: "running",
+                exit_code: null,
+                dropped: false,
+                started_at: "2026-01-01T00:00:00.000Z",
+                completed_at: null,
+                created_at: "2026-01-01T00:00:00.000Z",
+                updated_at: "2026-01-01T00:00:00.000Z",
+              },
+            },
+          });
+        }
+      }
+
+      return jsonApiResponse(
+        {
+          success: false,
+          error: `Unhandled route: ${request.method} ${url.pathname}`,
+        },
+        404,
+      );
+    },
+  );
+  const port = (server.addr as Deno.NetAddr).port;
+
+  return {
+    apiUrl: `http://127.0.0.1:${port}`,
     requests,
     shutdown: async () => {
       abortController.abort();
@@ -532,6 +624,81 @@ Deno.test("CLI: vk task-attempts create resolves repo by id", async () => {
     assertEquals(mock.requests[0].prompt, "Add tests");
     assertEquals(mock.requests[0].repos[0].repo_id, mock.repoId);
     assertEquals(mock.requests[0].repos[0].target_branch, "main");
+  } finally {
+    await mock.shutdown();
+  }
+});
+
+Deno.test("CLI: vk task-attempts spin-off requires --description", async () => {
+  const command = new Deno.Command("deno", {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "src/main.ts",
+      "task-attempts",
+      "spin-off",
+      "parent-attempt-1",
+    ],
+    stdout: "piped",
+    stderr: "piped",
+    env: {
+      VK_API_URL: config.apiUrl,
+      HOME: "/tmp/test-home-task-attempts-spin-off-missing-description",
+    },
+  });
+
+  const { code, stderr } = await command.output();
+  const stderrText = new TextDecoder().decode(stderr);
+
+  assertEquals(code, 1);
+  assertEquals(stderrText.includes("Option --description is required."), true);
+});
+
+Deno.test("CLI: vk task-attempts spin-off <id> --description --json", async () => {
+  const mock = await startTaskAttemptSpinOffMockApi();
+  const parentAttemptId = "parent-attempt-1";
+  try {
+    const command = new Deno.Command("deno", {
+      args: [
+        "run",
+        "--allow-net",
+        "--allow-read",
+        "--allow-write",
+        "--allow-env",
+        "src/main.ts",
+        "task-attempts",
+        "spin-off",
+        parentAttemptId,
+        "--description",
+        "Follow-up task attempt",
+        "--json",
+      ],
+      stdout: "piped",
+      stderr: "piped",
+      env: {
+        VK_API_URL: mock.apiUrl,
+        HOME: "/tmp/test-home-task-attempts-spin-off-json",
+      },
+    });
+
+    const { code, stdout, stderr } = await command.output();
+    const stderrText = new TextDecoder().decode(stderr);
+
+    assertEquals(
+      code,
+      0,
+      `Expected exit code 0 for task-attempts spin-off. stderr: ${stderrText}`,
+    );
+
+    const parsed = JSON.parse(new TextDecoder().decode(stdout));
+    assertEquals(parsed.workspace.id, "ws-spin-off-1");
+    assertEquals(parsed.execution_process.id, "exec-spin-off-1");
+    assertEquals(mock.requests.length, 1);
+    assertEquals(mock.requests[0].parentAttemptId, parentAttemptId);
+    assertEquals(mock.requests[0].body.description, "Follow-up task attempt");
   } finally {
     await mock.shutdown();
   }

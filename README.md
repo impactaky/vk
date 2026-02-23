@@ -116,6 +116,7 @@ vk task-attempts list --json
 vk task-attempts list --task-id <task-id>
 vk task-attempts show <attempt-id>
 vk task-attempts show --json <attempt-id>
+vk task-attempts spin-off <attempt-id> --description "Follow-up work"
 ```
 
 ## License

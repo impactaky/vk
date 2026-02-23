@@ -5,7 +5,7 @@ Define the expected `vk task-attempts` command surface and output behavior.
 ## Requirements
 
 ### Requirement: Task-attempt command surface coverage
-The CLI SHALL expose `vk task-attempts` subcommands for the supported task-attempt API operations beyond `list` and `show`, including create, update, delete, repos, branch-status, rename-branch, merge, push, rebase, stop, and PR-related operations.
+The CLI SHALL expose `vk task-attempts` subcommands for the supported task-attempt API operations beyond `list` and `show`, including create, spin-off, update, delete, repos, branch-status, rename-branch, merge, push, rebase, stop, and PR-related operations.
 
 #### Scenario: User invokes an implemented task-attempt operation
 - **WHEN** a user runs an implemented `vk task-attempts` subcommand
