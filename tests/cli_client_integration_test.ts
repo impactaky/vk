@@ -107,7 +107,6 @@ Deno.test({
       // Create workspace with repos[] array (the correct schema)
       const workspacePayload = {
         task_id: taskId,
-        executor_profile_id: { executor: "CLAUDE_CODE", variant: null },
         repos: [{ repo_id: repoId, target_branch: "main" }],
       };
 
@@ -186,7 +185,6 @@ Deno.test({
       // Try to create workspace with deprecated base_branch field
       const deprecatedPayload = {
         task_id: taskId,
-        executor_profile_id: { executor: "CLAUDE_CODE", variant: null },
         base_branch: "main", // DEPRECATED - should fail
       };
 
@@ -265,7 +263,6 @@ Deno.test({
         method: "POST",
         body: JSON.stringify({
           task_id: taskId,
-          executor_profile_id: { executor: "CLAUDE_CODE", variant: null },
           repos: [{ repo_id: repoId, target_branch: "main" }],
         }),
       });
@@ -362,7 +359,6 @@ Deno.test({
         method: "POST",
         body: JSON.stringify({
           task_id: taskId,
-          executor_profile_id: { executor: "CLAUDE_CODE", variant: null },
           repos: [{ repo_id: repoId, target_branch: "main" }],
         }),
       });
@@ -450,7 +446,6 @@ Deno.test({
         method: "POST",
         body: JSON.stringify({
           task_id: taskId,
-          executor_profile_id: { executor: "CLAUDE_CODE", variant: null },
           repos: [{ repo_id: repoId, target_branch: "main" }],
         }),
       });

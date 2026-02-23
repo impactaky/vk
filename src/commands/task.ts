@@ -3,7 +3,7 @@ import { Confirm, Input } from "@cliffy/prompt";
 import { Table } from "@cliffy/table";
 import { open } from "@opensrc/deno-open";
 import { ApiClient } from "../api/client.ts";
-import { getApiUrl, loadConfig } from "../api/config.ts";
+import { getApiUrl } from "../api/config.ts";
 import type {
   CreateTask,
   CreateWorkspace,
@@ -14,7 +14,6 @@ import { getProjectId } from "../utils/project-resolver.ts";
 import { parseTaskFromFile } from "../utils/markdown-parser.ts";
 import { applyFilters } from "../utils/filter.ts";
 import { getTaskIdWithAutoDetect } from "../utils/attempt-resolver.ts";
-import { parseExecutorString } from "../utils/executor-parser.ts";
 import { handleCliError } from "../utils/error-handler.ts";
 
 export const taskCommand = new Command()
@@ -134,30 +133,11 @@ taskCommand
     default: true,
   })
   .option(
-    "--executor <executor:string>",
-    "Executor profile ID in format <name>:<variant> (e.g., CLAUDE_CODE:DEFAULT). Required when --run is specified unless default-executor is configured.",
-  )
-  .option(
     "--target-branch <branch:string>",
     "Target branch for workspace repos (default: repo's default or 'main')",
   )
   .action(async (options) => {
     try {
-      let executorString: string | undefined;
-      if (options.run) {
-        if (options.executor) {
-          executorString = options.executor;
-        } else {
-          executorString = (await loadConfig()).defaultExecutor;
-          if (!executorString) {
-            console.error(
-              "Error: --executor is required when --run is specified. Set a default with `vk config set default-executor <name>:<variant>`.",
-            );
-            Deno.exit(1);
-          }
-        }
-      }
-
       const client = await ApiClient.create();
       const projectId = await getProjectId(options.project, client);
 
@@ -204,10 +184,8 @@ taskCommand
       console.log(`Task created successfully!`);
       console.log(`ID: ${task.id}`);
 
-      // If --run is specified, create a workspace and start execution
-      if (options.run && executorString) {
-        const executorProfileId = parseExecutorString(executorString);
-
+      // If --run is specified, create a workspace
+      if (options.run) {
         // Get project repos to build repos[] array
         const projectRepos = await client.listProjectRepos(projectId);
         if (projectRepos.length === 0) {
@@ -226,7 +204,6 @@ taskCommand
 
         const createWorkspace: CreateWorkspace = {
           task_id: task.id,
-          executor_profile_id: executorProfileId,
           repos,
         };
 

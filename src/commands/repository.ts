@@ -96,14 +96,17 @@ repositoryCommand
       if (repo.cleanup_script) {
         console.log(`Cleanup Script:       ${repo.cleanup_script}`);
       }
-      if (repo.copy_files) {
-        console.log(`Copy Files:           ${repo.copy_files}`);
+      if (repo.archive_script) {
+        console.log(`Archive Script:       ${repo.archive_script}`);
       }
-      console.log(
-        `Parallel Setup:       ${repo.parallel_setup_script ? "Yes" : "No"}`,
-      );
       if (repo.dev_server_script) {
         console.log(`Dev Server Script:    ${repo.dev_server_script}`);
+      }
+      if (repo.default_target_branch) {
+        console.log(`Default Target Branch: ${repo.default_target_branch}`);
+      }
+      if (repo.default_working_dir) {
+        console.log(`Default Working Dir:  ${repo.default_working_dir}`);
       }
       console.log(`Created:              ${repo.created_at}`);
       console.log(`Updated:              ${repo.updated_at}`);
@@ -156,24 +159,17 @@ repositoryCommand
 repositoryCommand
   .command("init")
   .description("Initialize a new git repository")
-  .option("--parent-path <path:string>", "Parent directory path")
-  .option("--folder-name <name:string>", "Folder name for the new repository")
+  .option("--repo-path <path:string>", "Path for the new repository")
   .action(async (options) => {
     try {
-      let parentPath = options.parentPath;
-      let folderName = options.folderName;
+      let repoPath = options.repoPath;
 
-      if (!parentPath) {
-        parentPath = await Input.prompt("Parent directory path:");
-      }
-
-      if (!folderName) {
-        folderName = await Input.prompt("Folder name:");
+      if (!repoPath) {
+        repoPath = await Input.prompt("Repository path:");
       }
 
       const request: InitRepoRequest = {
-        parent_path: parentPath,
-        folder_name: folderName,
+        repo_path: repoPath,
       };
 
       const client = await ApiClient.create();
@@ -196,10 +192,16 @@ repositoryCommand
   .option("--display-name <name:string>", "New display name")
   .option("--setup-script <script:string>", "Setup script command")
   .option("--cleanup-script <script:string>", "Cleanup script command")
-  .option("--copy-files <files:string>", "Files to copy (glob patterns)")
-  .option("--parallel-setup", "Enable parallel setup script")
-  .option("--no-parallel-setup", "Disable parallel setup script")
+  .option("--archive-script <script:string>", "Archive script command")
   .option("--dev-server-script <script:string>", "Dev server script command")
+  .option(
+    "--default-target-branch <branch:string>",
+    "Default target branch for workspaces",
+  )
+  .option(
+    "--default-working-dir <dir:string>",
+    "Default working directory for agents",
+  )
   .action(async (options, id?: string) => {
     try {
       const update: UpdateRepo = {};
@@ -213,14 +215,17 @@ repositoryCommand
       if (options.cleanupScript !== undefined) {
         update.cleanup_script = options.cleanupScript || null;
       }
-      if (options.copyFiles !== undefined) {
-        update.copy_files = options.copyFiles || null;
-      }
-      if (options.parallelSetup !== undefined) {
-        update.parallel_setup_script = options.parallelSetup;
+      if (options.archiveScript !== undefined) {
+        update.archive_script = options.archiveScript || null;
       }
       if (options.devServerScript !== undefined) {
         update.dev_server_script = options.devServerScript || null;
+      }
+      if (options.defaultTargetBranch !== undefined) {
+        update.default_target_branch = options.defaultTargetBranch || null;
+      }
+      if (options.defaultWorkingDir !== undefined) {
+        update.default_working_dir = options.defaultWorkingDir || null;
       }
 
       if (Object.keys(update).length === 0) {
@@ -254,9 +259,9 @@ repositoryCommand
 
       // Filter by remote/local if specified
       if (options.remote) {
-        branches = branches.filter((b) => b.is_remote);
+        branches = branches.filter((b) => !b.is_local);
       } else if (options.local) {
-        branches = branches.filter((b) => !b.is_remote);
+        branches = branches.filter((b) => b.is_local);
       }
 
       if (options.json) {
@@ -270,12 +275,11 @@ repositoryCommand
       }
 
       const table = new Table()
-        .header(["Name", "Current", "Remote"])
+        .header(["Name", "Local"])
         .body(
           branches.map((b) => [
             b.name,
-            b.is_current ? "*" : "",
-            b.is_remote ? "Yes" : "No",
+            b.is_local ? "Yes" : "No",
           ]),
         );
 
