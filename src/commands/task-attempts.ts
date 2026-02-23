@@ -86,7 +86,7 @@ taskAttemptsCommand
 taskAttemptsCommand
   .command("create")
   .description("Create task attempt")
-  .option("--task-id <id:string>", "Task ID")
+  .option("--description <text:string>", "Task description/prompt")
   .option("--repo <repo:string>", "Repository ID or name")
   .option("--target-branch <name:string>", "Target branch name")
   .option(
@@ -96,8 +96,8 @@ taskAttemptsCommand
   .option("--json", "Output as JSON")
   .action(async (options) => {
     try {
-      if (!options.taskId) {
-        throw new Error("Option --task-id is required.");
+      if (!options.description) {
+        throw new Error("Option --description is required.");
       }
       if (!options.repo) {
         throw new Error("Option --repo is required.");
@@ -111,18 +111,20 @@ taskAttemptsCommand
       );
       const targetBranch = options.targetBranch || "main";
 
-      const attempt = await client.createWorkspace({
-        task_id: options.taskId,
-        executor_profile_id: executor,
+      const createResult = await client.createWorkspace({
+        prompt: options.description,
+        executor_config: executor,
         repos: [{ repo_id: repoId, target_branch: targetBranch }],
       });
 
       if (options.json) {
-        console.log(JSON.stringify(attempt, null, 2));
+        console.log(JSON.stringify(createResult, null, 2));
         return;
       }
 
-      console.log(`Task attempt ${attempt.id} created.`);
+      console.log(
+        `Task attempt ${createResult.workspace.id} created and started.`,
+      );
     } catch (error) {
       handleCliError(error);
       throw error;

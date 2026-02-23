@@ -12,8 +12,9 @@ import { isVerbose, verboseLog } from "../utils/verbose.ts";
 import type {
   ApiResponse,
   AttachPRRequest,
+  CreateAndStartWorkspaceRequest,
+  CreateAndStartWorkspaceResponse,
   CreatePRRequest,
-  CreateWorkspace,
   FollowUpRequest,
   GitBranch,
   InitRepoRequest,
@@ -161,12 +162,17 @@ export class ApiClient {
     return allWorkspaces.filter((workspace) => workspace.branch === branchName);
   }
 
-  /** Create a new workspace for a task. Calls POST /api/task-attempts. */
-  createWorkspace(workspace: CreateWorkspace): Promise<Workspace> {
-    return this.request<Workspace>("/task-attempts", {
-      method: "POST",
-      body: JSON.stringify(workspace),
-    });
+  /** Create and start a new workspace for a prompt. Calls POST /api/task-attempts/create-and-start. */
+  createWorkspace(
+    workspace: CreateAndStartWorkspaceRequest,
+  ): Promise<CreateAndStartWorkspaceResponse> {
+    return this.request<CreateAndStartWorkspaceResponse>(
+      "/task-attempts/create-and-start",
+      {
+        method: "POST",
+        body: JSON.stringify(workspace),
+      },
+    );
   }
 
   /** Update workspace properties. Calls PUT /api/task-attempts/:id. */

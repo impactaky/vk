@@ -2,12 +2,13 @@
 
 Last updated: 2026-02-23
 
-This is the human-readable source of truth for current CLI behavior.
-Keep this file simple and aligned with code.
+This is the human-readable source of truth for current CLI behavior. Keep this
+file simple and aligned with code.
 
 ## Scope
 
 Current top-level commands:
+
 - `organization`
 - `repository`
 - `task-attempts`
@@ -24,12 +25,14 @@ Current top-level commands:
 ## Config Command
 
 ### `vk config show`
+
 - Prints:
   - `API URL: <value>`
   - `Shell: <value or (default: bash)>`
   - `Default executor: <value or (not set)>`
 
 ### `vk config set <key> <value>`
+
 - Allowed keys:
   - `api-url`
   - `shell`
@@ -44,6 +47,7 @@ Current top-level commands:
 ## Organization Command
 
 ### `vk organization list`
+
 - Fetches all organizations from API.
 - Supports optional filter:
   - `--name <name>`
@@ -53,6 +57,7 @@ Current top-level commands:
 - If no results: prints `No organizations found.`
 
 ### `vk organization show [id]`
+
 - Shows one organization.
 - If `id` is missing, resolver selects organization.
 - Output:
@@ -62,6 +67,7 @@ Current top-level commands:
 ## Repository Command
 
 ### `vk repository list`
+
 - Fetches all repositories from API.
 - Supports optional filters:
   - `--name <name>`
@@ -72,14 +78,17 @@ Current top-level commands:
 - If no results: prints `No repositories found.`
 
 ### `vk repository show [id]`
+
 - Shows one repository.
 - If `id` is missing, resolver selects repository.
 - Output:
   - `--json`: prints JSON object
-  - default: prints core fields (`ID`, `Name`, `Display Name`, `Path`, `Created`, `Updated`)
+  - default: prints core fields (`ID`, `Name`, `Display Name`, `Path`,
+    `Created`, `Updated`)
   - optional fields are printed only when present
 
 ### `vk repository register`
+
 - Registers an existing git repository.
 - Inputs:
   - `--path <path>` (prompted if missing)
@@ -90,6 +99,7 @@ Current top-level commands:
   - `Name: <name>`
 
 ### `vk repository init`
+
 - Creates a new git repository.
 - Inputs:
   - `--parent-path <path>` (prompted if missing)
@@ -100,6 +110,7 @@ Current top-level commands:
   - `Path: <path>`
 
 ### `vk repository update [id]`
+
 - Updates repository properties.
 - Supported options:
   - `--display-name <name>`
@@ -114,6 +125,7 @@ Current top-level commands:
   - prints `Repository <id> updated.`
 
 ### `vk repository branches [id]`
+
 - Lists branches for one repository.
 - Supports:
   - `--remote` (remote only)
@@ -126,6 +138,7 @@ Current top-level commands:
 ## Task-Attempts Command
 
 ### `vk task-attempts list`
+
 - Fetches task attempts from API.
 - Supports optional filter:
   - `--task-id <id>`
@@ -135,6 +148,7 @@ Current top-level commands:
 - If no results: prints `No task attempts found.`
 
 ### `vk task-attempts show [id]`
+
 - Shows one task attempt.
 - If `id` is missing, resolver uses this order:
   - explicit `id` argument (when present)
@@ -143,21 +157,28 @@ Current top-level commands:
   - error: `Not in a workspace branch. Provide workspace ID.`
 - Output:
   - `--json`: prints JSON object
-  - default: prints key attempt fields (`ID`, `Task ID`, `Name`, `Branch`, `Agent Working Dir`, `Archived`, `Pinned`, `Created`, `Updated`)
+  - default: prints key attempt fields (`ID`, `Task ID`, `Name`, `Branch`,
+    `Agent Working Dir`, `Archived`, `Pinned`, `Created`, `Updated`)
 
 ### `vk task-attempts create`
-- Creates a new task attempt.
+
+- Creates and starts a new task attempt workspace.
 - Required options:
-  - `--task-id <id>`
+  - `--description <text>`
   - `--repo <id-or-name>`
 - Optional options:
   - `--target-branch <name>` (defaults to `main`)
-  - `--executor <name:variant>` (defaults to configured `defaultExecutor`, otherwise `CLAUDE_CODE:DEFAULT`)
+  - `--executor <name:variant>` (defaults to configured `defaultExecutor`,
+    otherwise `CLAUDE_CODE:DEFAULT`)
+- API request:
+  - `POST /api/task-attempts/create-and-start`
+  - body includes `prompt`, `repos`, and `executor_config`
 - Output:
-  - `--json`: prints created task-attempt JSON
-  - default: prints `Task attempt <id> created.`
+  - `--json`: prints `{ workspace, execution_process }`
+  - default: prints `Task attempt <id> created and started.`
 
 ### `vk task-attempts update [id]`
+
 - Updates task-attempt fields.
 - Supported options:
   - `--name <name>`
@@ -171,6 +192,7 @@ Current top-level commands:
   - default: prints `Task attempt <id> updated.`
 
 ### `vk task-attempts delete [id]`
+
 - Deletes one task attempt.
 - If `id` is missing, uses the same resolver order as `show`.
 - Output:
@@ -179,6 +201,7 @@ Current top-level commands:
   - resolver/API errors are printed as `Error: <message>` and exit code is `1`
 
 ### `vk task-attempts repos [id]`
+
 - Lists repositories attached to one task attempt.
 - If `id` is missing, uses the same resolver order as `show`.
 - Output:
@@ -187,15 +210,19 @@ Current top-level commands:
 - If no results: prints `No repositories found for task attempt.`
 
 ### `vk task-attempts branch-status [id]`
+
 - Lists branch status for repositories in one task attempt.
 - If `id` is missing, uses the same resolver order as `show`.
 - Output:
   - `--json`: prints JSON array
-  - default: table with `Repository | Ahead | Behind | Uncommitted | Untracked | Conflict`
+  - default: table with
+    `Repository | Ahead | Behind | Uncommitted | Untracked | Conflict`
 - If no results: prints `No branch status found.`
 
 ### `vk task-attempts rename-branch [id]`
-- Command placement decision: keep `rename-branch` as a standalone `task-attempts` subcommand.
+
+- Command placement decision: keep `rename-branch` as a standalone
+  `task-attempts` subcommand.
 - Renames the workspace branch for one task attempt.
 - Required option:
   - `--new-branch-name <name>`
@@ -205,6 +232,7 @@ Current top-level commands:
   - default: prints `Task attempt <id> branch renamed to <name>.`
 
 ### `vk task-attempts merge [id]`
+
 - Merges task-attempt branch for a repository.
 - Required option:
   - `--repo <id-or-name>`
@@ -213,6 +241,7 @@ Current top-level commands:
   - default: prints `Task attempt <id> merged for repo <repo-id>.`
 
 ### `vk task-attempts push [id]`
+
 - Pushes task-attempt branch for a repository.
 - Required option:
   - `--repo <id-or-name>`
@@ -221,6 +250,7 @@ Current top-level commands:
   - default: prints `Task attempt <id> pushed for repo <repo-id>.`
 
 ### `vk task-attempts rebase [id]`
+
 - Rebases task-attempt branch for a repository.
 - Required option:
   - `--repo <id-or-name>`
@@ -232,12 +262,14 @@ Current top-level commands:
   - default: prints `Task attempt <id> rebased for repo <repo-id>.`
 
 ### `vk task-attempts stop [id]`
+
 - Stops an active task-attempt.
 - If `id` is missing, uses the same resolver order as `show`.
 - Output:
   - default: prints `Task attempt <id> stopped.`
 
 ### `vk task-attempts pr`
+
 - Creates a pull request for a task-attempt repository.
 - Optional option:
   - `--id <id>`
@@ -252,6 +284,7 @@ Current top-level commands:
   - default: prints `Pull request created: <url>`
 
 ### `vk task-attempts pr attach [id]`
+
 - Attaches an existing PR to a task-attempt repository.
 - Required options:
   - `--repo <id-or-name>`
@@ -262,6 +295,7 @@ Current top-level commands:
   - default: prints `Pull request attached: <url>`
 
 ### `vk task-attempts pr comments [id]`
+
 - Lists PR comments for a task-attempt repository.
 - Required option:
   - `--repo <id-or-name>`
@@ -274,6 +308,7 @@ Current top-level commands:
 ## TDD Rule
 
 For every behavior change:
+
 1. Add or update one failing test first.
 2. Implement the smallest code change to pass.
 3. Keep this spec in sync with the new behavior.

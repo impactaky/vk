@@ -142,11 +142,26 @@ export interface WorkspaceRepoInput {
   target_branch: string;
 }
 
-/** Request body for creating a new workspace. */
-export interface CreateWorkspace {
-  task_id: string;
-  executor_profile_id: ExecutorProfileID;
+/** Executor configuration accepted by create-and-start workspace APIs. */
+export type ExecutorConfig = ExecutorProfileID;
+
+/** Request body for creating and starting a new workspace. */
+export interface CreateAndStartWorkspaceRequest {
+  prompt: string;
+  executor_config: ExecutorConfig;
   repos: WorkspaceRepoInput[];
+  name?: string;
+  linked_issue?: string;
+  image_ids?: string[];
+}
+
+/** @deprecated Use CreateAndStartWorkspaceRequest. */
+export type CreateWorkspace = CreateAndStartWorkspaceRequest;
+
+/** Response body for creating and starting a new workspace. */
+export interface CreateAndStartWorkspaceResponse {
+  workspace: Workspace;
+  execution_process: ExecutionProcess;
 }
 
 /** Request body for renaming a workspace's git branch. */
