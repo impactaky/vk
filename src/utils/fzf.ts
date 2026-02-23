@@ -2,10 +2,7 @@
  * FZF utility for interactive selection
  */
 
-import type {
-  Repo,
-  Workspace,
-} from "../api/types.ts";
+import type { Repo, Workspace } from "../api/types.ts";
 
 export class FzfNotInstalledError extends Error {
   constructor() {

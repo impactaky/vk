@@ -71,7 +71,9 @@ async function getAttemptSeed(): Promise<AttemptSeed | null> {
   const reposResult = await apiCall<Array<{ id?: string; repo_id?: string }>>(
     `/task-attempts/${attempt.id}/repos`,
   );
-  if (!reposResult.success || !reposResult.data || reposResult.data.length === 0) {
+  if (
+    !reposResult.success || !reposResult.data || reposResult.data.length === 0
+  ) {
     return null;
   }
 
@@ -85,7 +87,14 @@ async function getAttemptSeed(): Promise<AttemptSeed | null> {
 }
 
 async function getOrCreatePrNumber(seed: AttemptSeed): Promise<number | null> {
-  const statusResult = await apiCall<Array<{ repo_id: string; merges?: Array<{ pr_info?: { number?: number; status?: string } }> }>>(
+  const statusResult = await apiCall<
+    Array<
+      {
+        repo_id: string;
+        merges?: Array<{ pr_info?: { number?: number; status?: string } }>;
+      }
+    >
+  >(
     `/task-attempts/${seed.attemptId}/branch-status`,
   );
   if (statusResult.success && statusResult.data) {
@@ -97,14 +106,17 @@ async function getOrCreatePrNumber(seed: AttemptSeed): Promise<number | null> {
     }
   }
 
-  const createResult = await apiCall<string>(`/task-attempts/${seed.attemptId}/pr`, {
-    method: "POST",
-    body: JSON.stringify({
-      repo_id: seed.repoId,
-      title: "tmp pr from integration test",
-      body: "tmp body",
-    }),
-  });
+  const createResult = await apiCall<string>(
+    `/task-attempts/${seed.attemptId}/pr`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        repo_id: seed.repoId,
+        title: "tmp pr from integration test",
+        body: "tmp body",
+      }),
+    },
+  );
   if (!createResult.success || !createResult.data) {
     return null;
   }
@@ -178,7 +190,10 @@ function startTaskAttemptCreateMockApi(): TaskAttemptCreateMockApi {
       }
 
       return jsonApiResponse(
-        { success: false, error: `Unhandled route: ${request.method} ${url.pathname}` },
+        {
+          success: false,
+          error: `Unhandled route: ${request.method} ${url.pathname}`,
+        },
         404,
       );
     },
@@ -505,7 +520,9 @@ Deno.test("CLI: vk task-attempts create resolves repo by id", async () => {
 
 Deno.test("CLI: vk task-attempts update <id> --name --archived --pinned --json", async () => {
   const listResult = await apiCall<
-    Array<{ id: string; name: string | null; archived: boolean; pinned: boolean }>
+    Array<
+      { id: string; name: string | null; archived: boolean; pinned: boolean }
+    >
   >("/task-attempts");
   if (
     listResult.status === 401 || !listResult.success || !listResult.data ||
@@ -687,7 +704,9 @@ Deno.test("CLI: vk task-attempts repos <id> --json", async () => {
   }
 
   const firstId = listResult.data[0].id;
-  const endpointResult = await apiCall<unknown[]>(`/task-attempts/${firstId}/repos`);
+  const endpointResult = await apiCall<unknown[]>(
+    `/task-attempts/${firstId}/repos`,
+  );
   if (!endpointResult.success) {
     return;
   }
@@ -735,7 +754,9 @@ Deno.test("CLI: vk task-attempts repos <id> default output", async () => {
   }
 
   const firstId = listResult.data[0].id;
-  const endpointResult = await apiCall<unknown[]>(`/task-attempts/${firstId}/repos`);
+  const endpointResult = await apiCall<unknown[]>(
+    `/task-attempts/${firstId}/repos`,
+  );
   if (!endpointResult.success) {
     return;
   }
@@ -1033,7 +1054,10 @@ Deno.test("CLI: vk task-attempts rename-branch requires --new-branch-name", asyn
   const { code, stderr } = await command.output();
   const stderrText = new TextDecoder().decode(stderr);
   assertEquals(code, 1);
-  assertEquals(stderrText.includes("Option --new-branch-name is required."), true);
+  assertEquals(
+    stderrText.includes("Option --new-branch-name is required."),
+    true,
+  );
 });
 
 Deno.test("CLI: vk task-attempts merge <id> --repo succeeds", async () => {
@@ -1049,7 +1073,9 @@ Deno.test("CLI: vk task-attempts merge <id> --repo succeeds", async () => {
     const reposResult = await apiCall<Array<{ id?: string; repo_id?: string }>>(
       `/task-attempts/${attempt.id}/repos`,
     );
-    if (!reposResult.success || !reposResult.data || reposResult.data.length === 0) {
+    if (
+      !reposResult.success || !reposResult.data || reposResult.data.length === 0
+    ) {
       continue;
     }
 

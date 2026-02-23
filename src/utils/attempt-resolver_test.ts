@@ -85,10 +85,11 @@ Deno.test("getAttemptIdWithAutoDetect: falls back to interactive workspace selec
     undefined,
     {
       resolveWorkspaceFromBranch: () => Promise.resolve(null),
-      listWorkspaces: () => Promise.resolve([
-        createWorkspace("ws-1", "feature/a"),
-        createWorkspace("ws-2", "feature/b"),
-      ]),
+      listWorkspaces: () =>
+        Promise.resolve([
+          createWorkspace("ws-1", "feature/a"),
+          createWorkspace("ws-2", "feature/b"),
+        ]),
       selectWorkspace: (workspaces: Workspace[]) => {
         selectCalled = true;
         return Promise.resolve(workspaces[1].id);

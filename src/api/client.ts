@@ -20,8 +20,8 @@ import type {
   MergeResult,
   MergeWorkspaceRequest,
   Organization,
-  PRCommentsResponse,
   PRAttachResult,
+  PRCommentsResponse,
   PRResult,
   PushWorkspaceRequest,
   RebaseWorkspaceRequest,
@@ -273,7 +273,9 @@ export class ApiClient {
 
   /** Get all comments on a workspace's pull request. Calls GET /api/task-attempts/:id/pr/comments. */
   async getPRComments(id: string, repoId: string): Promise<PRCommentsResponse> {
-    const response = await this.request<PRCommentsResponse | UnifiedPRComment[]>(
+    const response = await this.request<
+      PRCommentsResponse | UnifiedPRComment[]
+    >(
       `/task-attempts/${id}/pr/comments?repo_id=${repoId}`,
     );
     return Array.isArray(response) ? { comments: response } : response;

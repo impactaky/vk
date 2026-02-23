@@ -11,8 +11,9 @@ Scope:
 Workflow:
 1) Keep selection logic deterministic and clear.
 2) Prefer single-target test fixes.
-3) Run lint with: deno lint
-4) Verify with: docker compose run --rm vk
+3) Run format check with: deno fmt --check
+4) Run lint with: deno lint
+5) Verify with: docker compose run --rm vk
 
 Do not widen scope beyond resolver behavior.
 """
