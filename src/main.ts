@@ -12,7 +12,7 @@ const VERSION = "0.1.0";
 const cli = new Command()
   .name("vk")
   .version(VERSION)
-  .description("CLI for vibe-kanban - manage projects and tasks")
+  .description("CLI for vibe-kanban")
   .option("--ai", "Output AI-friendly CLI documentation as JSON")
   .globalOption(
     "-v, --verbose",

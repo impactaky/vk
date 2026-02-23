@@ -136,9 +136,7 @@ Current top-level commands:
 
 ### `vk task-attempts show [id]`
 - Shows one task attempt.
-- If `id` is missing, resolver auto-detects/selects attempt.
-- Supports optional project hint:
-  - `--project <id>`
+- If `id` is missing, resolver auto-detects from current workspace branch.
 - Output:
   - `--json`: prints JSON object
   - default: prints key attempt fields (`ID`, `Task ID`, `Name`, `Branch`, `Agent Working Dir`, `Archived`, `Pinned`, `Created`, `Updated`)

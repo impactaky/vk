@@ -117,7 +117,7 @@ export async function resolveRepositoryFromPath(
       if (pathMatch) {
         return { id: pathMatch.id, name: pathMatch.name };
       }
-      // Otherwise, warn and use first match (consistent with project-resolver)
+      // Otherwise, warn and use first match.
       console.error(
         `Warning: Multiple repositories match "${currentBasename}". Using first match: ${
           gitMatches[0].name

@@ -12,9 +12,7 @@ import { isVerbose, verboseLog } from "../utils/verbose.ts";
 import type {
   ApiResponse,
   AttachPRRequest,
-  CreateProject,
   CreatePRRequest,
-  CreateTask,
   CreateWorkspace,
   FollowUpRequest,
   GitBranch,
@@ -22,7 +20,6 @@ import type {
   MergeResult,
   MergeWorkspaceRequest,
   Organization,
-  Project,
   PRResult,
   PushWorkspaceRequest,
   RebaseWorkspaceRequest,
@@ -31,12 +28,8 @@ import type {
   Repo,
   RepoBranchStatus,
   Session,
-  Task,
-  TaskWithAttemptStatus,
   UnifiedPRComment,
-  UpdateProject,
   UpdateRepo,
-  UpdateTask,
   UpdateWorkspace,
   Workspace,
   WorkspaceRepo,
@@ -103,11 +96,6 @@ export class ApiClient {
     return result.data as T;
   }
 
-  /** List all projects. Calls GET /api/projects. */
-  listProjects(): Promise<Project[]> {
-    return this.request<Project[]>("/projects");
-  }
-
   /** List all organizations. Calls GET /api/organizations. */
   listOrganizations(): Promise<Organization[]> {
     return (async () => {
@@ -139,99 +127,6 @@ export class ApiClient {
       }
       return response;
     })();
-  }
-
-  /** Get a single project by ID. Calls GET /api/projects/:id. */
-  getProject(id: string): Promise<Project> {
-    return this.request<Project>(`/projects/${id}`);
-  }
-
-  /** Create a new project. Calls POST /api/projects. */
-  createProject(project: CreateProject): Promise<Project> {
-    return this.request<Project>("/projects", {
-      method: "POST",
-      body: JSON.stringify(project),
-    });
-  }
-
-  /** Update project properties. Calls PUT /api/projects/:id. */
-  updateProject(id: string, update: UpdateProject): Promise<Project> {
-    return this.request<Project>(`/projects/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(update),
-    });
-  }
-
-  /** Delete a project. Calls DELETE /api/projects/:id. */
-  deleteProject(id: string): Promise<void> {
-    return this.request<void>(`/projects/${id}`, {
-      method: "DELETE",
-    });
-  }
-
-  /** List all repositories attached to a project. Calls GET /api/projects/:id/repositories. */
-  listProjectRepos(projectId: string): Promise<Repo[]> {
-    return this.request<Repo[]>(`/projects/${projectId}/repositories`);
-  }
-
-  /** Add a repository to a project. Calls POST /api/projects/:id/repositories. */
-  addProjectRepo(
-    projectId: string,
-    displayName: string,
-    gitRepoPath: string,
-  ): Promise<Repo> {
-    return this.request<Repo>(`/projects/${projectId}/repositories`, {
-      method: "POST",
-      body: JSON.stringify({
-        display_name: displayName,
-        git_repo_path: gitRepoPath,
-      }),
-    });
-  }
-
-  /** Remove a repository from a project. Calls DELETE /api/projects/:projectId/repositories/:repoId. */
-  removeProjectRepo(projectId: string, repoId: string): Promise<void> {
-    return this.request<void>(
-      `/projects/${projectId}/repositories/${repoId}`,
-      {
-        method: "DELETE",
-      },
-    );
-  }
-
-  /** List all tasks in a project. Calls GET /api/tasks?project_id=:id. */
-  listTasks(projectId: string): Promise<TaskWithAttemptStatus[]> {
-    return this.request<TaskWithAttemptStatus[]>(
-      `/tasks?project_id=${projectId}`,
-    );
-  }
-
-  /** Get a single task by ID. Calls GET /api/tasks/:id. */
-  getTask(id: string): Promise<Task> {
-    return this.request<Task>(`/tasks/${id}`);
-  }
-
-  /** Create a new task. Calls POST /api/tasks. */
-  createTask(task: CreateTask): Promise<Task> {
-    return this.request<Task>("/tasks", {
-      method: "POST",
-      body: JSON.stringify(task),
-    });
-  }
-
-  /** Update task properties. Calls PUT /api/tasks/:id. */
-  updateTask(id: string, update: UpdateTask): Promise<Task> {
-    return this.request<Task>(`/tasks/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(update),
-    });
-  }
-
-  /** Delete a task. Calls DELETE /api/tasks/:id. */
-  deleteTask(id: string): Promise<void> {
-    return this.request<void>(`/tasks/${id}`, {
-      method: "DELETE",
-    });
   }
 
   /** List workspaces (attempts). Calls GET /api/task-attempts with optional task_id filter. */

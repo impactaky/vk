@@ -1,0 +1,26 @@
+## ADDED Requirements
+
+### Requirement: Task-attempt command surface coverage
+The CLI SHALL expose `vk task-attempts` subcommands for the supported task-attempt API operations beyond `list` and `show`, including create, update, delete, repos, branch-status, rename-branch, merge, push, rebase, stop, and PR-related operations.
+
+#### Scenario: User invokes an implemented task-attempt operation
+- **WHEN** a user runs an implemented `vk task-attempts` subcommand
+- **THEN** the CLI executes the corresponding API operation for that subcommand
+
+### Requirement: PR operations are grouped under a nested subcommand
+The CLI SHALL group pull request operations under `vk task-attempts pr`, including nested operations for attaching an existing PR and listing PR comments.
+
+#### Scenario: User discovers PR operations
+- **WHEN** a user inspects or uses task-attempt PR functionality
+- **THEN** PR operations are available under the `task-attempts pr` command group instead of flat top-level variants
+
+### Requirement: Consistent success and JSON output behavior
+Each task-attempt subcommand SHALL support existing CLI output conventions: human-readable success output by default and structured output when `--json` is used where a response payload exists.
+
+#### Scenario: User requests machine-readable output
+- **WHEN** a user runs a task-attempt subcommand with `--json`
+- **THEN** the CLI prints the operation result as JSON using the command's response payload shape
+
+#### Scenario: User uses default output mode
+- **WHEN** a user runs a task-attempt subcommand without `--json`
+- **THEN** the CLI prints concise human-readable status consistent with other VK commands

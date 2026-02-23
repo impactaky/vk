@@ -3,7 +3,6 @@
  */
 
 import type {
-  Project,
   Repo,
   TaskWithAttemptStatus,
   Workspace,
@@ -86,15 +85,6 @@ async function runFzf(items: string[], prompt?: string): Promise<string> {
 }
 
 /**
- * Format project for fzf display
- */
-export function formatProject(project: Project): string {
-  return `${project.id}\t${project.name}\t${
-    project.default_agent_working_dir || "-"
-  }`;
-}
-
-/**
  * Format repository for fzf display
  */
 export function formatRepository(repo: Repo): string {
@@ -120,19 +110,6 @@ export function formatWorkspace(workspace: Workspace): string {
  */
 function extractId(selection: string): string {
   return selection.split("\t")[0];
-}
-
-/**
- * Select a project using fzf
- */
-export async function selectProject(projects: Project[]): Promise<string> {
-  if (projects.length === 0) {
-    throw new Error("No projects available.");
-  }
-
-  const items = projects.map(formatProject);
-  const selected = await runFzf(items, "Select project:");
-  return extractId(selected);
 }
 
 /**

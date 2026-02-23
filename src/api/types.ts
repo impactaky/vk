@@ -15,47 +15,12 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
-/** A project represents a collection of tasks and repositories. */
-export interface Project {
-  id: string;
-  name: string;
-  default_agent_working_dir: string | null;
-  remote_project_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 /** An organization represents a tenant/grouping unit in the system. */
 export interface Organization {
   id: string;
   name: string;
   created_at: string;
   updated_at: string;
-}
-
-/** Repository configuration for creating projects with attached repositories. */
-export interface CreateProjectRepo {
-  display_name: string;
-  git_repo_path: string;
-}
-
-/** Request body for creating a new project. */
-export interface CreateProject {
-  name: string;
-  repositories: CreateProjectRepo[];
-}
-
-/** Request body for updating project properties. */
-export interface UpdateProject {
-  name?: string | null;
-}
-
-/** Join table linking projects to their repositories. */
-export interface ProjectRepo {
-  project_id: string;
-  repo_id: string;
-  is_main: boolean;
-  created_at: string;
 }
 
 /** A task represents a unit of work within a project. */
