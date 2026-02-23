@@ -7,7 +7,9 @@
 
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
-import { config } from "./helpers/test-server.ts";
+import { config, supportsLegacyProjectTaskApi } from "./helpers/test-server.ts";
+
+const hasLegacyProjectTaskApi = await supportsLegacyProjectTaskApi();
 
 // Helper to make raw API calls for verification
 async function apiCall<T>(
@@ -57,6 +59,7 @@ async function createTestRepoDir(suffix: string): Promise<string> {
 // ============================================================================
 
 Deno.test("CLI: vk attempt spin-off creates task with parent_workspace_id", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   const testRepoPath = await createTestRepoDir("spin-off");
 
   // Create project with repository
@@ -184,6 +187,7 @@ Deno.test("CLI: vk attempt spin-off creates task with parent_workspace_id", asyn
 });
 
 Deno.test("CLI: vk attempt spin-off --run creates task and workspace", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   const testRepoPath = await createTestRepoDir("spin-off-run");
 
   // Create project with repository

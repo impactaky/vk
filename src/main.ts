@@ -3,6 +3,7 @@ import { CompletionsCommand } from "@cliffy/command/completions";
 import { organizationCommand } from "./commands/organization.ts";
 import { configCommand } from "./commands/config.ts";
 import { repositoryCommand } from "./commands/repository.ts";
+import { taskAttemptsCommand } from "./commands/task-attempts.ts";
 import { generateAIHelp } from "./utils/ai-help.ts";
 import { setVerbose } from "./utils/verbose.ts";
 
@@ -19,6 +20,7 @@ const cli = new Command()
   )
   .command("organization", organizationCommand)
   .command("repository", repositoryCommand)
+  .command("task-attempts", taskAttemptsCommand)
   .command("config", configCommand)
   .command("completions", new CompletionsCommand());
 

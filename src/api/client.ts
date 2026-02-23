@@ -234,14 +234,25 @@ export class ApiClient {
     });
   }
 
-  /** List all workspaces (attempts) for a task. Calls GET /api/task-attempts?task_id=:id. */
-  listWorkspaces(taskId: string): Promise<Workspace[]> {
-    return this.request<Workspace[]>(`/task-attempts?task_id=${taskId}`);
+  /** List workspaces (attempts). Calls GET /api/task-attempts with optional task_id filter. */
+  listWorkspaces(taskId?: string): Promise<Workspace[]> {
+    const query = taskId ? `?task_id=${taskId}` : "";
+    return this.request<Workspace[]>(`/task-attempts${query}`);
+  }
+
+  /** Backward-compatible alias for task-attempt naming. */
+  listTaskAttempts(taskId?: string): Promise<Workspace[]> {
+    return this.listWorkspaces(taskId);
   }
 
   /** Get a single workspace by ID. Calls GET /api/task-attempts/:id. */
   getWorkspace(id: string): Promise<Workspace> {
     return this.request<Workspace>(`/task-attempts/${id}`);
+  }
+
+  /** Backward-compatible alias for task-attempt naming. */
+  getTaskAttempt(id: string): Promise<Workspace> {
+    return this.getWorkspace(id);
   }
 
   /**

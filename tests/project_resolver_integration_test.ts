@@ -6,13 +6,15 @@
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
-import { config } from "./helpers/test-server.ts";
+import { config, supportsLegacyProjectTaskApi } from "./helpers/test-server.ts";
 import { ApiClient } from "../src/api/client.ts";
 import {
   getProjectId,
   ProjectResolverError,
 } from "../src/utils/project-resolver.ts";
 import type { Project } from "../src/api/types.ts";
+
+const hasLegacyProjectTaskApi = await supportsLegacyProjectTaskApi();
 
 // Helper to create a test project
 async function createTestProject(
@@ -39,6 +41,7 @@ async function createTestProject(
 
 // Tests for getProjectId function with name resolution
 Deno.test("getProjectId: resolves by name when single match exists", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   const { project, cleanup } = await createTestProject("name-resolution");
 
   try {
@@ -52,6 +55,7 @@ Deno.test("getProjectId: resolves by name when single match exists", async () =>
 });
 
 Deno.test("getProjectId: returns explicit ID when provided", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   const { project, cleanup } = await createTestProject("explicit-id");
 
   try {
@@ -64,6 +68,7 @@ Deno.test("getProjectId: returns explicit ID when provided", async () => {
 });
 
 Deno.test("getProjectId: ID match takes priority over name match", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   const { project, cleanup } = await createTestProject("id-priority");
 
   try {
@@ -77,6 +82,7 @@ Deno.test("getProjectId: ID match takes priority over name match", async () => {
 });
 
 Deno.test("getProjectId: throws error when no project matches ID or name", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   // Create a project to ensure at least one exists (so we get "not found" instead of edge case)
   const { cleanup } = await createTestProject("ensure-exists");
 
@@ -97,6 +103,7 @@ Deno.test("getProjectId: throws error when no project matches ID or name", async
 });
 
 Deno.test("getProjectId: throws error when multiple projects share the same name", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   const client = new ApiClient(config.apiUrl);
   const sharedName = `duplicate-name-${Date.now()}`;
 

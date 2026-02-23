@@ -10,6 +10,7 @@ Keep this file simple and aligned with code.
 Current top-level commands:
 - `organization`
 - `repository`
+- `task-attempts`
 - `config`
 - `completions`
 
@@ -121,6 +122,26 @@ Current top-level commands:
   - `--json`: prints JSON array
   - default: table with `Name | Current | Remote`
 - If no results: prints `No branches found.`
+
+## Task-Attempts Command
+
+### `vk task-attempts list`
+- Fetches task attempts from API.
+- Supports optional filter:
+  - `--task-id <id>`
+- Output:
+  - `--json`: prints JSON array
+  - default: table with `ID | Task ID | Name | Branch | Archived | Pinned`
+- If no results: prints `No task attempts found.`
+
+### `vk task-attempts show [id]`
+- Shows one task attempt.
+- If `id` is missing, resolver auto-detects/selects attempt.
+- Supports optional project hint:
+  - `--project <id>`
+- Output:
+  - `--json`: prints JSON object
+  - default: prints key attempt fields (`ID`, `Task ID`, `Name`, `Branch`, `Agent Working Dir`, `Archived`, `Pinned`, `Created`, `Updated`)
 
 ## TDD Rule
 

@@ -12,7 +12,9 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { config } from "./helpers/test-server.ts";
+import { config, supportsLegacyProjectTaskApi } from "./helpers/test-server.ts";
+
+const hasLegacyProjectTaskApi = await supportsLegacyProjectTaskApi();
 
 // Helper to make raw API calls
 async function apiCall<T>(
@@ -60,6 +62,7 @@ async function createTestRepoDir(suffix: string): Promise<string> {
 Deno.test({
   name: "CLI Client: createWorkspace sends repos[] array payload",
   fn: async () => {
+    if (!hasLegacyProjectTaskApi) return;
     // Create test repo
     const testRepoPath = await createTestRepoDir("create-workspace");
 
@@ -148,6 +151,7 @@ Deno.test({
 Deno.test({
   name: "CLI Client: createWorkspace with base_branch should fail (deprecated)",
   fn: async () => {
+    if (!hasLegacyProjectTaskApi) return;
     const testRepoPath = await createTestRepoDir("deprecated-base-branch");
 
     const projectResult = await apiCall<{ id: string }>("/projects", {
@@ -224,6 +228,7 @@ Deno.test({
 Deno.test({
   name: "CLI Client: followUp uses session-based endpoint",
   fn: async () => {
+    if (!hasLegacyProjectTaskApi) return;
     const testRepoPath = await createTestRepoDir("session-followup");
 
     const projectResult = await apiCall<{ id: string }>("/projects", {
@@ -322,6 +327,7 @@ Deno.test({
 Deno.test({
   name: "CLI Client: branch-status returns array response",
   fn: async () => {
+    if (!hasLegacyProjectTaskApi) return;
     const testRepoPath = await createTestRepoDir("branch-status");
 
     const projectResult = await apiCall<{ id: string }>("/projects", {
@@ -410,6 +416,7 @@ Deno.test({
 Deno.test({
   name: "CLI Client: pr-comments requires repo_id parameter",
   fn: async () => {
+    if (!hasLegacyProjectTaskApi) return;
     const testRepoPath = await createTestRepoDir("pr-comments");
 
     const projectResult = await apiCall<{ id: string }>("/projects", {

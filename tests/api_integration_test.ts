@@ -9,7 +9,9 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { config } from "./helpers/test-server.ts";
+import { config, supportsLegacyProjectTaskApi } from "./helpers/test-server.ts";
+
+const hasLegacyProjectTaskApi = await supportsLegacyProjectTaskApi();
 
 // Helper to make raw API calls (bypassing ApiClient to test actual API)
 async function apiCall<T>(
@@ -46,6 +48,7 @@ async function apiCall<T>(
 
 // Project Tests using raw API calls
 Deno.test("API: List projects", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   const result = await apiCall<unknown[]>("/projects");
   assertEquals(result.success, true);
   assertExists(result.data);
@@ -53,6 +56,7 @@ Deno.test("API: List projects", async () => {
 });
 
 Deno.test("API: Create and delete project", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   // Create project with minimal required fields
   const createResult = await apiCall<{ id: string; name: string }>(
     "/projects",
@@ -77,6 +81,7 @@ Deno.test("API: Create and delete project", async () => {
 });
 
 Deno.test("API: Get project by ID", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   // Create a project first
   const createResult = await apiCall<{ id: string; name: string }>(
     "/projects",
@@ -110,6 +115,7 @@ Deno.test("API: List repositories", async () => {
 
 // Task Tests (requires a project with a repository)
 Deno.test("API: List tasks for project", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   // Get list of existing projects
   const projectsResult = await apiCall<{ id: string }[]>("/projects");
   assertEquals(projectsResult.success, true);
@@ -145,6 +151,7 @@ async function createTestRepoDir(suffix: string): Promise<string> {
 
 // Project Repository Tests
 Deno.test("API: Add repository to project", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   // Create a test repo directory with .git folder
   const testRepoPath = await createTestRepoDir("add-repo");
 
@@ -201,6 +208,7 @@ Deno.test("API: Add repository to project", async () => {
 });
 
 Deno.test("API: Add repository to project with custom display_name", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   // Create a test repo directory with .git folder
   const testRepoPath = await createTestRepoDir("custom-name");
 
@@ -256,6 +264,7 @@ Deno.test("API: Add repository to project with custom display_name", async () =>
 // ============================================================================
 
 Deno.test("API: Create, get, and delete task", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   // Create a test project first
   const projectResult = await apiCall<{ id: string }>(
     "/projects",
@@ -314,6 +323,7 @@ Deno.test("API: Create, get, and delete task", async () => {
 });
 
 Deno.test("API: Update task", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   // Create a test project
   const projectResult = await apiCall<{ id: string }>(
     "/projects",
@@ -392,6 +402,7 @@ Deno.test("API: Update task", async () => {
 });
 
 Deno.test("API: List tasks with status filter", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   // Create a test project
   const projectResult = await apiCall<{ id: string }>(
     "/projects",
@@ -509,6 +520,7 @@ Deno.test("API: List tasks with status filter", async () => {
 Deno.test({
   name: "API: Create, get, update, and delete task attempt",
   fn: async () => {
+    if (!hasLegacyProjectTaskApi) return;
     // Create a test repo directory with .git folder
     const testRepoPath = await createTestRepoDir("attempt-repo");
 
@@ -660,6 +672,7 @@ Deno.test({
 Deno.test({
   name: "API: List task attempts with task filter",
   fn: async () => {
+    if (!hasLegacyProjectTaskApi) return;
     // Create a test repo directory
     const testRepoPath = await createTestRepoDir("attempt-filter-repo");
 
@@ -821,6 +834,7 @@ Deno.test({
 Deno.test({
   name: "API: Workspace merge requires repo_id",
   fn: async () => {
+    if (!hasLegacyProjectTaskApi) return;
     // Create a test repo directory
     const testRepoPath = await createTestRepoDir("merge-repo");
 
@@ -905,6 +919,7 @@ Deno.test({
 Deno.test({
   name: "API: Workspace push requires repo_id",
   fn: async () => {
+    if (!hasLegacyProjectTaskApi) return;
     const testRepoPath = await createTestRepoDir("push-repo");
 
     const projectResult = await apiCall<{ id: string }>("/projects", {
@@ -989,6 +1004,7 @@ Deno.test({
 Deno.test({
   name: "API: Workspace rebase requires repo_id with optional base branches",
   fn: async () => {
+    if (!hasLegacyProjectTaskApi) return;
     const testRepoPath = await createTestRepoDir("rebase-repo");
 
     const projectResult = await apiCall<{ id: string }>("/projects", {
@@ -1082,6 +1098,7 @@ Deno.test({
 // ============================================================================
 
 Deno.test("API: Create task with image_ids", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   const projectResult = await apiCall<{ id: string }>("/projects", {
     method: "POST",
     body: JSON.stringify({
@@ -1117,6 +1134,7 @@ Deno.test("API: Create task with image_ids", async () => {
 });
 
 Deno.test("API: Update task with image_ids", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   const projectResult = await apiCall<{ id: string }>("/projects", {
     method: "POST",
     body: JSON.stringify({
@@ -1185,6 +1203,7 @@ Deno.test({
 // ============================================================================
 
 Deno.test("API: Task list returns attempt status fields", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   const projectsResult = await apiCall<{ id: string }[]>("/projects");
   assertEquals(projectsResult.success, true);
 
@@ -1216,6 +1235,7 @@ Deno.test("API: Task list returns attempt status fields", async () => {
 // ============================================================================
 
 Deno.test("API: Update project", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   // Create a test project
   const createResult = await apiCall<{ id: string; name: string }>(
     "/projects",
@@ -1261,6 +1281,7 @@ Deno.test("API: Update project", async () => {
 // ============================================================================
 
 Deno.test("API: Remove repository from project", async () => {
+  if (!hasLegacyProjectTaskApi) return;
   // Create a test repo directory
   const testRepoPath = await createTestRepoDir("remove-repo");
 

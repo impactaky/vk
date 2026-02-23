@@ -5,6 +5,8 @@
 import type {
   Project,
   Repo,
+  TaskWithAttemptStatus,
+  Workspace,
 } from "../api/types.ts";
 
 export class FzfNotInstalledError extends Error {
@@ -100,6 +102,20 @@ export function formatRepository(repo: Repo): string {
 }
 
 /**
+ * Format task for fzf display
+ */
+export function formatTask(task: TaskWithAttemptStatus): string {
+  return `${task.id}\t${task.title}\t${task.status}`;
+}
+
+/**
+ * Format workspace for fzf display
+ */
+export function formatWorkspace(workspace: Workspace): string {
+  return `${workspace.id}\t${workspace.branch}\t${workspace.name || "-"}`;
+}
+
+/**
  * Extract ID from fzf selection (first column)
  */
 function extractId(selection: string): string {
@@ -132,3 +148,32 @@ export async function selectRepository(repos: Repo[]): Promise<string> {
   return extractId(selected);
 }
 
+/**
+ * Select a task using fzf
+ */
+export async function selectTask(
+  tasks: TaskWithAttemptStatus[],
+): Promise<string> {
+  if (tasks.length === 0) {
+    throw new Error("No tasks available.");
+  }
+
+  const items = tasks.map(formatTask);
+  const selected = await runFzf(items, "Select task:");
+  return extractId(selected);
+}
+
+/**
+ * Select a workspace using fzf
+ */
+export async function selectWorkspace(
+  workspaces: Workspace[],
+): Promise<string> {
+  if (workspaces.length === 0) {
+    throw new Error("No workspaces available.");
+  }
+
+  const items = workspaces.map(formatWorkspace);
+  const selected = await runFzf(items, "Select workspace:");
+  return extractId(selected);
+}
