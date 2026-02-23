@@ -145,6 +145,43 @@ Current top-level commands:
   - `--json`: prints JSON object
   - default: prints key attempt fields (`ID`, `Task ID`, `Name`, `Branch`, `Agent Working Dir`, `Archived`, `Pinned`, `Created`, `Updated`)
 
+### `vk task-attempts update [id]`
+- Updates task-attempt fields.
+- Supported options:
+  - `--name <name>`
+  - `--archived` / `--no-archived`
+  - `--pinned` / `--no-pinned`
+- If `id` is missing, uses the same resolver order as `show`.
+- If no update options are provided:
+  - prints `No updates specified.`
+- Output:
+  - `--json`: prints updated task-attempt JSON
+  - default: prints `Task attempt <id> updated.`
+
+### `vk task-attempts delete [id]`
+- Deletes one task attempt.
+- If `id` is missing, uses the same resolver order as `show`.
+- Output:
+  - default: prints `Task attempt <id> deleted.`
+- Error behavior:
+  - resolver/API errors are printed as `Error: <message>` and exit code is `1`
+
+### `vk task-attempts repos [id]`
+- Lists repositories attached to one task attempt.
+- If `id` is missing, uses the same resolver order as `show`.
+- Output:
+  - `--json`: prints JSON array
+  - default: table with `ID | Repo ID | Target Branch`
+- If no results: prints `No repositories found for task attempt.`
+
+### `vk task-attempts branch-status [id]`
+- Lists branch status for repositories in one task attempt.
+- If `id` is missing, uses the same resolver order as `show`.
+- Output:
+  - `--json`: prints JSON array
+  - default: table with `Repository | Ahead | Behind | Uncommitted | Untracked | Conflict`
+- If no results: prints `No branch status found.`
+
 ## TDD Rule
 
 For every behavior change:

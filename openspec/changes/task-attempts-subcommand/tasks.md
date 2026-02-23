@@ -13,17 +13,17 @@
 - [ ] 2.1 Add spec text for `vk task-attempts create` inputs and success output in `specs/cli.md` (Owner: Spec and Docs Agent).
 - [ ] 2.2 Add failing tests for `vk task-attempts create` argument parsing, repo resolution (id/name), and `--json` output (Owner: Test Triage Agent).
 - [ ] 2.3 Implement `create` command behavior in `src/commands/task-attempts.ts` and client/type usage in `src/api/client.ts` and `src/api/types.ts` (Owner: CLI Behavior Agent + API Contract Agent).
-- [ ] 2.4 Add spec text and failing tests for `vk task-attempts update [id]` flags (`--name`, archived toggle, pinned toggle) including omitted id auto-detect (Owner: Spec and Docs Agent + Test Triage Agent).
-- [ ] 2.5 Implement `update [id]` command behavior and status output parity with existing update commands (Owner: CLI Behavior Agent).
-- [ ] 2.6 Add spec text and failing tests for `vk task-attempts delete [id]` including omitted id auto-detect and error handling (Owner: Spec and Docs Agent + Test Triage Agent).
-- [ ] 2.7 Implement `delete [id]` command behavior and success/error output conventions (Owner: CLI Behavior Agent).
+- [x] 2.4 Add spec text and failing tests for `vk task-attempts update [id]` flags (`--name`, archived toggle, pinned toggle) including omitted id auto-detect (Owner: Spec and Docs Agent + Test Triage Agent).
+- [x] 2.5 Implement `update [id]` command behavior and status output parity with existing update commands (Owner: CLI Behavior Agent).
+- [x] 2.6 Add spec text and failing tests for `vk task-attempts delete [id]` including omitted id auto-detect and error handling (Owner: Spec and Docs Agent + Test Triage Agent).
+- [x] 2.7 Implement `delete [id]` command behavior and success/error output conventions (Owner: CLI Behavior Agent).
 
 ## 3. Phase 2 Repo and Branch Status Subcommands
 
-- [ ] 3.1 Add spec text and failing tests for `vk task-attempts repos [id]` output modes (table and `--json`) with optional id auto-detect (Owner: Spec and Docs Agent + Test Triage Agent).
-- [ ] 3.2 Implement `repos [id]` command and response formatting integration with API client methods (Owner: CLI Behavior Agent + API Contract Agent).
-- [ ] 3.3 Add spec text and failing tests for `vk task-attempts branch-status [id]` including branch status fields and optional id resolution (Owner: Spec and Docs Agent + Test Triage Agent).
-- [ ] 3.4 Implement `branch-status [id]` command behavior and output formatting (Owner: CLI Behavior Agent).
+- [x] 3.1 Add spec text and failing tests for `vk task-attempts repos [id]` output modes (table and `--json`) with optional id auto-detect (Owner: Spec and Docs Agent + Test Triage Agent).
+- [x] 3.2 Implement `repos [id]` command and response formatting integration with API client methods (Owner: CLI Behavior Agent + API Contract Agent).
+- [x] 3.3 Add spec text and failing tests for `vk task-attempts branch-status [id]` including branch status fields and optional id resolution (Owner: Spec and Docs Agent + Test Triage Agent).
+- [x] 3.4 Implement `branch-status [id]` command behavior and output formatting (Owner: CLI Behavior Agent).
 
 ## 4. Phase 3 Git Operation Subcommands
 
