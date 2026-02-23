@@ -125,9 +125,9 @@ async function getOrCreatePrNumber(seed: AttemptSeed): Promise<number | null> {
   return match ? Number(match[1]) : null;
 }
 
-type CreateTaskAttemptRequest = {
-  task_id: string;
-  executor_profile_id: { executor: string; variant: string | null };
+type CreateAndStartWorkspaceRequest = {
+  prompt: string;
+  executor_config: { executor: string; variant: string | null };
   repos: Array<{ repo_id: string; target_branch: string }>;
 };
 
@@ -135,7 +135,7 @@ type TaskAttemptCreateMockApi = {
   apiUrl: string;
   repoId: string;
   repoName: string;
-  requests: CreateTaskAttemptRequest[];
+  requests: CreateAndStartWorkspaceRequest[];
   shutdown: () => Promise<void>;
 };
 
@@ -149,7 +149,7 @@ function jsonApiResponse(payload: unknown, status = 200): Response {
 function startTaskAttemptCreateMockApi(): TaskAttemptCreateMockApi {
   const repoId = "repo-1";
   const repoName = "repo-one";
-  const requests: CreateTaskAttemptRequest[] = [];
+  const requests: CreateAndStartWorkspaceRequest[] = [];
   const abortController = new AbortController();
   const server = Deno.serve(
     {
@@ -168,23 +168,40 @@ function startTaskAttemptCreateMockApi(): TaskAttemptCreateMockApi {
         });
       }
 
-      if (request.method === "POST" && url.pathname === "/api/task-attempts") {
-        const body = await request.json() as CreateTaskAttemptRequest;
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/task-attempts/create-and-start"
+      ) {
+        const body = await request.json() as CreateAndStartWorkspaceRequest;
         requests.push(body);
         return jsonApiResponse({
           success: true,
           data: {
-            id: "ws-created-1",
-            task_id: body.task_id,
-            container_ref: null,
-            branch: "feature/ws-created-1",
-            agent_working_dir: null,
-            setup_completed_at: null,
-            created_at: "2026-01-01T00:00:00.000Z",
-            updated_at: "2026-01-01T00:00:00.000Z",
-            archived: false,
-            pinned: false,
-            name: null,
+            workspace: {
+              id: "ws-created-1",
+              task_id: "",
+              container_ref: null,
+              branch: "feature/ws-created-1",
+              agent_working_dir: null,
+              setup_completed_at: null,
+              created_at: "2026-01-01T00:00:00.000Z",
+              updated_at: "2026-01-01T00:00:00.000Z",
+              archived: false,
+              pinned: false,
+              name: null,
+            },
+            execution_process: {
+              id: "exec-1",
+              session_id: "session-1",
+              run_reason: "codingagent",
+              status: "running",
+              exit_code: null,
+              dropped: false,
+              started_at: "2026-01-01T00:00:00.000Z",
+              completed_at: null,
+              created_at: "2026-01-01T00:00:00.000Z",
+              updated_at: "2026-01-01T00:00:00.000Z",
+            },
           },
         });
       }
@@ -388,7 +405,7 @@ Deno.test("CLI: vk task-attempts show --json auto-detects ID from branch", async
   }
 });
 
-Deno.test("CLI: vk task-attempts create requires --task-id", async () => {
+Deno.test("CLI: vk task-attempts create requires --description", async () => {
   const command = new Deno.Command("deno", {
     args: [
       "run",
@@ -414,7 +431,7 @@ Deno.test("CLI: vk task-attempts create requires --task-id", async () => {
   const stderrText = new TextDecoder().decode(stderr);
 
   assertEquals(code, 1);
-  assertEquals(stderrText.includes("Option --task-id is required."), true);
+  assertEquals(stderrText.includes("Option --description is required."), true);
 });
 
 Deno.test("CLI: vk task-attempts create resolves repo by name and supports --json output", async () => {
@@ -430,8 +447,8 @@ Deno.test("CLI: vk task-attempts create resolves repo by name and supports --jso
         "src/main.ts",
         "task-attempts",
         "create",
-        "--task-id",
-        "task-123",
+        "--description",
+        "Fix the issue",
         "--repo",
         mock.repoName,
         "--target-branch",
@@ -458,13 +475,14 @@ Deno.test("CLI: vk task-attempts create resolves repo by name and supports --jso
     );
 
     const parsed = JSON.parse(new TextDecoder().decode(stdout));
-    assertEquals(parsed.id, "ws-created-1");
+    assertEquals(parsed.workspace.id, "ws-created-1");
+    assertEquals(parsed.execution_process.id, "exec-1");
     assertEquals(mock.requests.length, 1);
-    assertEquals(mock.requests[0].task_id, "task-123");
+    assertEquals(mock.requests[0].prompt, "Fix the issue");
     assertEquals(mock.requests[0].repos[0].repo_id, mock.repoId);
     assertEquals(mock.requests[0].repos[0].target_branch, "develop");
-    assertEquals(mock.requests[0].executor_profile_id.executor, "CLAUDE_CODE");
-    assertEquals(mock.requests[0].executor_profile_id.variant, "DEFAULT");
+    assertEquals(mock.requests[0].executor_config.executor, "CLAUDE_CODE");
+    assertEquals(mock.requests[0].executor_config.variant, "DEFAULT");
   } finally {
     await mock.shutdown();
   }
@@ -483,8 +501,8 @@ Deno.test("CLI: vk task-attempts create resolves repo by id", async () => {
         "src/main.ts",
         "task-attempts",
         "create",
-        "--task-id",
-        "task-456",
+        "--description",
+        "Add tests",
         "--repo",
         mock.repoId,
         "--executor",
@@ -509,8 +527,9 @@ Deno.test("CLI: vk task-attempts create resolves repo by id", async () => {
     );
 
     const parsed = JSON.parse(new TextDecoder().decode(stdout));
-    assertEquals(parsed.id, "ws-created-1");
+    assertEquals(parsed.workspace.id, "ws-created-1");
     assertEquals(mock.requests.length, 1);
+    assertEquals(mock.requests[0].prompt, "Add tests");
     assertEquals(mock.requests[0].repos[0].repo_id, mock.repoId);
     assertEquals(mock.requests[0].repos[0].target_branch, "main");
   } finally {
