@@ -182,6 +182,83 @@ Current top-level commands:
   - default: table with `Repository | Ahead | Behind | Uncommitted | Untracked | Conflict`
 - If no results: prints `No branch status found.`
 
+### `vk task-attempts rename-branch [id]`
+- Command placement decision: keep `rename-branch` as a standalone `task-attempts` subcommand.
+- Renames the workspace branch for one task attempt.
+- Required option:
+  - `--new-branch-name <name>`
+- If `id` is missing, uses the same resolver order as `show`.
+- Output:
+  - `--json`: prints API response JSON
+  - default: prints `Task attempt <id> branch renamed to <name>.`
+
+### `vk task-attempts merge [id]`
+- Merges task-attempt branch for a repository.
+- Required option:
+  - `--repo <id-or-name>`
+- If `id` is missing, uses the same resolver order as `show`.
+- Output:
+  - default: prints `Task attempt <id> merged for repo <repo-id>.`
+
+### `vk task-attempts push [id]`
+- Pushes task-attempt branch for a repository.
+- Required option:
+  - `--repo <id-or-name>`
+- If `id` is missing, uses the same resolver order as `show`.
+- Output:
+  - default: prints `Task attempt <id> pushed for repo <repo-id>.`
+
+### `vk task-attempts rebase [id]`
+- Rebases task-attempt branch for a repository.
+- Required option:
+  - `--repo <id-or-name>`
+- Optional options:
+  - `--old-base-branch <name>`
+  - `--new-base-branch <name>`
+- If `id` is missing, uses the same resolver order as `show`.
+- Output:
+  - default: prints `Task attempt <id> rebased for repo <repo-id>.`
+
+### `vk task-attempts stop [id]`
+- Stops an active task-attempt.
+- If `id` is missing, uses the same resolver order as `show`.
+- Output:
+  - default: prints `Task attempt <id> stopped.`
+
+### `vk task-attempts pr`
+- Creates a pull request for a task-attempt repository.
+- Optional option:
+  - `--id <id>`
+- Required option:
+  - `--repo <id-or-name>`
+- Optional options:
+  - `--title <title>`
+  - `--body <body>`
+- If `--id` is missing, uses the same resolver order as `show`.
+- Output:
+  - `--json`: prints PR creation result JSON
+  - default: prints `Pull request created: <url>`
+
+### `vk task-attempts pr attach [id]`
+- Attaches an existing PR to a task-attempt repository.
+- Required options:
+  - `--repo <id-or-name>`
+  - `--pr-number <number>`
+- If `id` is missing, uses the same resolver order as `show`.
+- Output:
+  - `--json`: prints attach result JSON
+  - default: prints `Pull request attached: <url>`
+
+### `vk task-attempts pr comments [id]`
+- Lists PR comments for a task-attempt repository.
+- Required option:
+  - `--repo <id-or-name>`
+- If `id` is missing, uses the same resolver order as `show`.
+- Output:
+  - `--json`: prints comments JSON payload
+  - default: table with `ID | Type | User | Path | Line | Created`
+- If no comments: prints `No PR comments found.`
+
 ## TDD Rule
 
 For every behavior change:

@@ -4,6 +4,7 @@ import { ApiClient } from "../api/client.ts";
 import type { UpdateWorkspace } from "../api/types.ts";
 import { getAttemptIdWithAutoDetect } from "../utils/attempt-resolver.ts";
 import { handleCliError } from "../utils/error-handler.ts";
+import { getRepositoryId } from "../utils/repository-resolver.ts";
 
 export const taskAttemptsCommand = new Command()
   .description("Manage task attempts")
@@ -214,6 +215,247 @@ taskAttemptsCommand
           String(status.uncommitted_count),
           String(status.untracked_count),
           status.conflicted_files.length > 0 ? "Yes" : "No",
+        ]));
+
+      table.render();
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+taskAttemptsCommand
+  .command("rename-branch")
+  .description("Rename task attempt branch")
+  .arguments("[id:string]")
+  .option("--new-branch-name <name:string>", "New branch name")
+  .option("--json", "Output as JSON")
+  .action(async (options, id?: string) => {
+    try {
+      if (!options.newBranchName) {
+        throw new Error("Option --new-branch-name is required.");
+      }
+
+      const client = await ApiClient.create();
+      const attemptId = await getAttemptIdWithAutoDetect(client, id);
+      const result = await client.renameBranch(attemptId, {
+        new_branch_name: options.newBranchName,
+      });
+
+      if (options.json) {
+        console.log(JSON.stringify(result, null, 2));
+        return;
+      }
+
+      const branchName = "branch" in result && result.branch
+        ? result.branch
+        : options.newBranchName;
+      console.log(
+        `Task attempt ${attemptId} branch renamed to ${branchName}.`,
+      );
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+taskAttemptsCommand
+  .command("merge")
+  .description("Merge task attempt branch")
+  .arguments("[id:string]")
+  .option("--repo <repo:string>", "Repository ID or name")
+  .action(async (options, id?: string) => {
+    try {
+      if (!options.repo) {
+        throw new Error("Option --repo is required.");
+      }
+
+      const client = await ApiClient.create();
+      const attemptId = await getAttemptIdWithAutoDetect(client, id);
+      const repoId = await getRepositoryId(options.repo, client);
+      await client.mergeWorkspace(attemptId, { repo_id: repoId });
+      console.log(`Task attempt ${attemptId} merged for repo ${repoId}.`);
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+taskAttemptsCommand
+  .command("push")
+  .description("Push task attempt branch")
+  .arguments("[id:string]")
+  .option("--repo <repo:string>", "Repository ID or name")
+  .action(async (options, id?: string) => {
+    try {
+      if (!options.repo) {
+        throw new Error("Option --repo is required.");
+      }
+
+      const client = await ApiClient.create();
+      const attemptId = await getAttemptIdWithAutoDetect(client, id);
+      const repoId = await getRepositoryId(options.repo, client);
+      await client.pushWorkspace(attemptId, { repo_id: repoId });
+      console.log(`Task attempt ${attemptId} pushed for repo ${repoId}.`);
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+taskAttemptsCommand
+  .command("rebase")
+  .description("Rebase task attempt branch")
+  .arguments("[id:string]")
+  .option("--repo <repo:string>", "Repository ID or name")
+  .option("--old-base-branch <name:string>", "Old base branch")
+  .option("--new-base-branch <name:string>", "New base branch")
+  .action(async (options, id?: string) => {
+    try {
+      if (!options.repo) {
+        throw new Error("Option --repo is required.");
+      }
+
+      const client = await ApiClient.create();
+      const attemptId = await getAttemptIdWithAutoDetect(client, id);
+      const repoId = await getRepositoryId(options.repo, client);
+      await client.rebaseWorkspace(attemptId, {
+        repo_id: repoId,
+        old_base_branch: options.oldBaseBranch,
+        new_base_branch: options.newBaseBranch,
+      });
+      console.log(`Task attempt ${attemptId} rebased for repo ${repoId}.`);
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+taskAttemptsCommand
+  .command("stop")
+  .description("Stop task attempt")
+  .arguments("[id:string]")
+  .action(async (_options, id?: string) => {
+    try {
+      const client = await ApiClient.create();
+      const attemptId = await getAttemptIdWithAutoDetect(client, id);
+      await client.stopWorkspace(attemptId);
+      console.log(`Task attempt ${attemptId} stopped.`);
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+const prCommand = new Command()
+  .description("Pull request operations for task attempts")
+  .option("--id <id:string>", "Task attempt ID")
+  .option("--repo <repo:string>", "Repository ID or name")
+  .option("--title <title:string>", "Pull request title")
+  .option("--body <body:string>", "Pull request body")
+  .option("--json", "Output as JSON")
+  .action(async (options) => {
+    try {
+      if (!options.repo) {
+        throw new Error("Option --repo is required.");
+      }
+
+      const client = await ApiClient.create();
+      const attemptId = await getAttemptIdWithAutoDetect(client, options.id);
+      const repoId = await getRepositoryId(options.repo, client);
+      const title = options.title || `Task attempt ${attemptId}`;
+      const url = await client.createPR(attemptId, {
+        repo_id: repoId,
+        title,
+        body: options.body,
+      });
+
+      if (options.json) {
+        console.log(JSON.stringify(url, null, 2));
+        return;
+      }
+
+      console.log(`Pull request created: ${url}`);
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+prCommand
+  .command("attach")
+  .description("Attach an existing pull request to a task attempt")
+  .arguments("[id:string]")
+  .option("--repo <repo:string>", "Repository ID or name")
+  .option("--pr-number <number:number>", "Pull request number")
+  .option("--json", "Output as JSON")
+  .action(async (options, id?: string) => {
+    try {
+      if (!options.repo) {
+        throw new Error("Option --repo is required.");
+      }
+      if (options.prNumber === undefined) {
+        throw new Error("Option --pr-number is required.");
+      }
+
+      const client = await ApiClient.create();
+      const attemptId = await getAttemptIdWithAutoDetect(client, id);
+      const repoId = await getRepositoryId(options.repo, client);
+      const result = await client.attachPR(attemptId, {
+        repo_id: repoId,
+        pr_number: options.prNumber,
+      });
+
+      if (options.json) {
+        console.log(JSON.stringify(result, null, 2));
+        return;
+      }
+
+      console.log(`Pull request attached: ${result.pr_url}`);
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+taskAttemptsCommand.command("pr", prCommand);
+
+prCommand
+  .command("comments")
+  .description("List pull request comments for a task attempt")
+  .arguments("[id:string]")
+  .option("--repo <repo:string>", "Repository ID or name")
+  .option("--json", "Output as JSON")
+  .action(async (options, id?: string) => {
+    try {
+      if (!options.repo) {
+        throw new Error("Option --repo is required.");
+      }
+
+      const client = await ApiClient.create();
+      const attemptId = await getAttemptIdWithAutoDetect(client, id);
+      const repoId = await getRepositoryId(options.repo, client);
+      const response = await client.getPRComments(attemptId, repoId);
+
+      if (options.json) {
+        console.log(JSON.stringify(response, null, 2));
+        return;
+      }
+
+      if (response.comments.length === 0) {
+        console.log("No PR comments found.");
+        return;
+      }
+
+      const table = new Table()
+        .header(["ID", "Type", "User", "Path", "Line", "Created"])
+        .body(response.comments.map((comment) => [
+          String(comment.id),
+          comment.comment_type,
+          comment.user,
+          comment.path || "-",
+          comment.line ? String(comment.line) : "-",
+          comment.created_at,
         ]));
 
       table.render();

@@ -20,6 +20,8 @@ import type {
   MergeResult,
   MergeWorkspaceRequest,
   Organization,
+  PRCommentsResponse,
+  PRAttachResult,
   PRResult,
   PushWorkspaceRequest,
   RebaseWorkspaceRequest,
@@ -232,10 +234,10 @@ export class ApiClient {
   }
 
   /** Create a pull request from a workspace. Calls POST /api/task-attempts/:id/pr. */
-  createPR(id: string, request?: CreatePRRequest): Promise<PRResult> {
+  createPR(id: string, request: CreatePRRequest): Promise<PRResult> {
     return this.request<PRResult>(`/task-attempts/${id}/pr`, {
       method: "POST",
-      body: JSON.stringify(request || {}),
+      body: JSON.stringify(request),
     });
   }
 
@@ -262,18 +264,19 @@ export class ApiClient {
   }
 
   /** Attach an existing pull request to a workspace. Calls POST /api/task-attempts/:id/pr/attach. */
-  attachPR(id: string, request: AttachPRRequest): Promise<PRResult> {
-    return this.request<PRResult>(`/task-attempts/${id}/pr/attach`, {
+  attachPR(id: string, request: AttachPRRequest): Promise<PRAttachResult> {
+    return this.request<PRAttachResult>(`/task-attempts/${id}/pr/attach`, {
       method: "POST",
       body: JSON.stringify(request),
     });
   }
 
   /** Get all comments on a workspace's pull request. Calls GET /api/task-attempts/:id/pr/comments. */
-  getPRComments(id: string, repoId: string): Promise<UnifiedPRComment[]> {
-    return this.request<UnifiedPRComment[]>(
+  async getPRComments(id: string, repoId: string): Promise<PRCommentsResponse> {
+    const response = await this.request<PRCommentsResponse | UnifiedPRComment[]>(
       `/task-attempts/${id}/pr/comments?repo_id=${repoId}`,
     );
+    return Array.isArray(response) ? { comments: response } : response;
   }
 
   /** List all sessions for a workspace. Calls GET /api/sessions?workspace_id=:id. */

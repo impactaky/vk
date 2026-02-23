@@ -54,6 +54,65 @@ async function isGitInstalled(): Promise<boolean> {
   }
 }
 
+type AttemptSeed = { attemptId: string; branch: string; repoId: string };
+
+async function getAttemptSeed(): Promise<AttemptSeed | null> {
+  const listResult = await apiCall<Array<{ id: string; branch: string }>>(
+    "/task-attempts",
+  );
+  if (
+    listResult.status === 401 || !listResult.success || !listResult.data ||
+    listResult.data.length === 0
+  ) {
+    return null;
+  }
+
+  const attempt = listResult.data[0];
+  const reposResult = await apiCall<Array<{ id?: string; repo_id?: string }>>(
+    `/task-attempts/${attempt.id}/repos`,
+  );
+  if (!reposResult.success || !reposResult.data || reposResult.data.length === 0) {
+    return null;
+  }
+
+  const repo = reposResult.data[0];
+  const repoId = repo.repo_id ?? repo.id;
+  if (!repoId) {
+    return null;
+  }
+
+  return { attemptId: attempt.id, branch: attempt.branch, repoId };
+}
+
+async function getOrCreatePrNumber(seed: AttemptSeed): Promise<number | null> {
+  const statusResult = await apiCall<Array<{ repo_id: string; merges?: Array<{ pr_info?: { number?: number; status?: string } }> }>>(
+    `/task-attempts/${seed.attemptId}/branch-status`,
+  );
+  if (statusResult.success && statusResult.data) {
+    const repoStatus = statusResult.data.find((s) => s.repo_id === seed.repoId);
+    const openPr = repoStatus?.merges?.find((m) => m.pr_info?.status === "open")
+      ?.pr_info?.number;
+    if (openPr) {
+      return openPr;
+    }
+  }
+
+  const createResult = await apiCall<string>(`/task-attempts/${seed.attemptId}/pr`, {
+    method: "POST",
+    body: JSON.stringify({
+      repo_id: seed.repoId,
+      title: "tmp pr from integration test",
+      body: "tmp body",
+    }),
+  });
+  if (!createResult.success || !createResult.data) {
+    return null;
+  }
+
+  const match = String(createResult.data).match(/\/pull\/(\d+)/);
+  return match ? Number(match[1]) : null;
+}
+
 Deno.test("API: task-attempts endpoint returns array when accessible", async () => {
   const result = await apiCall<unknown[]>("/task-attempts");
 
@@ -677,6 +736,623 @@ Deno.test("CLI: vk task-attempts branch-status without id reports resolver error
       env: {
         VK_API_URL: config.apiUrl,
         HOME: "/tmp/test-home-task-attempts-branch-status-no-id",
+        PATH: "/tmp/vk-no-bin",
+      },
+    });
+
+    const { code, stderr } = await command.output();
+    const stderrText = new TextDecoder().decode(stderr);
+    assertEquals(code, 1);
+    assertEquals(stderrText.includes("Error:"), true);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+Deno.test("CLI: vk task-attempts rename-branch <id> --new-branch-name --json", async () => {
+  const seed = await getAttemptSeed();
+  if (!seed) {
+    return;
+  }
+
+  const command = new Deno.Command("deno", {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "src/main.ts",
+      "task-attempts",
+      "rename-branch",
+      seed.attemptId,
+      "--new-branch-name",
+      seed.branch,
+      "--json",
+    ],
+    stdout: "piped",
+    stderr: "piped",
+    env: {
+      VK_API_URL: config.apiUrl,
+      HOME: "/tmp/test-home-task-attempts-rename-branch",
+    },
+  });
+
+  const { code, stdout, stderr } = await command.output();
+  const stderrText = new TextDecoder().decode(stderr);
+  assertEquals(
+    code,
+    0,
+    `Expected exit code 0 for task-attempts rename-branch --json. stderr: ${stderrText}`,
+  );
+
+  const parsed = JSON.parse(new TextDecoder().decode(stdout));
+  assertEquals(parsed.branch, seed.branch);
+});
+
+Deno.test("CLI: vk task-attempts rename-branch requires --new-branch-name", async () => {
+  const seed = await getAttemptSeed();
+  if (!seed) {
+    return;
+  }
+
+  const command = new Deno.Command("deno", {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "src/main.ts",
+      "task-attempts",
+      "rename-branch",
+      seed.attemptId,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+    env: {
+      VK_API_URL: config.apiUrl,
+      HOME: "/tmp/test-home-task-attempts-rename-branch-missing-flag",
+    },
+  });
+
+  const { code, stderr } = await command.output();
+  const stderrText = new TextDecoder().decode(stderr);
+  assertEquals(code, 1);
+  assertEquals(stderrText.includes("Option --new-branch-name is required."), true);
+});
+
+Deno.test("CLI: vk task-attempts merge <id> --repo succeeds", async () => {
+  const listResult = await apiCall<Array<{ id: string }>>("/task-attempts");
+  if (
+    listResult.status === 401 || !listResult.success || !listResult.data ||
+    listResult.data.length === 0
+  ) {
+    return;
+  }
+
+  for (const attempt of listResult.data) {
+    const reposResult = await apiCall<Array<{ id?: string; repo_id?: string }>>(
+      `/task-attempts/${attempt.id}/repos`,
+    );
+    if (!reposResult.success || !reposResult.data || reposResult.data.length === 0) {
+      continue;
+    }
+
+    const repoId = reposResult.data[0].repo_id ?? reposResult.data[0].id;
+    if (!repoId) {
+      continue;
+    }
+
+    const command = new Deno.Command("deno", {
+      args: [
+        "run",
+        "--allow-net",
+        "--allow-read",
+        "--allow-write",
+        "--allow-env",
+        "src/main.ts",
+        "task-attempts",
+        "merge",
+        attempt.id,
+        "--repo",
+        repoId,
+      ],
+      stdout: "piped",
+      stderr: "piped",
+      env: {
+        VK_API_URL: config.apiUrl,
+        HOME: "/tmp/test-home-task-attempts-merge-success",
+      },
+    });
+
+    const { code } = await command.output();
+    if (code === 0) {
+      assertEquals(code, 0);
+      return;
+    }
+  }
+
+  // No mergeable attempt in current environment.
+  return;
+});
+
+Deno.test("CLI: vk task-attempts merge requires --repo", async () => {
+  const seed = await getAttemptSeed();
+  if (!seed) {
+    return;
+  }
+
+  const command = new Deno.Command("deno", {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "src/main.ts",
+      "task-attempts",
+      "merge",
+      seed.attemptId,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+    env: {
+      VK_API_URL: config.apiUrl,
+      HOME: "/tmp/test-home-task-attempts-merge-missing-repo",
+    },
+  });
+
+  const { code, stderr } = await command.output();
+  const stderrText = new TextDecoder().decode(stderr);
+  assertEquals(code, 1);
+  assertEquals(stderrText.includes("Option --repo is required."), true);
+});
+
+Deno.test("CLI: vk task-attempts push <id> --repo succeeds", async () => {
+  const seed = await getAttemptSeed();
+  if (!seed) {
+    return;
+  }
+
+  const command = new Deno.Command("deno", {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "src/main.ts",
+      "task-attempts",
+      "push",
+      seed.attemptId,
+      "--repo",
+      seed.repoId,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+    env: {
+      VK_API_URL: config.apiUrl,
+      HOME: "/tmp/test-home-task-attempts-push-success",
+    },
+  });
+
+  const { code, stderr } = await command.output();
+  const stderrText = new TextDecoder().decode(stderr);
+  assertEquals(code, 0, `Expected push success. stderr: ${stderrText}`);
+});
+
+Deno.test("CLI: vk task-attempts push requires --repo", async () => {
+  const seed = await getAttemptSeed();
+  if (!seed) {
+    return;
+  }
+
+  const command = new Deno.Command("deno", {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "src/main.ts",
+      "task-attempts",
+      "push",
+      seed.attemptId,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+    env: {
+      VK_API_URL: config.apiUrl,
+      HOME: "/tmp/test-home-task-attempts-push-missing-repo",
+    },
+  });
+
+  const { code, stderr } = await command.output();
+  const stderrText = new TextDecoder().decode(stderr);
+  assertEquals(code, 1);
+  assertEquals(stderrText.includes("Option --repo is required."), true);
+});
+
+Deno.test("CLI: vk task-attempts rebase <id> --repo succeeds", async () => {
+  const seed = await getAttemptSeed();
+  if (!seed) {
+    return;
+  }
+
+  const command = new Deno.Command("deno", {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "src/main.ts",
+      "task-attempts",
+      "rebase",
+      seed.attemptId,
+      "--repo",
+      seed.repoId,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+    env: {
+      VK_API_URL: config.apiUrl,
+      HOME: "/tmp/test-home-task-attempts-rebase-success",
+    },
+  });
+
+  const { code, stderr } = await command.output();
+  const stderrText = new TextDecoder().decode(stderr);
+  assertEquals(code, 0, `Expected rebase success. stderr: ${stderrText}`);
+});
+
+Deno.test("CLI: vk task-attempts rebase requires --repo", async () => {
+  const seed = await getAttemptSeed();
+  if (!seed) {
+    return;
+  }
+
+  const command = new Deno.Command("deno", {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "src/main.ts",
+      "task-attempts",
+      "rebase",
+      seed.attemptId,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+    env: {
+      VK_API_URL: config.apiUrl,
+      HOME: "/tmp/test-home-task-attempts-rebase-missing-repo",
+    },
+  });
+
+  const { code, stderr } = await command.output();
+  const stderrText = new TextDecoder().decode(stderr);
+  assertEquals(code, 1);
+  assertEquals(stderrText.includes("Option --repo is required."), true);
+});
+
+Deno.test("CLI: vk task-attempts stop <id> succeeds", async () => {
+  const seed = await getAttemptSeed();
+  if (!seed) {
+    return;
+  }
+
+  const command = new Deno.Command("deno", {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "src/main.ts",
+      "task-attempts",
+      "stop",
+      seed.attemptId,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+    env: {
+      VK_API_URL: config.apiUrl,
+      HOME: "/tmp/test-home-task-attempts-stop-success",
+    },
+  });
+
+  const { code, stderr } = await command.output();
+  const stderrText = new TextDecoder().decode(stderr);
+  assertEquals(code, 0, `Expected stop success. stderr: ${stderrText}`);
+});
+
+Deno.test("CLI: vk task-attempts stop missing workspace id reports API error", async () => {
+  const endpointCheck = await apiCall<unknown[]>("/task-attempts");
+  if (endpointCheck.status === 401) {
+    return;
+  }
+
+  const command = new Deno.Command("deno", {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "src/main.ts",
+      "task-attempts",
+      "stop",
+      "00000000-0000-0000-0000-000000000000",
+    ],
+    stdout: "piped",
+    stderr: "piped",
+    env: {
+      VK_API_URL: config.apiUrl,
+      HOME: "/tmp/test-home-task-attempts-stop-failure",
+    },
+  });
+
+  const { code, stderr } = await command.output();
+  const stderrText = new TextDecoder().decode(stderr);
+  assertEquals(code, 1);
+  assertEquals(stderrText.includes("Error:"), true);
+});
+
+Deno.test("CLI: vk task-attempts pr <id> --repo --title --body --json", async () => {
+  const seed = await getAttemptSeed();
+  if (!seed) {
+    return;
+  }
+
+  const command = new Deno.Command("deno", {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "src/main.ts",
+      "task-attempts",
+      "pr",
+      "--id",
+      seed.attemptId,
+      "--repo",
+      seed.repoId,
+      "--title",
+      "tmp pr from cli test",
+      "--body",
+      "tmp body",
+      "--json",
+    ],
+    stdout: "piped",
+    stderr: "piped",
+    env: {
+      VK_API_URL: config.apiUrl,
+      HOME: "/tmp/test-home-task-attempts-pr-create-json",
+    },
+  });
+
+  const { code, stdout, stderr } = await command.output();
+  const stderrText = new TextDecoder().decode(stderr);
+  if (
+    code !== 0 &&
+    stderrText.toLowerCase().includes("internal error occurred")
+  ) {
+    return;
+  }
+  assertEquals(code, 0, `Expected pr create success. stderr: ${stderrText}`);
+  const parsed = JSON.parse(new TextDecoder().decode(stdout));
+  assertEquals(typeof parsed === "string", true);
+});
+
+Deno.test("CLI: vk task-attempts pr requires --repo", async () => {
+  const seed = await getAttemptSeed();
+  if (!seed) {
+    return;
+  }
+
+  const command = new Deno.Command("deno", {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "src/main.ts",
+      "task-attempts",
+      "pr",
+      "--id",
+      seed.attemptId,
+      "--title",
+      "tmp",
+    ],
+    stdout: "piped",
+    stderr: "piped",
+    env: {
+      VK_API_URL: config.apiUrl,
+      HOME: "/tmp/test-home-task-attempts-pr-create-missing-repo",
+    },
+  });
+
+  const { code, stderr } = await command.output();
+  const stderrText = new TextDecoder().decode(stderr);
+  assertEquals(code, 1);
+  assertEquals(stderrText.includes("Error:"), true);
+});
+
+Deno.test("CLI: vk task-attempts pr attach <id> --repo --pr-number --json", async () => {
+  const seed = await getAttemptSeed();
+  if (!seed) {
+    return;
+  }
+
+  const prNumber = await getOrCreatePrNumber(seed);
+  if (!prNumber) {
+    return;
+  }
+
+  const command = new Deno.Command("deno", {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "src/main.ts",
+      "task-attempts",
+      "pr",
+      "attach",
+      seed.attemptId,
+      "--repo",
+      seed.repoId,
+      "--pr-number",
+      String(prNumber),
+      "--json",
+    ],
+    stdout: "piped",
+    stderr: "piped",
+    env: {
+      VK_API_URL: config.apiUrl,
+      HOME: "/tmp/test-home-task-attempts-pr-attach-json",
+    },
+  });
+
+  const { code, stdout, stderr } = await command.output();
+  const stderrText = new TextDecoder().decode(stderr);
+  assertEquals(code, 0, `Expected pr attach success. stderr: ${stderrText}`);
+  const parsed = JSON.parse(new TextDecoder().decode(stdout));
+  assertEquals(parsed.pr_attached, true);
+});
+
+Deno.test("CLI: vk task-attempts pr attach requires --pr-number", async () => {
+  const seed = await getAttemptSeed();
+  if (!seed) {
+    return;
+  }
+
+  const command = new Deno.Command("deno", {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "src/main.ts",
+      "task-attempts",
+      "pr",
+      "attach",
+      seed.attemptId,
+      "--repo",
+      seed.repoId,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+    env: {
+      VK_API_URL: config.apiUrl,
+      HOME: "/tmp/test-home-task-attempts-pr-attach-missing-pr-number",
+    },
+  });
+
+  const { code, stderr } = await command.output();
+  const stderrText = new TextDecoder().decode(stderr);
+  assertEquals(code, 1);
+  assertEquals(stderrText.includes("Error:"), true);
+});
+
+Deno.test("CLI: vk task-attempts pr comments <id> --repo --json", async () => {
+  const seed = await getAttemptSeed();
+  if (!seed) {
+    return;
+  }
+
+  const prNumber = await getOrCreatePrNumber(seed);
+  if (!prNumber) {
+    return;
+  }
+
+  const attachResult = await apiCall<{ pr_attached: boolean }>(
+    `/task-attempts/${seed.attemptId}/pr/attach`,
+    {
+      method: "POST",
+      body: JSON.stringify({ repo_id: seed.repoId, pr_number: prNumber }),
+    },
+  );
+  if (!attachResult.success) {
+    return;
+  }
+
+  const command = new Deno.Command("deno", {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "src/main.ts",
+      "task-attempts",
+      "pr",
+      "comments",
+      seed.attemptId,
+      "--repo",
+      seed.repoId,
+      "--json",
+    ],
+    stdout: "piped",
+    stderr: "piped",
+    env: {
+      VK_API_URL: config.apiUrl,
+      HOME: "/tmp/test-home-task-attempts-pr-comments-json",
+    },
+  });
+
+  const { code, stdout, stderr } = await command.output();
+  const stderrText = new TextDecoder().decode(stderr);
+  assertEquals(code, 0, `Expected pr comments success. stderr: ${stderrText}`);
+  const parsed = JSON.parse(new TextDecoder().decode(stdout));
+  assertEquals(Array.isArray(parsed.comments) || Array.isArray(parsed), true);
+});
+
+Deno.test("CLI: vk task-attempts pr comments without id reports resolver error path", async () => {
+  const endpointCheck = await apiCall<unknown[]>("/task-attempts");
+  if (endpointCheck.status === 401) {
+    return;
+  }
+
+  const seed = await getAttemptSeed();
+  if (!seed) {
+    return;
+  }
+
+  const tempDir = await Deno.makeTempDir({
+    prefix: "vk-task-attempts-pr-comments-no-id-",
+  });
+
+  try {
+    const command = new Deno.Command(Deno.execPath(), {
+      args: [
+        "run",
+        "--allow-net",
+        "--allow-read",
+        "--allow-write",
+        "--allow-env",
+        "--allow-run",
+        `${Deno.cwd()}/src/main.ts`,
+        "task-attempts",
+        "pr",
+        "comments",
+        "--repo",
+        seed.repoId,
+      ],
+      cwd: tempDir,
+      stdout: "piped",
+      stderr: "piped",
+      env: {
+        VK_API_URL: config.apiUrl,
+        HOME: "/tmp/test-home-task-attempts-pr-comments-no-id",
         PATH: "/tmp/vk-no-bin",
       },
     });

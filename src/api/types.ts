@@ -156,7 +156,8 @@ export interface RenameBranchRequest {
 
 /** Request body for creating a pull request from a workspace. */
 export interface CreatePRRequest {
-  title?: string;
+  repo_id: string;
+  title: string;
   body?: string;
 }
 
@@ -223,6 +224,14 @@ export interface RebaseWorkspaceRequest {
 /** Pull request creation returns the URL of the created PR. */
 export type PRResult = string;
 
+/** Result payload when attaching an existing PR to a workspace. */
+export interface PRAttachResult {
+  pr_attached: boolean;
+  pr_url: string;
+  pr_number: number;
+  pr_status: string;
+}
+
 /** Request body for sending a follow-up message to a running session. */
 export interface FollowUpRequest {
   prompt: string;
@@ -231,6 +240,7 @@ export interface FollowUpRequest {
 
 /** Request body for attaching an existing pull request to a workspace. */
 export interface AttachPRRequest {
+  repo_id: string;
   pr_number: number;
 }
 
@@ -258,6 +268,11 @@ export interface UnifiedPRComment {
   line?: number;
   side?: string;
   in_reply_to_id?: number;
+}
+
+/** Response payload for PR comments endpoint. */
+export interface PRCommentsResponse {
+  comments: UnifiedPRComment[];
 }
 
 /** A git repository registered with vibe-kanban. */

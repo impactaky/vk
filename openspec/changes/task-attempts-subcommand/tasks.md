@@ -27,16 +27,16 @@
 
 ## 4. Phase 3 Git Operation Subcommands
 
-- [ ] 4.1 Finalize and document `rename-branch` command placement decision, then add corresponding failing tests (Owner: Spec and Docs Agent + CLI Behavior Agent).
-- [ ] 4.2 Implement `rename-branch` command behavior (standalone or update flag path) and API wiring (Owner: CLI Behavior Agent + API Contract Agent).
-- [ ] 4.3 Add failing tests and implement `merge [id]`, `push [id]`, `rebase [id]`, and `stop [id]` with optional id auto-detect and consistent success output (Owner: Test Triage Agent + CLI Behavior Agent).
+- [x] 4.1 Finalize and document `rename-branch` command placement decision, then add corresponding failing tests (Owner: Spec and Docs Agent + CLI Behavior Agent).
+- [x] 4.2 Implement `rename-branch` command behavior (standalone or update flag path) and API wiring (Owner: CLI Behavior Agent + API Contract Agent).
+- [x] 4.3 Add failing tests and implement `merge [id]`, `push [id]`, `rebase [id]`, and `stop [id]` with optional id auto-detect and consistent success output (Owner: Test Triage Agent + CLI Behavior Agent).
 
 ## 5. Phase 4 Pull Request Subcommands
 
-- [ ] 5.1 Add spec text and failing tests for nested `vk task-attempts pr` command grouping (create, attach, comments) with optional id auto-detect (Owner: Spec and Docs Agent + Test Triage Agent).
-- [ ] 5.2 Implement `vk task-attempts pr [id]` create behavior and output (`--json` and default modes) (Owner: CLI Behavior Agent + API Contract Agent).
-- [ ] 5.3 Implement `vk task-attempts pr attach [id]` behavior with request validation and success output (Owner: CLI Behavior Agent + API Contract Agent).
-- [ ] 5.4 Implement `vk task-attempts pr comments [id]` behavior with list formatting and `--json` output (Owner: CLI Behavior Agent).
+- [x] 5.1 Add spec text and failing tests for nested `vk task-attempts pr` command grouping (create, attach, comments) with optional id auto-detect (Owner: Spec and Docs Agent + Test Triage Agent).
+- [x] 5.2 Implement `vk task-attempts pr [id]` create behavior and output (`--json` and default modes) (Owner: CLI Behavior Agent + API Contract Agent).
+- [x] 5.3 Implement `vk task-attempts pr attach [id]` behavior with request validation and success output (Owner: CLI Behavior Agent + API Contract Agent).
+- [x] 5.4 Implement `vk task-attempts pr comments [id]` behavior with list formatting and `--json` output (Owner: CLI Behavior Agent).
 
 ## 6. Verification, Regression Safety, and Docs Sync
 
