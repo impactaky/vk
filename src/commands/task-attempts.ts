@@ -145,8 +145,23 @@ taskAttemptsCommand
 
       const client = await ApiClient.create();
       const attemptId = await getAttemptIdWithAutoDetect(client, id);
-      const spinOffResult = await client.spinOffWorkspace(attemptId, {
-        description: options.description,
+      const parentAttempt = await client.getTaskAttempt(attemptId);
+      const parentRepos = await client.getWorkspaceRepos(attemptId);
+      if (parentRepos.length === 0) {
+        throw new Error("Parent task attempt has no repositories to spin off.");
+      }
+
+      const config = await loadConfig();
+      const executor = parseExecutorString(
+        config.defaultExecutor || "CLAUDE_CODE:DEFAULT",
+      );
+      const spinOffResult = await client.createWorkspace({
+        prompt: options.description,
+        executor_config: executor,
+        repos: parentRepos.map((repo) => ({
+          repo_id: repo.repo_id,
+          target_branch: parentAttempt.branch,
+        })),
       });
 
       if (options.json) {

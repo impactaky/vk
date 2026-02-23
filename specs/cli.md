@@ -184,8 +184,12 @@ Current top-level commands:
 - Required option:
   - `--description <text>`
 - API request:
-  - `POST /api/task-attempts/:id/spin-off`
-  - body includes `description`
+  - `POST /api/task-attempts/create-and-start`
+  - body includes:
+    - `prompt` from `--description`
+    - `repos` derived from parent task-attempt repos
+    - `target_branch` set to parent task-attempt branch for each repo
+    - `executor_config` from default executor resolution (same as `create`)
 - Output:
   - `--json`: prints `{ workspace, execution_process }`
   - default: prints `Task attempt <new-id> spun off from <id>.`

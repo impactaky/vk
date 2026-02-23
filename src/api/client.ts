@@ -31,7 +31,6 @@ import type {
   Repo,
   RepoBranchStatus,
   Session,
-  SpinOffWorkspaceRequest,
   UnifiedPRComment,
   UpdateRepo,
   UpdateWorkspace,
@@ -172,20 +171,6 @@ export class ApiClient {
       {
         method: "POST",
         body: JSON.stringify(workspace),
-      },
-    );
-  }
-
-  /** Create and start a new workspace spun off from a parent workspace branch. Calls POST /api/task-attempts/:id/spin-off. */
-  spinOffWorkspace(
-    id: string,
-    request: SpinOffWorkspaceRequest,
-  ): Promise<CreateAndStartWorkspaceResponse> {
-    return this.request<CreateAndStartWorkspaceResponse>(
-      `/task-attempts/${id}/spin-off`,
-      {
-        method: "POST",
-        body: JSON.stringify(request),
       },
     );
   }
