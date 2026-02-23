@@ -10,10 +10,10 @@
 import { getApiUrl } from "./config.ts";
 import { isVerbose, verboseLog } from "../utils/verbose.ts";
 import type {
+  AbortConflictsRequest,
   ApiResponse,
   AttachPRRequest,
   AttachPRResponse,
-  AbortConflictsRequest,
   CreateProject,
   CreatePRRequest,
   CreateTask,
@@ -54,6 +54,30 @@ export class ApiClient {
   static async create(): Promise<ApiClient> {
     const apiUrl = await getApiUrl();
     return new ApiClient(apiUrl);
+  }
+
+  private isMethodNotAllowedError(error: unknown): boolean {
+    return error instanceof Error && error.message.includes("API error (405)");
+  }
+
+  private async requestWithMigrationFallback<T>(
+    path: string,
+    options: RequestInit = {},
+  ): Promise<T> {
+    try {
+      return await this.request<T>(path, options);
+    } catch (error) {
+      if (!this.isMethodNotAllowedError(error)) {
+        throw error;
+      }
+
+      const migrationPath = path.replace(
+        /^\/projects(?=\/|$)/,
+        "/migration/projects",
+      );
+
+      return await this.request<T>(migrationPath, options);
+    }
   }
 
   private async request<T>(
@@ -105,24 +129,26 @@ export class ApiClient {
 
   /** List all projects. Calls GET /api/projects. */
   listProjects(): Promise<Project[]> {
-    return this.request<Project[]>("/projects").catch(async (error) => {
-      const message = error instanceof Error ? error.message : String(error);
-      // Some backend deployments expose projects at /api/migration/projects.
-      if (message.includes("Unexpected token '<'")) {
-        return this.request<Project[]>("/migration/projects");
-      }
-      throw error;
-    });
+    return this.requestWithMigrationFallback<Project[]>("/projects").catch(
+      async (error) => {
+        const message = error instanceof Error ? error.message : String(error);
+        // Some backend deployments expose projects at /api/migration/projects.
+        if (message.includes("Unexpected token '<'")) {
+          return this.request<Project[]>("/migration/projects");
+        }
+        throw error;
+      },
+    );
   }
 
   /** Get a single project by ID. Calls GET /api/projects/:id. */
   getProject(id: string): Promise<Project> {
-    return this.request<Project>(`/projects/${id}`);
+    return this.requestWithMigrationFallback<Project>(`/projects/${id}`);
   }
 
   /** Create a new project. Calls POST /api/projects. */
   createProject(project: CreateProject): Promise<Project> {
-    return this.request<Project>("/projects", {
+    return this.requestWithMigrationFallback<Project>("/projects", {
       method: "POST",
       body: JSON.stringify(project),
     });
@@ -130,7 +156,7 @@ export class ApiClient {
 
   /** Update project properties. Calls PUT /api/projects/:id. */
   updateProject(id: string, update: UpdateProject): Promise<Project> {
-    return this.request<Project>(`/projects/${id}`, {
+    return this.requestWithMigrationFallback<Project>(`/projects/${id}`, {
       method: "PUT",
       body: JSON.stringify(update),
     });
@@ -138,14 +164,16 @@ export class ApiClient {
 
   /** Delete a project. Calls DELETE /api/projects/:id. */
   deleteProject(id: string): Promise<void> {
-    return this.request<void>(`/projects/${id}`, {
+    return this.requestWithMigrationFallback<void>(`/projects/${id}`, {
       method: "DELETE",
     });
   }
 
   /** List all repositories attached to a project. Calls GET /api/projects/:id/repositories. */
   listProjectRepos(projectId: string): Promise<Repo[]> {
-    return this.request<Repo[]>(`/projects/${projectId}/repositories`);
+    return this.requestWithMigrationFallback<Repo[]>(
+      `/projects/${projectId}/repositories`,
+    );
   }
 
   /** Add a repository to a project. Calls POST /api/projects/:id/repositories. */
@@ -154,18 +182,21 @@ export class ApiClient {
     displayName: string,
     gitRepoPath: string,
   ): Promise<Repo> {
-    return this.request<Repo>(`/projects/${projectId}/repositories`, {
-      method: "POST",
-      body: JSON.stringify({
-        display_name: displayName,
-        git_repo_path: gitRepoPath,
-      }),
-    });
+    return this.requestWithMigrationFallback<Repo>(
+      `/projects/${projectId}/repositories`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          display_name: displayName,
+          git_repo_path: gitRepoPath,
+        }),
+      },
+    );
   }
 
   /** Remove a repository from a project. Calls DELETE /api/projects/:projectId/repositories/:repoId. */
   removeProjectRepo(projectId: string, repoId: string): Promise<void> {
-    return this.request<void>(
+    return this.requestWithMigrationFallback<void>(
       `/projects/${projectId}/repositories/${repoId}`,
       {
         method: "DELETE",

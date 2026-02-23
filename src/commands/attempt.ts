@@ -250,7 +250,10 @@ attemptCommand
     "--project <id:string>",
     "Project ID (for fzf selection, auto-detected from git if omitted)",
   )
-  .option("--delete-branches", "Delete associated branches when deleting workspace")
+  .option(
+    "--delete-branches",
+    "Delete associated branches when deleting workspace",
+  )
   .option("--force", "Delete without confirmation")
   .action(async (options, id) => {
     try {
@@ -907,7 +910,9 @@ attemptCommand
 
       const request: AttachPRRequest = {
         repo_id: repoId,
-        ...(options.prNumber !== undefined ? { pr_number: options.prNumber } : {}),
+        ...(options.prNumber !== undefined
+          ? { pr_number: options.prNumber }
+          : {}),
       };
 
       const result = await client.attachPR(workspaceId, request);
