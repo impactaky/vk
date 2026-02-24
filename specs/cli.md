@@ -168,6 +168,7 @@ Current top-level commands:
     - `--description <text>`
     - `--file <path>`
   - `--repo <id-or-name>`
+- Prompt content must be non-empty text (empty/whitespace input is rejected).
 - Optional options:
   - `--target-branch <name>` (defaults to `main`)
   - `--executor <name:variant>` (defaults to configured `defaultExecutor`,
@@ -187,6 +188,7 @@ Current top-level commands:
   - Exactly one prompt source:
     - `--description <text>`
     - `--file <path>`
+- Prompt content must be non-empty text (empty/whitespace input is rejected).
 - API request:
   - `POST /api/task-attempts/create-and-start`
   - body includes:

@@ -665,6 +665,48 @@ Deno.test("CLI: vk task-attempts create supports --file", async () => {
   }
 });
 
+Deno.test("CLI: vk task-attempts create rejects empty --file content", async () => {
+  const promptFile = await Deno.makeTempFile({
+    suffix: ".md",
+    prefix: "vk-task-attempts-create-empty-file-",
+  });
+  try {
+    await Deno.writeTextFile(promptFile, "   \n");
+    const command = new Deno.Command("deno", {
+      args: [
+        "run",
+        "--allow-net",
+        "--allow-read",
+        "--allow-write",
+        "--allow-env",
+        "src/main.ts",
+        "task-attempts",
+        "create",
+        "--file",
+        promptFile,
+        "--repo",
+        "repo-1",
+      ],
+      stdout: "piped",
+      stderr: "piped",
+      env: {
+        VK_API_URL: config.apiUrl,
+        HOME: "/tmp/test-home-task-attempts-create-empty-file",
+      },
+    });
+
+    const { code, stderr } = await command.output();
+    const stderrText = new TextDecoder().decode(stderr);
+    assertEquals(code, 1);
+    assertEquals(
+      stderrText.includes("Option --file must contain non-empty text."),
+      true,
+    );
+  } finally {
+    await Deno.remove(promptFile, { recursive: true });
+  }
+});
+
 Deno.test("CLI: vk task-attempts create resolves repo by name and supports --json output", async () => {
   const mock = await startTaskAttemptCreateMockApi();
   try {
@@ -944,6 +986,49 @@ Deno.test("CLI: vk task-attempts spin-off <id> --file --json", async () => {
     await mock.shutdown();
   }
 });
+
+Deno.test(
+  "CLI: vk task-attempts spin-off rejects empty --file content",
+  async () => {
+    const promptFile = await Deno.makeTempFile({
+      suffix: ".md",
+      prefix: "vk-task-attempts-spin-off-empty-file-",
+    });
+    try {
+      await Deno.writeTextFile(promptFile, " \n\t ");
+      const command = new Deno.Command("deno", {
+        args: [
+          "run",
+          "--allow-net",
+          "--allow-read",
+          "--allow-write",
+          "--allow-env",
+          "src/main.ts",
+          "task-attempts",
+          "spin-off",
+          "--file",
+          promptFile,
+        ],
+        stdout: "piped",
+        stderr: "piped",
+        env: {
+          VK_API_URL: config.apiUrl,
+          HOME: "/tmp/test-home-task-attempts-spin-off-empty-file",
+        },
+      });
+
+      const { code, stderr } = await command.output();
+      const stderrText = new TextDecoder().decode(stderr);
+      assertEquals(code, 1);
+      assertEquals(
+        stderrText.includes("Option --file must contain non-empty text."),
+        true,
+      );
+    } finally {
+      await Deno.remove(promptFile, { recursive: true });
+    }
+  },
+);
 
 Deno.test("CLI: vk task-attempts update <id> --name --archived --pinned --json", async () => {
   const listResult = await apiCall<

@@ -18,12 +18,21 @@ async function resolvePrompt(options: PromptSourceOptions): Promise<string> {
     throw new Error("Options --description and --file are mutually exclusive.");
   }
 
+  let prompt: string | undefined;
   if (options.file) {
-    return await Deno.readTextFile(options.file);
+    prompt = await Deno.readTextFile(options.file);
+    if (prompt.trim().length === 0) {
+      throw new Error("Option --file must contain non-empty text.");
+    }
+    return prompt;
   }
 
   if (options.description) {
-    return options.description;
+    prompt = options.description;
+    if (prompt.trim().length === 0) {
+      throw new Error("Option --description must be non-empty.");
+    }
+    return prompt;
   }
 
   throw new Error("Option --description or --file is required.");
