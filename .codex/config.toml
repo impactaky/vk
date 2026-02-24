@@ -26,3 +26,23 @@ config_file = "agents/resolver.toml"
 [agents.spec_docs]
 description = "Keep specs/cli.md and README aligned with real behavior."
 config_file = "agents/spec-docs.toml"
+
+[agents.opsx_triage]
+description = "Triage OpenSpec change state and pick the smallest next action."
+config_file = "agents/opsx-triage.toml"
+
+[agents.opsx_artifacts]
+description = "Own proposal/design/tasks artifacts for OpenSpec changes."
+config_file = "agents/opsx-artifacts.toml"
+
+[agents.opsx_spec_delta]
+description = "Own delta specs and spec-sync coherence for OpenSpec changes."
+config_file = "agents/opsx-spec-delta.toml"
+
+[agents.opsx_apply]
+description = "Implement one OpenSpec task at a time with minimal diffs."
+config_file = "agents/opsx-apply.toml"
+
+[agents.opsx_verify_archive]
+description = "Verify and archive completed OpenSpec changes."
+config_file = "agents/opsx-verify-archive.toml"

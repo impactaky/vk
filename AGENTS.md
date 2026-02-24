@@ -1,44 +1,65 @@
 # Agent Teams for VK
 
-Use this team setup for this repository.
-Keep work small and test-driven.
+Use this team setup for OPSX flow in this repository. Keep work small and
+test-driven.
+
+## Skill Source Requirement
+
+- Before acting, each OPSX agent must read the original OpenSpec skill markdown
+  file(s) from `.codex/skills/**/SKILL.md` for its assigned action.
+- Treat those `SKILL.md` files as source of truth for workflow details and
+  guardrails.
 
 ## Team Roles
 
-1. Test Triage Agent
-- Groups failing tests by root cause.
-- Picks one small target to fix first.
+1. OPSX Triage Agent
 
-2. API Contract Agent
-- Owns `src/api/client.ts` and `src/api/types.ts`.
-- Fixes API shape and status handling issues.
+- Owns change selection and next-action triage.
+- Uses `openspec list --json` and `openspec status --change "<name>" --json`.
+- Picks the smallest next action (artifact, apply step, sync, verify, or
+  archive).
 
-3. CLI Behavior Agent
-- Owns `src/commands/*.ts` and `src/main.ts`.
-- Fixes command behavior and output behavior.
+2. OPSX Artifact Agent
 
-4. Resolver Agent
-- Owns `src/utils/project-resolver.ts` and `src/utils/repository-resolver.ts`.
-- Fixes ID and auto-detection logic.
+- Owns planning artifacts under `openspec/changes/*`.
+- Focuses on `proposal.md`, `design.md`, and `tasks.md`.
+- Uses `/opsx:new`, `/opsx:continue`, and `/opsx:ff` behavior.
 
-5. Spec and Docs Agent
-- Owns `specs/cli.md` and `README.md`.
-- Keeps docs aligned with actual behavior.
+3. OPSX Spec Delta Agent
+
+- Owns delta specs in `openspec/changes/*/specs/**/spec.md`.
+- Owns source-of-truth specs in `openspec/specs/**/spec.md`.
+- Keeps requirement and scenario text aligned with final behavior.
+
+4. OPSX Apply Agent
+
+- Owns implementation in `src/**` and related tests for the active change.
+- Implements one task checkbox at a time with minimal diffs.
+- Updates task checkboxes in `tasks.md` immediately after each completed task.
+
+5. OPSX Verify and Archive Agent
+
+- Owns change verification and archival.
+- Confirms task/spec/design coherence before archive.
+- Handles `/opsx:verify`, `/opsx:sync`, and `/opsx:archive` decisions.
 
 ## Default Workflow
 
-1. Run baseline tests with:
+1. Select or create the change: `openspec list --json`
+   `openspec new change "<name>"` (if no active change exists)
+2. Check artifact state and pick the smallest ready step:
+   `openspec status --change "<name>" --json`
+3. Build planning artifacts until apply-ready: `/opsx:continue` or `/opsx:ff`
+4. Implement tasks incrementally: `/opsx:apply`
+5. Run project checks after each meaningful step: `deno fmt --check` `deno lint`
    `docker compose run --rm vk`
-2. Group failures into buckets (API, CLI, resolver, other).
-3. Pick one bucket and one smallest failing test.
-4. Update or add spec text in `specs/cli.md` first.
-5. Make the test fail for the expected behavior.
-6. Implement the smallest code change.
-7. Run `docker compose run --rm vk` again.
-8. Keep docs and tests in sync before finishing.
+6. Keep delta specs current and sync when ready: `/opsx:sync`
+7. Verify implementation against artifacts: `/opsx:verify`
+8. Archive completed change: `/opsx:archive`
 
 ## Done Criteria
 
-- The targeted failing tests pass.
-- No new failures are introduced by the change.
-- `specs/cli.md` reflects the final behavior.
+- All tasks for the active change are complete (`- [x]`).
+- Format, lint, and tests pass with no new regressions.
+- Delta specs reflect shipped behavior, with sync status made explicit.
+- The change is verified and archived.
