@@ -164,7 +164,9 @@ Current top-level commands:
 
 - Creates and starts a new task attempt workspace.
 - Required options:
-  - `--description <text>`
+  - Exactly one prompt source:
+    - `--description <text>`
+    - `--file <path>`
   - `--repo <id-or-name>`
 - Optional options:
   - `--target-branch <name>` (defaults to `main`)
@@ -182,11 +184,13 @@ Current top-level commands:
 - Creates and starts a new task attempt from a parent task-attempt branch.
 - If `id` is missing, uses the same resolver order as `show`.
 - Required option:
-  - `--description <text>`
+  - Exactly one prompt source:
+    - `--description <text>`
+    - `--file <path>`
 - API request:
   - `POST /api/task-attempts/create-and-start`
   - body includes:
-    - `prompt` from `--description`
+    - `prompt` from `--description` or file content from `--file`
     - `repos` derived from parent task-attempt repos
     - `target_branch` set to parent task-attempt branch for each repo
     - `executor_config` from default executor resolution (same as `create`)
