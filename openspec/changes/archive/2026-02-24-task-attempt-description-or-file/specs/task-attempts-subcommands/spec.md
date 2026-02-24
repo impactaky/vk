@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: Create task-attempt prompt input
 `vk task-attempts create` MUST accept exactly one prompt source:
