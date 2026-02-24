@@ -158,10 +158,18 @@ taskAttemptsCommand
       const spinOffResult = await client.createWorkspace({
         prompt: options.description,
         executor_config: executor,
-        repos: parentRepos.map((repo) => ({
-          repo_id: repo.repo_id,
-          target_branch: parentAttempt.branch,
-        })),
+        repos: parentRepos.map((repo) => {
+          const repoId = repo.repo_id || repo.id;
+          if (!repoId) {
+            throw new Error(
+              "Parent task attempt repo is missing repository ID.",
+            );
+          }
+          return {
+            repo_id: repoId,
+            target_branch: parentAttempt.branch,
+          };
+        }),
       });
 
       if (options.json) {
