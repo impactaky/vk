@@ -7,26 +7,6 @@ max_threads = 8
 [agents.default]
 description = "General VK coding agent."
 
-[agents.test_triage]
-description = "Group failing tests by root cause and pick one small target."
-config_file = "agents/test-triage.toml"
-
-[agents.api_contract]
-description = "Own API client/types alignment and status handling."
-config_file = "agents/api-contract.toml"
-
-[agents.cli_behavior]
-description = "Own command behavior and CLI output consistency."
-config_file = "agents/cli-behavior.toml"
-
-[agents.resolver]
-description = "Own project/repository resolver logic and ID selection."
-config_file = "agents/resolver.toml"
-
-[agents.spec_docs]
-description = "Keep specs/cli.md and README aligned with real behavior."
-config_file = "agents/spec-docs.toml"
-
 [agents.opsx_triage]
 description = "Triage OpenSpec change state and pick the smallest next action."
 config_file = "agents/opsx-triage.toml"
