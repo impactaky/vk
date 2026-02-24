@@ -177,6 +177,23 @@ Current top-level commands:
   - `--json`: prints `{ workspace, execution_process }`
   - default: prints `Task attempt <id> created and started.`
 
+### `vk task-attempts spin-off [id]`
+
+- Creates and starts a new task attempt from a parent task-attempt branch.
+- If `id` is missing, uses the same resolver order as `show`.
+- Required option:
+  - `--description <text>`
+- API request:
+  - `POST /api/task-attempts/create-and-start`
+  - body includes:
+    - `prompt` from `--description`
+    - `repos` derived from parent task-attempt repos
+    - `target_branch` set to parent task-attempt branch for each repo
+    - `executor_config` from default executor resolution (same as `create`)
+- Output:
+  - `--json`: prints `{ workspace, execution_process }`
+  - default: prints `Task attempt <new-id> spun off from <id>.`
+
 ### `vk task-attempts update [id]`
 
 - Updates task-attempt fields.

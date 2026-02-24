@@ -132,6 +132,61 @@ taskAttemptsCommand
   });
 
 taskAttemptsCommand
+  .command("spin-off")
+  .description("Create task attempt by spinning off from a parent task attempt")
+  .arguments("[id:string]")
+  .option("--description <text:string>", "Task description/prompt")
+  .option("--json", "Output as JSON")
+  .action(async (options, id?: string) => {
+    try {
+      if (!options.description) {
+        throw new Error("Option --description is required.");
+      }
+
+      const client = await ApiClient.create();
+      const attemptId = await getAttemptIdWithAutoDetect(client, id);
+      const parentAttempt = await client.getTaskAttempt(attemptId);
+      const parentRepos = await client.getWorkspaceRepos(attemptId);
+      if (parentRepos.length === 0) {
+        throw new Error("Parent task attempt has no repositories to spin off.");
+      }
+
+      const config = await loadConfig();
+      const executor = parseExecutorString(
+        config.defaultExecutor || "CLAUDE_CODE:DEFAULT",
+      );
+      const spinOffResult = await client.createWorkspace({
+        prompt: options.description,
+        executor_config: executor,
+        repos: parentRepos.map((repo) => {
+          const repoId = repo.repo_id || repo.id;
+          if (!repoId) {
+            throw new Error(
+              "Parent task attempt repo is missing repository ID.",
+            );
+          }
+          return {
+            repo_id: repoId,
+            target_branch: parentAttempt.branch,
+          };
+        }),
+      });
+
+      if (options.json) {
+        console.log(JSON.stringify(spinOffResult, null, 2));
+        return;
+      }
+
+      console.log(
+        `Task attempt ${spinOffResult.workspace.id} spun off from ${attemptId}.`,
+      );
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+taskAttemptsCommand
   .command("update")
   .description("Update task attempt details")
   .arguments("[id:string]")
