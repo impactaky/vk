@@ -5,8 +5,8 @@ test-driven.
 
 ## Skill Source Requirement
 
-- Before acting, each OPSX agent must read the original OpenSpec skill markdown
-  file(s) from `.codex/skills/**/SKILL.md` for its assigned action.
+- Before acting, each OPSX agent must read the assigned skill markdown file(s)
+  from `.codex/skills/**/SKILL.md` for its action (OpenSpec and project skills).
 - Treat those `SKILL.md` files as source of truth for workflow details and
   guardrails.
 
@@ -36,12 +36,14 @@ test-driven.
 - Owns implementation in `src/**` and related tests for the active change.
 - Implements one task checkbox at a time with minimal diffs.
 - Updates task checkboxes in `tasks.md` immediately after each completed task.
+- Runs CI-aligned checks by calling `/lint` then `/test`.
 
 5. OPSX Verify and Archive Agent
 
 - Owns change verification and archival.
 - Confirms task/spec/design coherence before archive.
 - Handles `/opsx:verify`, `/opsx:sync`, and `/opsx:archive` decisions.
+- Re-runs `/lint` then `/test` before archive decisions.
 
 ## Default Workflow
 
@@ -51,8 +53,10 @@ test-driven.
    `openspec status --change "<name>" --json`
 3. Build planning artifacts until apply-ready: `/opsx:continue` or `/opsx:ff`
 4. Implement tasks incrementally: `/opsx:apply`
-5. Run project checks after each meaningful step: `deno fmt --check` `deno lint`
-   `docker compose run --rm vk`
+5. Run project checks after each meaningful step:
+   `/lint` then `/test`
+   (see `.codex/skills/lint/SKILL.md` and
+   `.codex/skills/test/SKILL.md`).
 6. Keep delta specs current and sync when ready: `/opsx:sync`
 7. Verify implementation against artifacts: `/opsx:verify`
 8. Archive completed change: `/opsx:archive`
