@@ -88,3 +88,37 @@ For `vk task-attempts create` and `vk task-attempts spin-off [id]`, resolved pro
 - **WHEN** user passes `--file` pointing to an empty (or whitespace-only) file
 - **THEN** CLI returns a clear validation error before API submission.
 
+### Requirement: Create command repository autodetection
+`vk task-attempts create` SHALL accept optional `--repo <id-or-name>`. When
+`--repo` is omitted, repository selection SHALL use existing repository
+resolution behavior based on current working directory context.
+
+#### Scenario: Create with explicit repository
+- **WHEN** user runs `vk task-attempts create --repo <id-or-name> ...`
+- **THEN** CLI resolves and uses the provided repository identifier
+- **AND** existing explicit resolution behavior remains unchanged
+
+#### Scenario: Create without --repo in a matching repository directory
+- **WHEN** user runs `vk task-attempts create ...` without `--repo`
+- **AND** current directory maps to exactly one registered repository via
+  resolver rules
+- **THEN** CLI auto-selects that repository and creates the task attempt
+
+#### Scenario: Create without --repo when repository cannot be resolved
+- **WHEN** user runs `vk task-attempts create ...` without `--repo`
+- **AND** resolver cannot determine a repository from current directory or
+  interactive fallback
+- **THEN** CLI returns the resolver error and does not submit create request
+
+### Requirement: Compose-backed task-attempt integration tests
+Task-attempt command integration tests for successful create and spin-off flows MUST execute against the real API instance configured by test environment (`VK_API_URL`) rather than in-process mock API servers.
+
+#### Scenario: Create success path test execution
+- **WHEN** integration tests run create success scenarios
+- **THEN** test data is sourced from real API endpoints
+- **AND** CLI requests are sent to the compose-backed API instance
+
+#### Scenario: Spin-off success path test execution
+- **WHEN** integration tests run spin-off success scenarios
+- **THEN** parent attempt data is sourced from real API endpoints
+- **AND** CLI requests are sent to the compose-backed API instance
