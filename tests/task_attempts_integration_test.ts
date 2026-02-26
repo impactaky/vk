@@ -533,7 +533,7 @@ Deno.test("CLI: vk task-attempts show --json auto-detects ID from branch", async
   }
 });
 
-Deno.test("CLI: vk task-attempts create requires --description", async () => {
+Deno.test("CLI: vk task-attempts create requires prompt source", async () => {
   const command = new Deno.Command("deno", {
     args: [
       "run",
@@ -559,7 +559,152 @@ Deno.test("CLI: vk task-attempts create requires --description", async () => {
   const stderrText = new TextDecoder().decode(stderr);
 
   assertEquals(code, 1);
-  assertEquals(stderrText.includes("Option --description is required."), true);
+  assertEquals(
+    stderrText.includes("Option --description or --file is required."),
+    true,
+  );
+});
+
+Deno.test(
+  "CLI: vk task-attempts create rejects --description with --file",
+  async () => {
+    const promptFile = await Deno.makeTempFile({
+      suffix: ".md",
+      prefix: "vk-task-attempts-create-conflict-",
+    });
+    try {
+      await Deno.writeTextFile(promptFile, "Prompt from file");
+      const command = new Deno.Command("deno", {
+        args: [
+          "run",
+          "--allow-net",
+          "--allow-read",
+          "--allow-write",
+          "--allow-env",
+          "src/main.ts",
+          "task-attempts",
+          "create",
+          "--description",
+          "Inline prompt",
+          "--file",
+          promptFile,
+          "--repo",
+          "repo-1",
+        ],
+        stdout: "piped",
+        stderr: "piped",
+        env: {
+          VK_API_URL: config.apiUrl,
+          HOME: "/tmp/test-home-task-attempts-create-conflicting-prompt",
+        },
+      });
+
+      const { code, stderr } = await command.output();
+      const stderrText = new TextDecoder().decode(stderr);
+      assertEquals(code, 1);
+      assertEquals(
+        stderrText.includes(
+          "Options --description and --file are mutually exclusive.",
+        ),
+        true,
+      );
+    } finally {
+      await Deno.remove(promptFile, { recursive: true });
+    }
+  },
+);
+
+Deno.test("CLI: vk task-attempts create supports --file", async () => {
+  const mock = await startTaskAttemptCreateMockApi();
+  const promptFile = await Deno.makeTempFile({
+    suffix: ".md",
+    prefix: "vk-task-attempts-create-file-",
+  });
+  try {
+    await Deno.writeTextFile(promptFile, "Task prompt from markdown file");
+    const command = new Deno.Command("deno", {
+      args: [
+        "run",
+        "--allow-net",
+        "--allow-read",
+        "--allow-write",
+        "--allow-env",
+        "src/main.ts",
+        "task-attempts",
+        "create",
+        "--file",
+        promptFile,
+        "--repo",
+        mock.repoName,
+        "--json",
+      ],
+      stdout: "piped",
+      stderr: "piped",
+      env: {
+        VK_API_URL: mock.apiUrl,
+        HOME: "/tmp/test-home-task-attempts-create-file",
+      },
+    });
+
+    const { code, stdout, stderr } = await command.output();
+    const stderrText = new TextDecoder().decode(stderr);
+
+    assertEquals(
+      code,
+      0,
+      `Expected exit code 0 for task-attempts create with file. stderr: ${stderrText}`,
+    );
+
+    const parsed = JSON.parse(new TextDecoder().decode(stdout));
+    assertEquals(parsed.workspace.id, "ws-created-1");
+    assertEquals(mock.requests.length, 1);
+    assertEquals(mock.requests[0].prompt, "Task prompt from markdown file");
+  } finally {
+    await Deno.remove(promptFile, { recursive: true });
+    await mock.shutdown();
+  }
+});
+
+Deno.test("CLI: vk task-attempts create rejects empty --file content", async () => {
+  const promptFile = await Deno.makeTempFile({
+    suffix: ".md",
+    prefix: "vk-task-attempts-create-empty-file-",
+  });
+  try {
+    await Deno.writeTextFile(promptFile, "   \n");
+    const command = new Deno.Command("deno", {
+      args: [
+        "run",
+        "--allow-net",
+        "--allow-read",
+        "--allow-write",
+        "--allow-env",
+        "src/main.ts",
+        "task-attempts",
+        "create",
+        "--file",
+        promptFile,
+        "--repo",
+        "repo-1",
+      ],
+      stdout: "piped",
+      stderr: "piped",
+      env: {
+        VK_API_URL: config.apiUrl,
+        HOME: "/tmp/test-home-task-attempts-create-empty-file",
+      },
+    });
+
+    const { code, stderr } = await command.output();
+    const stderrText = new TextDecoder().decode(stderr);
+    assertEquals(code, 1);
+    assertEquals(
+      stderrText.includes("Option --file must contain non-empty text."),
+      true,
+    );
+  } finally {
+    await Deno.remove(promptFile, { recursive: true });
+  }
 });
 
 Deno.test("CLI: vk task-attempts create resolves repo by name and supports --json output", async () => {
@@ -665,7 +810,7 @@ Deno.test("CLI: vk task-attempts create resolves repo by id", async () => {
   }
 });
 
-Deno.test("CLI: vk task-attempts spin-off requires --description", async () => {
+Deno.test("CLI: vk task-attempts spin-off requires prompt source", async () => {
   const command = new Deno.Command("deno", {
     args: [
       "run",
@@ -690,8 +835,59 @@ Deno.test("CLI: vk task-attempts spin-off requires --description", async () => {
   const stderrText = new TextDecoder().decode(stderr);
 
   assertEquals(code, 1);
-  assertEquals(stderrText.includes("Option --description is required."), true);
+  assertEquals(
+    stderrText.includes("Option --description or --file is required."),
+    true,
+  );
 });
+
+Deno.test(
+  "CLI: vk task-attempts spin-off rejects --description with --file",
+  async () => {
+    const promptFile = await Deno.makeTempFile({
+      suffix: ".md",
+      prefix: "vk-task-attempts-spin-off-conflict-",
+    });
+    try {
+      await Deno.writeTextFile(promptFile, "Prompt from file");
+      const command = new Deno.Command("deno", {
+        args: [
+          "run",
+          "--allow-net",
+          "--allow-read",
+          "--allow-write",
+          "--allow-env",
+          "src/main.ts",
+          "task-attempts",
+          "spin-off",
+          "parent-attempt-1",
+          "--description",
+          "Inline prompt",
+          "--file",
+          promptFile,
+        ],
+        stdout: "piped",
+        stderr: "piped",
+        env: {
+          VK_API_URL: config.apiUrl,
+          HOME: "/tmp/test-home-task-attempts-spin-off-conflicting-prompt",
+        },
+      });
+
+      const { code, stderr } = await command.output();
+      const stderrText = new TextDecoder().decode(stderr);
+      assertEquals(code, 1);
+      assertEquals(
+        stderrText.includes(
+          "Options --description and --file are mutually exclusive.",
+        ),
+        true,
+      );
+    } finally {
+      await Deno.remove(promptFile, { recursive: true });
+    }
+  },
+);
 
 Deno.test("CLI: vk task-attempts spin-off <id> --description --json", async () => {
   const mock = await startTaskAttemptSpinOffMockApi();
@@ -740,6 +936,99 @@ Deno.test("CLI: vk task-attempts spin-off <id> --description --json", async () =
     await mock.shutdown();
   }
 });
+
+Deno.test("CLI: vk task-attempts spin-off <id> --file --json", async () => {
+  const mock = await startTaskAttemptSpinOffMockApi();
+  const promptFile = await Deno.makeTempFile({
+    suffix: ".md",
+    prefix: "vk-task-attempts-spin-off-file-",
+  });
+  try {
+    await Deno.writeTextFile(promptFile, "Spin-off prompt from markdown file");
+    const command = new Deno.Command("deno", {
+      args: [
+        "run",
+        "--allow-net",
+        "--allow-read",
+        "--allow-write",
+        "--allow-env",
+        "src/main.ts",
+        "task-attempts",
+        "spin-off",
+        mock.parentAttemptId,
+        "--file",
+        promptFile,
+        "--json",
+      ],
+      stdout: "piped",
+      stderr: "piped",
+      env: {
+        VK_API_URL: mock.apiUrl,
+        HOME: "/tmp/test-home-task-attempts-spin-off-file-json",
+      },
+    });
+
+    const { code, stdout, stderr } = await command.output();
+    const stderrText = new TextDecoder().decode(stderr);
+
+    assertEquals(
+      code,
+      0,
+      `Expected exit code 0 for task-attempts spin-off with file. stderr: ${stderrText}`,
+    );
+
+    const parsed = JSON.parse(new TextDecoder().decode(stdout));
+    assertEquals(parsed.workspace.id, "ws-spin-off-1");
+    assertEquals(mock.requests.length, 1);
+    assertEquals(mock.requests[0].prompt, "Spin-off prompt from markdown file");
+  } finally {
+    await Deno.remove(promptFile, { recursive: true });
+    await mock.shutdown();
+  }
+});
+
+Deno.test(
+  "CLI: vk task-attempts spin-off rejects empty --file content",
+  async () => {
+    const promptFile = await Deno.makeTempFile({
+      suffix: ".md",
+      prefix: "vk-task-attempts-spin-off-empty-file-",
+    });
+    try {
+      await Deno.writeTextFile(promptFile, " \n\t ");
+      const command = new Deno.Command("deno", {
+        args: [
+          "run",
+          "--allow-net",
+          "--allow-read",
+          "--allow-write",
+          "--allow-env",
+          "src/main.ts",
+          "task-attempts",
+          "spin-off",
+          "--file",
+          promptFile,
+        ],
+        stdout: "piped",
+        stderr: "piped",
+        env: {
+          VK_API_URL: config.apiUrl,
+          HOME: "/tmp/test-home-task-attempts-spin-off-empty-file",
+        },
+      });
+
+      const { code, stderr } = await command.output();
+      const stderrText = new TextDecoder().decode(stderr);
+      assertEquals(code, 1);
+      assertEquals(
+        stderrText.includes("Option --file must contain non-empty text."),
+        true,
+      );
+    } finally {
+      await Deno.remove(promptFile, { recursive: true });
+    }
+  },
+);
 
 Deno.test("CLI: vk task-attempts update <id> --name --archived --pinned --json", async () => {
   const listResult = await apiCall<

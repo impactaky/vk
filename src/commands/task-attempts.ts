@@ -8,6 +8,36 @@ import { handleCliError } from "../utils/error-handler.ts";
 import { parseExecutorString } from "../utils/executor-parser.ts";
 import { getRepositoryId } from "../utils/repository-resolver.ts";
 
+type PromptSourceOptions = {
+  description?: string;
+  file?: string;
+};
+
+async function resolvePrompt(options: PromptSourceOptions): Promise<string> {
+  if (options.description && options.file) {
+    throw new Error("Options --description and --file are mutually exclusive.");
+  }
+
+  let prompt: string | undefined;
+  if (options.file) {
+    prompt = await Deno.readTextFile(options.file);
+    if (prompt.trim().length === 0) {
+      throw new Error("Option --file must contain non-empty text.");
+    }
+    return prompt;
+  }
+
+  if (options.description) {
+    prompt = options.description;
+    if (prompt.trim().length === 0) {
+      throw new Error("Option --description must be non-empty.");
+    }
+    return prompt;
+  }
+
+  throw new Error("Option --description or --file is required.");
+}
+
 export const taskAttemptsCommand = new Command()
   .description("Manage task attempts")
   .action(function () {
@@ -87,6 +117,7 @@ taskAttemptsCommand
   .command("create")
   .description("Create task attempt")
   .option("--description <text:string>", "Task description/prompt")
+  .option("--file <path:string>", "Read task description/prompt from file")
   .option("--repo <repo:string>", "Repository ID or name")
   .option("--target-branch <name:string>", "Target branch name")
   .option(
@@ -96,9 +127,7 @@ taskAttemptsCommand
   .option("--json", "Output as JSON")
   .action(async (options) => {
     try {
-      if (!options.description) {
-        throw new Error("Option --description is required.");
-      }
+      const prompt = await resolvePrompt(options);
       if (!options.repo) {
         throw new Error("Option --repo is required.");
       }
@@ -112,7 +141,7 @@ taskAttemptsCommand
       const targetBranch = options.targetBranch || "main";
 
       const createResult = await client.createWorkspace({
-        prompt: options.description,
+        prompt,
         executor_config: executor,
         repos: [{ repo_id: repoId, target_branch: targetBranch }],
       });
@@ -136,12 +165,11 @@ taskAttemptsCommand
   .description("Create task attempt by spinning off from a parent task attempt")
   .arguments("[id:string]")
   .option("--description <text:string>", "Task description/prompt")
+  .option("--file <path:string>", "Read task description/prompt from file")
   .option("--json", "Output as JSON")
   .action(async (options, id?: string) => {
     try {
-      if (!options.description) {
-        throw new Error("Option --description is required.");
-      }
+      const prompt = await resolvePrompt(options);
 
       const client = await ApiClient.create();
       const attemptId = await getAttemptIdWithAutoDetect(client, id);
@@ -156,7 +184,7 @@ taskAttemptsCommand
         config.defaultExecutor || "CLAUDE_CODE:DEFAULT",
       );
       const spinOffResult = await client.createWorkspace({
-        prompt: options.description,
+        prompt,
         executor_config: executor,
         repos: parentRepos.map((repo) => {
           const repoId = repo.repo_id || repo.id;
