@@ -167,7 +167,10 @@ Current top-level commands:
   - Exactly one prompt source:
     - `--description <text>`
     - `--file <path>`
-  - `--repo <id-or-name>`
+- Repository selection:
+  - `--repo <id-or-name>` (optional)
+  - if omitted, repository is auto-resolved from current directory context
+    using existing repository resolver behavior
 - Prompt content must be non-empty text (empty/whitespace input is rejected).
 - Optional options:
   - `--target-branch <name>` (defaults to `main`)

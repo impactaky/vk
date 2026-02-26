@@ -155,7 +155,9 @@ function jsonApiResponse(payload: unknown, status = 200): Response {
   });
 }
 
-function startTaskAttemptCreateMockApi(): TaskAttemptCreateMockApi {
+function startTaskAttemptCreateMockApi(
+  repoPath = "/tmp/repo-one",
+): TaskAttemptCreateMockApi {
   const repoId = "repo-1";
   const repoName = "repo-one";
   const requests: CreateAndStartWorkspaceRequest[] = [];
@@ -173,7 +175,7 @@ function startTaskAttemptCreateMockApi(): TaskAttemptCreateMockApi {
       if (request.method === "GET" && url.pathname === "/api/repos") {
         return jsonApiResponse({
           success: true,
-          data: [{ id: repoId, name: repoName, path: "/tmp/repo-one" }],
+          data: [{ id: repoId, name: repoName, path: repoPath }],
         });
       }
 
@@ -757,6 +759,57 @@ Deno.test("CLI: vk task-attempts create resolves repo by name and supports --jso
     assertEquals(mock.requests[0].executor_config.executor, "CLAUDE_CODE");
     assertEquals(mock.requests[0].executor_config.variant, "DEFAULT");
   } finally {
+    await mock.shutdown();
+  }
+});
+
+Deno.test("CLI: vk task-attempts create auto-detects repo from current directory", async () => {
+  const tempDir = await Deno.makeTempDir({
+    prefix: "vk-task-attempts-create-repo-autodetect-",
+  });
+  const mock = await startTaskAttemptCreateMockApi(tempDir);
+
+  try {
+    const command = new Deno.Command("deno", {
+      args: [
+        "run",
+        "--allow-net",
+        "--allow-read",
+        "--allow-write",
+        "--allow-env",
+        "--allow-run",
+        `${Deno.cwd()}/src/main.ts`,
+        "task-attempts",
+        "create",
+        "--description",
+        "Use repo from cwd",
+        "--json",
+      ],
+      cwd: tempDir,
+      stdout: "piped",
+      stderr: "piped",
+      env: {
+        VK_API_URL: mock.apiUrl,
+        HOME: "/tmp/test-home-task-attempts-create-repo-autodetect",
+      },
+    });
+
+    const { code, stdout, stderr } = await command.output();
+    const stderrText = new TextDecoder().decode(stderr);
+
+    assertEquals(
+      code,
+      0,
+      `Expected exit code 0 for task-attempts create with repo autodetect. stderr: ${stderrText}`,
+    );
+
+    const parsed = JSON.parse(new TextDecoder().decode(stdout));
+    assertEquals(parsed.workspace.id, "ws-created-1");
+    assertEquals(mock.requests.length, 1);
+    assertEquals(mock.requests[0].repos[0].repo_id, mock.repoId);
+    assertEquals(mock.requests[0].prompt, "Use repo from cwd");
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
     await mock.shutdown();
   }
 });

@@ -128,10 +128,6 @@ taskAttemptsCommand
   .action(async (options) => {
     try {
       const prompt = await resolvePrompt(options);
-      if (!options.repo) {
-        throw new Error("Option --repo is required.");
-      }
-
       const client = await ApiClient.create();
       const repoId = await getRepositoryId(options.repo, client);
       const config = await loadConfig();
