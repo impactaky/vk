@@ -12,7 +12,10 @@ export const notifyCommand = new Command()
   .description("Publish the current git branch to NATS")
   .option("--host <host:string>", `NATS host (default: ${DEFAULT_NATS_HOST})`)
   .option("--port <port:number>", `NATS port (default: ${DEFAULT_NATS_PORT})`)
-  .option("--subject <subject:string>", `NATS subject (default: ${DEFAULT_NATS_SUBJECT})`)
+  .option(
+    "--subject <subject:string>",
+    `NATS subject (default: ${DEFAULT_NATS_SUBJECT})`,
+  )
   .action(async (options) => {
     try {
       const branch = await getCurrentBranch();
@@ -24,7 +27,8 @@ export const notifyCommand = new Command()
       const config = await loadConfig();
       const host = options.host || config.natsHost || DEFAULT_NATS_HOST;
       const port = options.port || config.natsPort || DEFAULT_NATS_PORT;
-      const subject = options.subject || config.natsSubject || DEFAULT_NATS_SUBJECT;
+      const subject = options.subject || config.natsSubject ||
+        DEFAULT_NATS_SUBJECT;
 
       const nc = await connect({ servers: [`nats://${host}:${port}`] });
 

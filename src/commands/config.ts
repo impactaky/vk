@@ -49,7 +49,9 @@ configCommand
       case "nats-port": {
         const parsedPort = Number(value);
         if (Number.isNaN(parsedPort) || parsedPort <= 0) {
-          console.error("Invalid value for nats-port. Must be a positive integer.");
+          console.error(
+            "Invalid value for nats-port. Must be a positive integer.",
+          );
           Deno.exit(1);
         }
         config.natsPort = parsedPort;
