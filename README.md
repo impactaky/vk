@@ -119,6 +119,13 @@ vk task-attempts show --json <attempt-id>
 vk task-attempts spin-off <attempt-id> --description "Follow-up work"
 ```
 
+### Notify Commands
+
+```bash
+vk notify
+vk wait <branch-name>
+```
+
 ## License
 
 MIT
