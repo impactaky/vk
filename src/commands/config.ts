@@ -17,7 +17,7 @@ configCommand
     console.log(`API URL: ${config.apiUrl}`);
     console.log(`NATS Host: ${config.natsHost || "localhost"}`);
     console.log(`NATS Port: ${config.natsPort || 4222}`);
-    console.log(`NATS Subject: ${config.natsSubject || "vibekanban.notify"}`);
+    console.log(`NATS Subject: ${config.natsSubject || "vk.notify"}`);
     console.log(`Shell: ${config.shell || "(default: bash)"}`);
     console.log(`Default executor: ${config.defaultExecutor || "(not set)"}`);
   });

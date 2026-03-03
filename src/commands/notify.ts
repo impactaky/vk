@@ -6,7 +6,7 @@ import { handleCliError } from "../utils/error-handler.ts";
 
 const DEFAULT_NATS_HOST = "localhost";
 const DEFAULT_NATS_PORT = 4222;
-const DEFAULT_NATS_SUBJECT = "vibekanban.notify";
+const DEFAULT_NATS_SUBJECT = "vk.notify";
 
 export const notifyCommand = new Command()
   .description("Publish the current git branch to NATS")
