@@ -4,6 +4,7 @@ import { organizationCommand } from "./commands/organization.ts";
 import { configCommand } from "./commands/config.ts";
 import { repositoryCommand } from "./commands/repository.ts";
 import { taskAttemptsCommand } from "./commands/task-attempts.ts";
+import { notifyCommand } from "./commands/notify.ts";
 import { generateAIHelp } from "./utils/ai-help.ts";
 import { setVerbose } from "./utils/verbose.ts";
 
@@ -22,6 +23,7 @@ const cli = new Command()
   .command("repository", repositoryCommand)
   .command("task-attempts", taskAttemptsCommand)
   .command("config", configCommand)
+  .command("notify", notifyCommand)
   .command("completions", new CompletionsCommand());
 
 // Handle --ai flag before normal parsing

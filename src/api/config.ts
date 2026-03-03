@@ -12,6 +12,9 @@ import { join } from "@std/path";
 /** CLI configuration stored in ~/.config/vibe-kanban/vk-config.json. */
 export interface Config {
   apiUrl: string;
+  natsPort?: number;
+  natsHost?: string;
+  natsSubject?: string;
   /** User's preferred shell for workspace sessions. */
   shell?: string;
   /** Default executor profile used when commands don't provide one. */
@@ -50,6 +53,24 @@ export async function loadConfig(): Promise<Config> {
   const envDefaultExecutor = Deno.env.get("VK_DEFAULT_EXECUTOR");
   if (envDefaultExecutor) {
     config.defaultExecutor = envDefaultExecutor;
+  }
+
+  const envNatsPort = Deno.env.get("VK_NATS_PORT");
+  if (envNatsPort) {
+    const parsed = Number(envNatsPort);
+    if (!Number.isNaN(parsed)) {
+      config.natsPort = parsed;
+    }
+  }
+
+  const envNatsHost = Deno.env.get("VK_NATS_HOST");
+  if (envNatsHost) {
+    config.natsHost = envNatsHost;
+  }
+
+  const envNatsSubject = Deno.env.get("VK_NATS_SUBJECT");
+  if (envNatsSubject) {
+    config.natsSubject = envNatsSubject;
   }
 
   return config;
