@@ -11,7 +11,7 @@ Current top-level commands:
 
 - `organization`
 - `repository`
-- `task-attempts`
+- `workspace`
 - `config`
 - `completions`
 
@@ -135,9 +135,9 @@ Current top-level commands:
   - default: table with `Name | Current | Remote`
 - If no results: prints `No branches found.`
 
-## Task-Attempts Command
+## Workspace Command
 
-### `vk task-attempts list`
+### `vk workspace list`
 
 - Fetches task attempts from API.
 - Supports optional filter:
@@ -147,7 +147,7 @@ Current top-level commands:
   - default: table with `ID | Task ID | Name | Branch | Archived | Pinned`
 - If no results: prints `No task attempts found.`
 
-### `vk task-attempts show [id]`
+### `vk workspace show [id]`
 
 - Shows one task attempt.
 - If `id` is missing, resolver uses this order:
@@ -160,7 +160,7 @@ Current top-level commands:
   - default: prints key attempt fields (`ID`, `Task ID`, `Name`, `Branch`,
     `Agent Working Dir`, `Archived`, `Pinned`, `Created`, `Updated`)
 
-### `vk task-attempts create`
+### `vk workspace create`
 
 - Creates and starts a new task attempt workspace.
 - Required options:
@@ -183,7 +183,7 @@ Current top-level commands:
   - `--json`: prints `{ workspace, execution_process }`
   - default: prints `Task attempt <id> created and started.`
 
-### `vk task-attempts spin-off [id]`
+### `vk workspace spin-off [id]`
 
 - Creates and starts a new task attempt from a parent task-attempt branch.
 - If `id` is missing, uses the same resolver order as `show`.
@@ -203,7 +203,7 @@ Current top-level commands:
   - `--json`: prints `{ workspace, execution_process }`
   - default: prints `Task attempt <new-id> spun off from <id>.`
 
-### `vk task-attempts update [id]`
+### `vk workspace update [id]`
 
 - Updates task-attempt fields.
 - Supported options:
@@ -217,7 +217,7 @@ Current top-level commands:
   - `--json`: prints updated task-attempt JSON
   - default: prints `Task attempt <id> updated.`
 
-### `vk task-attempts delete [id]`
+### `vk workspace delete [id]`
 
 - Deletes one task attempt.
 - If `id` is missing, uses the same resolver order as `show`.
@@ -226,7 +226,7 @@ Current top-level commands:
 - Error behavior:
   - resolver/API errors are printed as `Error: <message>` and exit code is `1`
 
-### `vk task-attempts repos [id]`
+### `vk workspace repos [id]`
 
 - Lists repositories attached to one task attempt.
 - If `id` is missing, uses the same resolver order as `show`.
@@ -235,7 +235,7 @@ Current top-level commands:
   - default: table with `ID | Repo ID | Target Branch`
 - If no results: prints `No repositories found for task attempt.`
 
-### `vk task-attempts branch-status [id]`
+### `vk workspace branch-status [id]`
 
 - Lists branch status for repositories in one task attempt.
 - If `id` is missing, uses the same resolver order as `show`.
@@ -245,10 +245,10 @@ Current top-level commands:
     `Repository | Ahead | Behind | Uncommitted | Untracked | Conflict`
 - If no results: prints `No branch status found.`
 
-### `vk task-attempts rename-branch [id]`
+### `vk workspace rename-branch [id]`
 
 - Command placement decision: keep `rename-branch` as a standalone
-  `task-attempts` subcommand.
+  `workspace` subcommand.
 - Renames the workspace branch for one task attempt.
 - Required option:
   - `--new-branch-name <name>`
@@ -257,7 +257,7 @@ Current top-level commands:
   - `--json`: prints API response JSON
   - default: prints `Task attempt <id> branch renamed to <name>.`
 
-### `vk task-attempts merge [id]`
+### `vk workspace merge [id]`
 
 - Merges task-attempt branch for a repository.
 - Required option:
@@ -266,7 +266,7 @@ Current top-level commands:
 - Output:
   - default: prints `Task attempt <id> merged for repo <repo-id>.`
 
-### `vk task-attempts push [id]`
+### `vk workspace push [id]`
 
 - Pushes task-attempt branch for a repository.
 - Required option:
@@ -275,7 +275,7 @@ Current top-level commands:
 - Output:
   - default: prints `Task attempt <id> pushed for repo <repo-id>.`
 
-### `vk task-attempts rebase [id]`
+### `vk workspace rebase [id]`
 
 - Rebases task-attempt branch for a repository.
 - Required option:
@@ -287,14 +287,14 @@ Current top-level commands:
 - Output:
   - default: prints `Task attempt <id> rebased for repo <repo-id>.`
 
-### `vk task-attempts stop [id]`
+### `vk workspace stop [id]`
 
 - Stops an active task-attempt.
 - If `id` is missing, uses the same resolver order as `show`.
 - Output:
   - default: prints `Task attempt <id> stopped.`
 
-### `vk task-attempts pr`
+### `vk workspace pr`
 
 - Creates a pull request for a task-attempt repository.
 - Optional option:
@@ -309,7 +309,7 @@ Current top-level commands:
   - `--json`: prints PR creation result JSON
   - default: prints `Pull request created: <url>`
 
-### `vk task-attempts pr attach [id]`
+### `vk workspace pr attach [id]`
 
 - Attaches an existing PR to a task-attempt repository.
 - Required options:
@@ -320,7 +320,7 @@ Current top-level commands:
   - `--json`: prints attach result JSON
   - default: prints `Pull request attached: <url>`
 
-### `vk task-attempts pr comments [id]`
+### `vk workspace pr comments [id]`
 
 - Lists PR comments for a task-attempt repository.
 - Required option:

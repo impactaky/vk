@@ -47,7 +47,7 @@ vk organization list
 ### 4. List task attempts
 
 ```bash
-vk task-attempts list
+vk workspace list
 ```
 
 ## Installation
@@ -108,15 +108,15 @@ vk repository update <repository-id> --display-name "Renamed Repo"
 vk repository branches <repository-id>
 ```
 
-### Task-Attempts Commands
+### Workspace Commands
 
 ```bash
-vk task-attempts list
-vk task-attempts list --json
-vk task-attempts list --task-id <task-id>
-vk task-attempts show <attempt-id>
-vk task-attempts show --json <attempt-id>
-vk task-attempts spin-off <attempt-id> --description "Follow-up work"
+vk workspace list
+vk workspace list --json
+vk workspace list --task-id <task-id>
+vk workspace show <attempt-id>
+vk workspace show --json <attempt-id>
+vk workspace spin-off <attempt-id> --description "Follow-up work"
 ```
 
 ### Notify Commands
