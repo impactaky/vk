@@ -1174,7 +1174,7 @@ Deno.test("CLI: vk workspace repos <id> default output", async () => {
   const stdoutText = new TextDecoder().decode(stdout);
   assertEquals(
     stdoutText.includes("Repo ID") ||
-      stdoutText.includes("No repositories found for task attempt."),
+      stdoutText.includes("No repositories found for workspace."),
     true,
   );
 });

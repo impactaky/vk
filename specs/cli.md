@@ -139,17 +139,17 @@ Current top-level commands:
 
 ### `vk workspace list`
 
-- Fetches task attempts from API.
+- Fetches workspaces from API.
 - Supports optional filter:
   - `--task-id <id>`
 - Output:
   - `--json`: prints JSON array
   - default: table with `ID | Task ID | Name | Branch | Archived | Pinned`
-- If no results: prints `No task attempts found.`
+- If no results: prints `No workspaces found.`
 
 ### `vk workspace show [id]`
 
-- Shows one task attempt.
+- Shows one workspace.
 - If `id` is missing, resolver uses this order:
   - explicit `id` argument (when present)
   - workspace match for current git branch
@@ -162,7 +162,7 @@ Current top-level commands:
 
 ### `vk workspace create`
 
-- Creates and starts a new task attempt workspace.
+- Creates and starts a new workspace.
 - Required options:
   - Exactly one prompt source:
     - `--description <text>`
@@ -181,11 +181,11 @@ Current top-level commands:
   - body includes `prompt`, `repos`, and `executor_config`
 - Output:
   - `--json`: prints `{ workspace, execution_process }`
-  - default: prints `Task attempt <id> created and started.`
+  - default: prints `Workspace <id> created and started.`
 
 ### `vk workspace spin-off [id]`
 
-- Creates and starts a new task attempt from a parent task-attempt branch.
+- Creates and starts a new workspace from a parent workspace branch.
 - If `id` is missing, uses the same resolver order as `show`.
 - Required option:
   - Exactly one prompt source:
@@ -196,16 +196,16 @@ Current top-level commands:
   - `POST /api/task-attempts/create-and-start`
   - body includes:
     - `prompt` from `--description` or file content from `--file`
-    - `repos` derived from parent task-attempt repos
-    - `target_branch` set to parent task-attempt branch for each repo
+    - `repos` derived from parent workspace repos
+    - `target_branch` set to parent workspace branch for each repo
     - `executor_config` from default executor resolution (same as `create`)
 - Output:
   - `--json`: prints `{ workspace, execution_process }`
-  - default: prints `Task attempt <new-id> spun off from <id>.`
+  - default: prints `Workspace <new-id> spun off from <id>.`
 
 ### `vk workspace update [id]`
 
-- Updates task-attempt fields.
+- Updates workspace fields.
 - Supported options:
   - `--name <name>`
   - `--archived` / `--no-archived`
@@ -214,30 +214,30 @@ Current top-level commands:
 - If no update options are provided:
   - prints `No updates specified.`
 - Output:
-  - `--json`: prints updated task-attempt JSON
-  - default: prints `Task attempt <id> updated.`
+  - `--json`: prints updated workspace JSON
+  - default: prints `Workspace <id> updated.`
 
 ### `vk workspace delete [id]`
 
-- Deletes one task attempt.
+- Deletes one workspace.
 - If `id` is missing, uses the same resolver order as `show`.
 - Output:
-  - default: prints `Task attempt <id> deleted.`
+  - default: prints `Workspace <id> deleted.`
 - Error behavior:
   - resolver/API errors are printed as `Error: <message>` and exit code is `1`
 
 ### `vk workspace repos [id]`
 
-- Lists repositories attached to one task attempt.
+- Lists repositories attached to one workspace.
 - If `id` is missing, uses the same resolver order as `show`.
 - Output:
   - `--json`: prints JSON array
   - default: table with `ID | Repo ID | Target Branch`
-- If no results: prints `No repositories found for task attempt.`
+- If no results: prints `No repositories found for workspace.`
 
 ### `vk workspace branch-status [id]`
 
-- Lists branch status for repositories in one task attempt.
+- Lists branch status for repositories in one workspace.
 - If `id` is missing, uses the same resolver order as `show`.
 - Output:
   - `--json`: prints JSON array
@@ -249,35 +249,35 @@ Current top-level commands:
 
 - Command placement decision: keep `rename-branch` as a standalone
   `workspace` subcommand.
-- Renames the workspace branch for one task attempt.
+- Renames the workspace branch for one workspace.
 - Required option:
   - `--new-branch-name <name>`
 - If `id` is missing, uses the same resolver order as `show`.
 - Output:
   - `--json`: prints API response JSON
-  - default: prints `Task attempt <id> branch renamed to <name>.`
+  - default: prints `Workspace <id> branch renamed to <name>.`
 
 ### `vk workspace merge [id]`
 
-- Merges task-attempt branch for a repository.
+- Merges workspace branch for a repository.
 - Required option:
   - `--repo <id-or-name>`
 - If `id` is missing, uses the same resolver order as `show`.
 - Output:
-  - default: prints `Task attempt <id> merged for repo <repo-id>.`
+  - default: prints `Workspace <id> merged for repo <repo-id>.`
 
 ### `vk workspace push [id]`
 
-- Pushes task-attempt branch for a repository.
+- Pushes workspace branch for a repository.
 - Required option:
   - `--repo <id-or-name>`
 - If `id` is missing, uses the same resolver order as `show`.
 - Output:
-  - default: prints `Task attempt <id> pushed for repo <repo-id>.`
+  - default: prints `Workspace <id> pushed for repo <repo-id>.`
 
 ### `vk workspace rebase [id]`
 
-- Rebases task-attempt branch for a repository.
+- Rebases workspace branch for a repository.
 - Required option:
   - `--repo <id-or-name>`
 - Optional options:
@@ -285,18 +285,18 @@ Current top-level commands:
   - `--new-base-branch <name>`
 - If `id` is missing, uses the same resolver order as `show`.
 - Output:
-  - default: prints `Task attempt <id> rebased for repo <repo-id>.`
+  - default: prints `Workspace <id> rebased for repo <repo-id>.`
 
 ### `vk workspace stop [id]`
 
-- Stops an active task-attempt.
+- Stops an active workspace.
 - If `id` is missing, uses the same resolver order as `show`.
 - Output:
-  - default: prints `Task attempt <id> stopped.`
+  - default: prints `Workspace <id> stopped.`
 
 ### `vk workspace pr`
 
-- Creates a pull request for a task-attempt repository.
+- Creates a pull request for a workspace repository.
 - Optional option:
   - `--id <id>`
 - Required option:
@@ -311,7 +311,7 @@ Current top-level commands:
 
 ### `vk workspace pr attach [id]`
 
-- Attaches an existing PR to a task-attempt repository.
+- Attaches an existing PR to a workspace repository.
 - Required options:
   - `--repo <id-or-name>`
   - `--pr-number <number>`
@@ -322,7 +322,7 @@ Current top-level commands:
 
 ### `vk workspace pr comments [id]`
 
-- Lists PR comments for a task-attempt repository.
+- Lists PR comments for a workspace repository.
 - Required option:
   - `--repo <id-or-name>`
 - If `id` is missing, uses the same resolver order as `show`.

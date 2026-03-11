@@ -44,7 +44,7 @@ vk config set api-url https://your-vibe-kanban-instance.com
 vk organization list
 ```
 
-### 4. List task attempts
+### 4. List workspaces
 
 ```bash
 vk workspace list
