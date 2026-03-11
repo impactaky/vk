@@ -39,14 +39,14 @@ async function resolvePrompt(options: PromptSourceOptions): Promise<string> {
 }
 
 export const taskAttemptsCommand = new Command()
-  .description("Manage task attempts")
+  .description("Manage workspaces")
   .action(function () {
     this.showHelp();
   });
 
 taskAttemptsCommand
   .command("list")
-  .description("List task attempts")
+  .description("List workspaces")
   .option("--task-id <id:string>", "Filter by task ID")
   .option("--json", "Output as JSON")
   .action(async (options) => {
@@ -60,7 +60,7 @@ taskAttemptsCommand
       }
 
       if (attempts.length === 0) {
-        console.log("No task attempts found.");
+        console.log("No workspaces found.");
         return;
       }
 
@@ -84,7 +84,7 @@ taskAttemptsCommand
 
 taskAttemptsCommand
   .command("show")
-  .description("Show task attempt details")
+  .description("Show workspace details")
   .arguments("[id:string]")
   .option("--json", "Output as JSON")
   .action(async (options, id?: string) => {
@@ -115,7 +115,7 @@ taskAttemptsCommand
 
 taskAttemptsCommand
   .command("create")
-  .description("Create task attempt")
+  .description("Create workspace")
   .option("--description <text:string>", "Task description/prompt")
   .option("--file <path:string>", "Read task description/prompt from file")
   .option("--repo <repo:string>", "Repository ID or name")
@@ -148,7 +148,7 @@ taskAttemptsCommand
       }
 
       console.log(
-        `Task attempt ${createResult.workspace.id} created and started.`,
+        `Workspace ${createResult.workspace.id} created and started.`,
       );
     } catch (error) {
       handleCliError(error);
@@ -158,7 +158,7 @@ taskAttemptsCommand
 
 taskAttemptsCommand
   .command("spin-off")
-  .description("Create task attempt by spinning off from a parent task attempt")
+  .description("Create workspace by spinning off from a parent workspace")
   .arguments("[id:string]")
   .option("--description <text:string>", "Task description/prompt")
   .option("--file <path:string>", "Read task description/prompt from file")
@@ -172,7 +172,7 @@ taskAttemptsCommand
       const parentAttempt = await client.getTaskAttempt(attemptId);
       const parentRepos = await client.getWorkspaceRepos(attemptId);
       if (parentRepos.length === 0) {
-        throw new Error("Parent task attempt has no repositories to spin off.");
+        throw new Error("Parent workspace has no repositories to spin off.");
       }
 
       const config = await loadConfig();
@@ -186,7 +186,7 @@ taskAttemptsCommand
           const repoId = repo.repo_id || repo.id;
           if (!repoId) {
             throw new Error(
-              "Parent task attempt repo is missing repository ID.",
+              "Parent workspace repo is missing repository ID.",
             );
           }
           return {
@@ -202,7 +202,7 @@ taskAttemptsCommand
       }
 
       console.log(
-        `Task attempt ${spinOffResult.workspace.id} spun off from ${attemptId}.`,
+        `Workspace ${spinOffResult.workspace.id} spun off from ${attemptId}.`,
       );
     } catch (error) {
       handleCliError(error);
@@ -212,13 +212,13 @@ taskAttemptsCommand
 
 taskAttemptsCommand
   .command("update")
-  .description("Update task attempt details")
+  .description("Update workspace details")
   .arguments("[id:string]")
-  .option("--name <name:string>", "New task attempt name")
-  .option("--archived", "Mark task attempt as archived")
-  .option("--no-archived", "Mark task attempt as not archived")
-  .option("--pinned", "Pin task attempt")
-  .option("--no-pinned", "Unpin task attempt")
+  .option("--name <name:string>", "New workspace name")
+  .option("--archived", "Mark workspace as archived")
+  .option("--no-archived", "Mark workspace as not archived")
+  .option("--pinned", "Pin workspace")
+  .option("--no-pinned", "Unpin workspace")
   .option("--json", "Output as JSON")
   .action(async (options, id?: string) => {
     try {
@@ -248,7 +248,7 @@ taskAttemptsCommand
         return;
       }
 
-      console.log(`Task attempt ${attempt.id} updated.`);
+      console.log(`Workspace ${attempt.id} updated.`);
     } catch (error) {
       handleCliError(error);
       throw error;
@@ -257,14 +257,14 @@ taskAttemptsCommand
 
 taskAttemptsCommand
   .command("delete")
-  .description("Delete task attempt")
+  .description("Delete workspace")
   .arguments("[id:string]")
   .action(async (_options, id?: string) => {
     try {
       const client = await ApiClient.create();
       const attemptId = await getAttemptIdWithAutoDetect(client, id);
       await client.deleteWorkspace(attemptId);
-      console.log(`Task attempt ${attemptId} deleted.`);
+      console.log(`Workspace ${attemptId} deleted.`);
     } catch (error) {
       handleCliError(error);
       throw error;
@@ -273,7 +273,7 @@ taskAttemptsCommand
 
 taskAttemptsCommand
   .command("repos")
-  .description("List repositories attached to a task attempt")
+  .description("List repositories attached to a workspace")
   .arguments("[id:string]")
   .option("--json", "Output as JSON")
   .action(async (options, id?: string) => {
@@ -288,7 +288,7 @@ taskAttemptsCommand
       }
 
       if (repos.length === 0) {
-        console.log("No repositories found for task attempt.");
+        console.log("No repositories found for workspace.");
         return;
       }
 
@@ -309,7 +309,7 @@ taskAttemptsCommand
 
 taskAttemptsCommand
   .command("branch-status")
-  .description("Show branch status for repositories in a task attempt")
+  .description("Show branch status for repositories in a workspace")
   .arguments("[id:string]")
   .option("--json", "Output as JSON")
   .action(async (options, id?: string) => {
@@ -355,7 +355,7 @@ taskAttemptsCommand
 
 taskAttemptsCommand
   .command("rename-branch")
-  .description("Rename task attempt branch")
+  .description("Rename workspace branch")
   .arguments("[id:string]")
   .option("--new-branch-name <name:string>", "New branch name")
   .option("--json", "Output as JSON")
@@ -380,7 +380,7 @@ taskAttemptsCommand
         ? result.branch
         : options.newBranchName;
       console.log(
-        `Task attempt ${attemptId} branch renamed to ${branchName}.`,
+        `Workspace ${attemptId} branch renamed to ${branchName}.`,
       );
     } catch (error) {
       handleCliError(error);
@@ -390,7 +390,7 @@ taskAttemptsCommand
 
 taskAttemptsCommand
   .command("merge")
-  .description("Merge task attempt branch")
+  .description("Merge workspace branch")
   .arguments("[id:string]")
   .option("--repo <repo:string>", "Repository ID or name")
   .action(async (options, id?: string) => {
@@ -403,7 +403,7 @@ taskAttemptsCommand
       const attemptId = await getAttemptIdWithAutoDetect(client, id);
       const repoId = await getRepositoryId(options.repo, client);
       await client.mergeWorkspace(attemptId, { repo_id: repoId });
-      console.log(`Task attempt ${attemptId} merged for repo ${repoId}.`);
+      console.log(`Workspace ${attemptId} merged for repo ${repoId}.`);
     } catch (error) {
       handleCliError(error);
       throw error;
@@ -412,7 +412,7 @@ taskAttemptsCommand
 
 taskAttemptsCommand
   .command("push")
-  .description("Push task attempt branch")
+  .description("Push workspace branch")
   .arguments("[id:string]")
   .option("--repo <repo:string>", "Repository ID or name")
   .action(async (options, id?: string) => {
@@ -425,7 +425,7 @@ taskAttemptsCommand
       const attemptId = await getAttemptIdWithAutoDetect(client, id);
       const repoId = await getRepositoryId(options.repo, client);
       await client.pushWorkspace(attemptId, { repo_id: repoId });
-      console.log(`Task attempt ${attemptId} pushed for repo ${repoId}.`);
+      console.log(`Workspace ${attemptId} pushed for repo ${repoId}.`);
     } catch (error) {
       handleCliError(error);
       throw error;
@@ -434,7 +434,7 @@ taskAttemptsCommand
 
 taskAttemptsCommand
   .command("rebase")
-  .description("Rebase task attempt branch")
+  .description("Rebase workspace branch")
   .arguments("[id:string]")
   .option("--repo <repo:string>", "Repository ID or name")
   .option("--old-base-branch <name:string>", "Old base branch")
@@ -453,7 +453,7 @@ taskAttemptsCommand
         old_base_branch: options.oldBaseBranch,
         new_base_branch: options.newBaseBranch,
       });
-      console.log(`Task attempt ${attemptId} rebased for repo ${repoId}.`);
+      console.log(`Workspace ${attemptId} rebased for repo ${repoId}.`);
     } catch (error) {
       handleCliError(error);
       throw error;
@@ -462,14 +462,14 @@ taskAttemptsCommand
 
 taskAttemptsCommand
   .command("stop")
-  .description("Stop task attempt")
+  .description("Stop workspace")
   .arguments("[id:string]")
   .action(async (_options, id?: string) => {
     try {
       const client = await ApiClient.create();
       const attemptId = await getAttemptIdWithAutoDetect(client, id);
       await client.stopWorkspace(attemptId);
-      console.log(`Task attempt ${attemptId} stopped.`);
+      console.log(`Workspace ${attemptId} stopped.`);
     } catch (error) {
       handleCliError(error);
       throw error;
@@ -477,8 +477,8 @@ taskAttemptsCommand
   });
 
 const prCommand = new Command()
-  .description("Pull request operations for task attempts")
-  .option("--id <id:string>", "Task attempt ID")
+  .description("Pull request operations for workspaces")
+  .option("--id <id:string>", "Workspace ID")
   .option("--repo <repo:string>", "Repository ID or name")
   .option("--title <title:string>", "Pull request title")
   .option("--body <body:string>", "Pull request body")
@@ -492,7 +492,7 @@ const prCommand = new Command()
       const client = await ApiClient.create();
       const attemptId = await getAttemptIdWithAutoDetect(client, options.id);
       const repoId = await getRepositoryId(options.repo, client);
-      const title = options.title || `Task attempt ${attemptId}`;
+      const title = options.title || `Workspace ${attemptId}`;
       const url = await client.createPR(attemptId, {
         repo_id: repoId,
         title,
@@ -513,7 +513,7 @@ const prCommand = new Command()
 
 prCommand
   .command("attach")
-  .description("Attach an existing pull request to a task attempt")
+  .description("Attach an existing pull request to a workspace")
   .arguments("[id:string]")
   .option("--repo <repo:string>", "Repository ID or name")
   .option("--pr-number <number:number>", "Pull request number")
@@ -551,7 +551,7 @@ taskAttemptsCommand.command("pr", prCommand);
 
 prCommand
   .command("comments")
-  .description("List pull request comments for a task attempt")
+  .description("List pull request comments for a workspace")
   .arguments("[id:string]")
   .option("--repo <repo:string>", "Repository ID or name")
   .option("--json", "Output as JSON")

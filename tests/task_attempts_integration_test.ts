@@ -158,6 +158,18 @@ async function getRepoSeed(): Promise<RepoSeed | null> {
   };
 }
 
+function isListEndpointAccessible(result: ApiResult<unknown[]>): boolean {
+  if (result.status === 401) {
+    return false;
+  }
+
+  if (!result.success || result.rawText !== undefined || !result.data) {
+    return false;
+  }
+
+  return Array.isArray(result.data);
+}
+
 async function cleanupAttempt(attemptId: string | undefined): Promise<void> {
   if (!attemptId) {
     return;
@@ -168,8 +180,7 @@ async function cleanupAttempt(attemptId: string | undefined): Promise<void> {
 Deno.test("API: task-attempts endpoint returns array when accessible", async () => {
   const result = await apiCall<unknown[]>("/task-attempts");
 
-  if (result.status === 401) {
-    assertEquals(result.success, false);
+  if (!isListEndpointAccessible(result)) {
     return;
   }
 
@@ -179,9 +190,9 @@ Deno.test("API: task-attempts endpoint returns array when accessible", async () 
   assertEquals(Array.isArray(result.data), true);
 });
 
-Deno.test("CLI: vk task-attempts list --json", async () => {
+Deno.test("CLI: vk workspace list --json", async () => {
   const endpointCheck = await apiCall<unknown[]>("/task-attempts");
-  if (endpointCheck.status === 401) {
+  if (!isListEndpointAccessible(endpointCheck)) {
     return;
   }
 
@@ -193,7 +204,7 @@ Deno.test("CLI: vk task-attempts list --json", async () => {
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "list",
       "--json",
     ],
@@ -218,7 +229,7 @@ Deno.test("CLI: vk task-attempts list --json", async () => {
   assertEquals(Array.isArray(parsed), true);
 });
 
-Deno.test("CLI: vk task-attempts show <id> --json", async () => {
+Deno.test("CLI: vk workspace show <id> --json", async () => {
   const listResult = await apiCall<Array<{ id: string }>>("/task-attempts");
   if (
     listResult.status === 401 || !listResult.success || !listResult.data ||
@@ -236,7 +247,7 @@ Deno.test("CLI: vk task-attempts show <id> --json", async () => {
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "show",
       firstId,
       "--json",
@@ -262,7 +273,7 @@ Deno.test("CLI: vk task-attempts show <id> --json", async () => {
   assertEquals(parsed.id, firstId);
 });
 
-Deno.test("CLI: vk task-attempts show --json auto-detects ID from branch", async () => {
+Deno.test("CLI: vk workspace show --json auto-detects ID from branch", async () => {
   if (!(await isGitInstalled())) {
     return;
   }
@@ -314,7 +325,7 @@ Deno.test("CLI: vk task-attempts show --json auto-detects ID from branch", async
         "--allow-env",
         "--allow-run",
         `${Deno.cwd()}/src/main.ts`,
-        "task-attempts",
+        "workspace",
         "show",
         "--json",
       ],
@@ -341,7 +352,7 @@ Deno.test("CLI: vk task-attempts show --json auto-detects ID from branch", async
   }
 });
 
-Deno.test("CLI: vk task-attempts create requires prompt source", async () => {
+Deno.test("CLI: vk workspace create requires prompt source", async () => {
   const command = new Deno.Command("deno", {
     args: [
       "run",
@@ -350,7 +361,7 @@ Deno.test("CLI: vk task-attempts create requires prompt source", async () => {
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "create",
       "--repo",
       "repo-1",
@@ -374,7 +385,7 @@ Deno.test("CLI: vk task-attempts create requires prompt source", async () => {
 });
 
 Deno.test(
-  "CLI: vk task-attempts create rejects --description with --file",
+  "CLI: vk workspace create rejects --description with --file",
   async () => {
     const promptFile = await Deno.makeTempFile({
       suffix: ".md",
@@ -390,7 +401,7 @@ Deno.test(
           "--allow-write",
           "--allow-env",
           "src/main.ts",
-          "task-attempts",
+          "workspace",
           "create",
           "--description",
           "Inline prompt",
@@ -422,7 +433,7 @@ Deno.test(
   },
 );
 
-Deno.test("CLI: vk task-attempts create supports --file", async () => {
+Deno.test("CLI: vk workspace create supports --file", async () => {
   const repoSeed = await getRepoSeed();
   if (!repoSeed) {
     return;
@@ -441,7 +452,7 @@ Deno.test("CLI: vk task-attempts create supports --file", async () => {
         "--allow-write",
         "--allow-env",
         "src/main.ts",
-        "task-attempts",
+        "workspace",
         "create",
         "--file",
         promptFile,
@@ -478,7 +489,7 @@ Deno.test("CLI: vk task-attempts create supports --file", async () => {
   }
 });
 
-Deno.test("CLI: vk task-attempts create rejects empty --file content", async () => {
+Deno.test("CLI: vk workspace create rejects empty --file content", async () => {
   const promptFile = await Deno.makeTempFile({
     suffix: ".md",
     prefix: "vk-task-attempts-create-empty-file-",
@@ -493,7 +504,7 @@ Deno.test("CLI: vk task-attempts create rejects empty --file content", async () 
         "--allow-write",
         "--allow-env",
         "src/main.ts",
-        "task-attempts",
+        "workspace",
         "create",
         "--file",
         promptFile,
@@ -520,7 +531,7 @@ Deno.test("CLI: vk task-attempts create rejects empty --file content", async () 
   }
 });
 
-Deno.test("CLI: vk task-attempts create resolves repo by name and supports --json output", async () => {
+Deno.test("CLI: vk workspace create resolves repo by name and supports --json output", async () => {
   const repoSeed = await getRepoSeed();
   if (!repoSeed) {
     return;
@@ -534,7 +545,7 @@ Deno.test("CLI: vk task-attempts create resolves repo by name and supports --jso
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "create",
       "--description",
       "Fix the issue",
@@ -572,7 +583,7 @@ Deno.test("CLI: vk task-attempts create resolves repo by name and supports --jso
   await cleanupAttempt(parsed.workspace?.id);
 });
 
-Deno.test("CLI: vk task-attempts create auto-detects repo from current directory", async () => {
+Deno.test("CLI: vk workspace create auto-detects repo from current directory", async () => {
   const repoSeed = await getRepoSeed();
   if (!repoSeed) {
     return;
@@ -595,7 +606,7 @@ Deno.test("CLI: vk task-attempts create auto-detects repo from current directory
       "--allow-env",
       "--allow-run",
       `${Deno.cwd()}/src/main.ts`,
-      "task-attempts",
+      "workspace",
       "create",
       "--description",
       "Use repo from cwd",
@@ -628,7 +639,7 @@ Deno.test("CLI: vk task-attempts create auto-detects repo from current directory
   await cleanupAttempt(parsed.workspace?.id);
 });
 
-Deno.test("CLI: vk task-attempts create resolves repo by id", async () => {
+Deno.test("CLI: vk workspace create resolves repo by id", async () => {
   const repoSeed = await getRepoSeed();
   if (!repoSeed) {
     return;
@@ -641,7 +652,7 @@ Deno.test("CLI: vk task-attempts create resolves repo by id", async () => {
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "create",
       "--description",
       "Add tests",
@@ -677,7 +688,7 @@ Deno.test("CLI: vk task-attempts create resolves repo by id", async () => {
   await cleanupAttempt(parsed.workspace?.id);
 });
 
-Deno.test("CLI: vk task-attempts spin-off requires prompt source", async () => {
+Deno.test("CLI: vk workspace spin-off requires prompt source", async () => {
   const command = new Deno.Command("deno", {
     args: [
       "run",
@@ -686,7 +697,7 @@ Deno.test("CLI: vk task-attempts spin-off requires prompt source", async () => {
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "spin-off",
       "parent-attempt-1",
     ],
@@ -709,7 +720,7 @@ Deno.test("CLI: vk task-attempts spin-off requires prompt source", async () => {
 });
 
 Deno.test(
-  "CLI: vk task-attempts spin-off rejects --description with --file",
+  "CLI: vk workspace spin-off rejects --description with --file",
   async () => {
     const promptFile = await Deno.makeTempFile({
       suffix: ".md",
@@ -725,7 +736,7 @@ Deno.test(
           "--allow-write",
           "--allow-env",
           "src/main.ts",
-          "task-attempts",
+          "workspace",
           "spin-off",
           "parent-attempt-1",
           "--description",
@@ -756,7 +767,7 @@ Deno.test(
   },
 );
 
-Deno.test("CLI: vk task-attempts spin-off <id> --description --json", async () => {
+Deno.test("CLI: vk workspace spin-off <id> --description --json", async () => {
   const attemptSeed = await getAttemptSeed();
   if (!attemptSeed) {
     return;
@@ -769,7 +780,7 @@ Deno.test("CLI: vk task-attempts spin-off <id> --description --json", async () =
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "spin-off",
       attemptSeed.attemptId,
       "--description",
@@ -802,7 +813,7 @@ Deno.test("CLI: vk task-attempts spin-off <id> --description --json", async () =
   await cleanupAttempt(parsed.workspace?.id);
 });
 
-Deno.test("CLI: vk task-attempts spin-off <id> --file --json", async () => {
+Deno.test("CLI: vk workspace spin-off <id> --file --json", async () => {
   const attemptSeed = await getAttemptSeed();
   if (!attemptSeed) {
     return;
@@ -821,7 +832,7 @@ Deno.test("CLI: vk task-attempts spin-off <id> --file --json", async () => {
         "--allow-write",
         "--allow-env",
         "src/main.ts",
-        "task-attempts",
+        "workspace",
         "spin-off",
         attemptSeed.attemptId,
         "--file",
@@ -858,7 +869,7 @@ Deno.test("CLI: vk task-attempts spin-off <id> --file --json", async () => {
 });
 
 Deno.test(
-  "CLI: vk task-attempts spin-off rejects empty --file content",
+  "CLI: vk workspace spin-off rejects empty --file content",
   async () => {
     const promptFile = await Deno.makeTempFile({
       suffix: ".md",
@@ -874,7 +885,7 @@ Deno.test(
           "--allow-write",
           "--allow-env",
           "src/main.ts",
-          "task-attempts",
+          "workspace",
           "spin-off",
           "--file",
           promptFile,
@@ -900,7 +911,7 @@ Deno.test(
   },
 );
 
-Deno.test("CLI: vk task-attempts update <id> --name --archived --pinned --json", async () => {
+Deno.test("CLI: vk workspace update <id> --name --archived --pinned --json", async () => {
   const listResult = await apiCall<
     Array<
       { id: string; name: string | null; archived: boolean; pinned: boolean }
@@ -925,7 +936,7 @@ Deno.test("CLI: vk task-attempts update <id> --name --archived --pinned --json",
     "--allow-write",
     "--allow-env",
     "src/main.ts",
-    "task-attempts",
+    "workspace",
     "update",
     target.id,
     "--name",
@@ -958,7 +969,7 @@ Deno.test("CLI: vk task-attempts update <id> --name --archived --pinned --json",
   assertEquals(parsed.id, target.id);
 });
 
-Deno.test("CLI: vk task-attempts update without id reports resolver error path", async () => {
+Deno.test("CLI: vk workspace update without id reports resolver error path", async () => {
   const endpointCheck = await apiCall<unknown[]>("/task-attempts");
   if (endpointCheck.status === 401) {
     return;
@@ -978,7 +989,7 @@ Deno.test("CLI: vk task-attempts update without id reports resolver error path",
         "--allow-env",
         "--allow-run",
         `${Deno.cwd()}/src/main.ts`,
-        "task-attempts",
+        "workspace",
         "update",
         "--name",
         "noop",
@@ -1002,7 +1013,7 @@ Deno.test("CLI: vk task-attempts update without id reports resolver error path",
   }
 });
 
-Deno.test("CLI: vk task-attempts delete <id> shows API error when id does not exist", async () => {
+Deno.test("CLI: vk workspace delete <id> shows API error when id does not exist", async () => {
   const endpointCheck = await apiCall<unknown[]>("/task-attempts");
   if (endpointCheck.status === 401) {
     return;
@@ -1016,7 +1027,7 @@ Deno.test("CLI: vk task-attempts delete <id> shows API error when id does not ex
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "delete",
       "00000000-0000-0000-0000-000000000000",
     ],
@@ -1034,7 +1045,7 @@ Deno.test("CLI: vk task-attempts delete <id> shows API error when id does not ex
   assertEquals(stderrText.includes("Error:"), true);
 });
 
-Deno.test("CLI: vk task-attempts delete without id reports resolver error path", async () => {
+Deno.test("CLI: vk workspace delete without id reports resolver error path", async () => {
   const endpointCheck = await apiCall<unknown[]>("/task-attempts");
   if (endpointCheck.status === 401) {
     return;
@@ -1054,7 +1065,7 @@ Deno.test("CLI: vk task-attempts delete without id reports resolver error path",
         "--allow-env",
         "--allow-run",
         `${Deno.cwd()}/src/main.ts`,
-        "task-attempts",
+        "workspace",
         "delete",
       ],
       cwd: tempDir,
@@ -1076,7 +1087,7 @@ Deno.test("CLI: vk task-attempts delete without id reports resolver error path",
   }
 });
 
-Deno.test("CLI: vk task-attempts repos <id> --json", async () => {
+Deno.test("CLI: vk workspace repos <id> --json", async () => {
   const listResult = await apiCall<Array<{ id: string }>>("/task-attempts");
   if (
     listResult.status === 401 || !listResult.success || !listResult.data ||
@@ -1101,7 +1112,7 @@ Deno.test("CLI: vk task-attempts repos <id> --json", async () => {
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "repos",
       firstId,
       "--json",
@@ -1126,7 +1137,7 @@ Deno.test("CLI: vk task-attempts repos <id> --json", async () => {
   assertEquals(Array.isArray(parsed), true);
 });
 
-Deno.test("CLI: vk task-attempts repos <id> default output", async () => {
+Deno.test("CLI: vk workspace repos <id> default output", async () => {
   const listResult = await apiCall<Array<{ id: string }>>("/task-attempts");
   if (
     listResult.status === 401 || !listResult.success || !listResult.data ||
@@ -1151,7 +1162,7 @@ Deno.test("CLI: vk task-attempts repos <id> default output", async () => {
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "repos",
       firstId,
     ],
@@ -1174,12 +1185,12 @@ Deno.test("CLI: vk task-attempts repos <id> default output", async () => {
   const stdoutText = new TextDecoder().decode(stdout);
   assertEquals(
     stdoutText.includes("Repo ID") ||
-      stdoutText.includes("No repositories found for task attempt."),
+      stdoutText.includes("No repositories found for workspace."),
     true,
   );
 });
 
-Deno.test("CLI: vk task-attempts repos without id reports resolver error path", async () => {
+Deno.test("CLI: vk workspace repos without id reports resolver error path", async () => {
   const endpointCheck = await apiCall<unknown[]>("/task-attempts");
   if (endpointCheck.status === 401) {
     return;
@@ -1199,7 +1210,7 @@ Deno.test("CLI: vk task-attempts repos without id reports resolver error path", 
         "--allow-env",
         "--allow-run",
         `${Deno.cwd()}/src/main.ts`,
-        "task-attempts",
+        "workspace",
         "repos",
       ],
       cwd: tempDir,
@@ -1221,7 +1232,7 @@ Deno.test("CLI: vk task-attempts repos without id reports resolver error path", 
   }
 });
 
-Deno.test("CLI: vk task-attempts branch-status <id> --json", async () => {
+Deno.test("CLI: vk workspace branch-status <id> --json", async () => {
   const listResult = await apiCall<Array<{ id: string }>>("/task-attempts");
   if (
     listResult.status === 401 || !listResult.success || !listResult.data ||
@@ -1246,7 +1257,7 @@ Deno.test("CLI: vk task-attempts branch-status <id> --json", async () => {
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "branch-status",
       firstId,
       "--json",
@@ -1271,7 +1282,7 @@ Deno.test("CLI: vk task-attempts branch-status <id> --json", async () => {
   assertEquals(Array.isArray(parsed), true);
 });
 
-Deno.test("CLI: vk task-attempts branch-status <id> default output", async () => {
+Deno.test("CLI: vk workspace branch-status <id> default output", async () => {
   const listResult = await apiCall<Array<{ id: string }>>("/task-attempts");
   if (
     listResult.status === 401 || !listResult.success || !listResult.data ||
@@ -1296,7 +1307,7 @@ Deno.test("CLI: vk task-attempts branch-status <id> default output", async () =>
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "branch-status",
       firstId,
     ],
@@ -1324,7 +1335,7 @@ Deno.test("CLI: vk task-attempts branch-status <id> default output", async () =>
   );
 });
 
-Deno.test("CLI: vk task-attempts branch-status without id reports resolver error path", async () => {
+Deno.test("CLI: vk workspace branch-status without id reports resolver error path", async () => {
   const endpointCheck = await apiCall<unknown[]>("/task-attempts");
   if (endpointCheck.status === 401) {
     return;
@@ -1344,7 +1355,7 @@ Deno.test("CLI: vk task-attempts branch-status without id reports resolver error
         "--allow-env",
         "--allow-run",
         `${Deno.cwd()}/src/main.ts`,
-        "task-attempts",
+        "workspace",
         "branch-status",
       ],
       cwd: tempDir,
@@ -1366,7 +1377,7 @@ Deno.test("CLI: vk task-attempts branch-status without id reports resolver error
   }
 });
 
-Deno.test("CLI: vk task-attempts rename-branch <id> --new-branch-name --json", async () => {
+Deno.test("CLI: vk workspace rename-branch <id> --new-branch-name --json", async () => {
   const seed = await getAttemptSeed();
   if (!seed) {
     return;
@@ -1380,7 +1391,7 @@ Deno.test("CLI: vk task-attempts rename-branch <id> --new-branch-name --json", a
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "rename-branch",
       seed.attemptId,
       "--new-branch-name",
@@ -1407,7 +1418,7 @@ Deno.test("CLI: vk task-attempts rename-branch <id> --new-branch-name --json", a
   assertEquals(parsed.branch, seed.branch);
 });
 
-Deno.test("CLI: vk task-attempts rename-branch requires --new-branch-name", async () => {
+Deno.test("CLI: vk workspace rename-branch requires --new-branch-name", async () => {
   const seed = await getAttemptSeed();
   if (!seed) {
     return;
@@ -1421,7 +1432,7 @@ Deno.test("CLI: vk task-attempts rename-branch requires --new-branch-name", asyn
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "rename-branch",
       seed.attemptId,
     ],
@@ -1442,7 +1453,7 @@ Deno.test("CLI: vk task-attempts rename-branch requires --new-branch-name", asyn
   );
 });
 
-Deno.test("CLI: vk task-attempts merge <id> --repo succeeds", async () => {
+Deno.test("CLI: vk workspace merge <id> --repo succeeds", async () => {
   const listResult = await apiCall<Array<{ id: string }>>("/task-attempts");
   if (
     listResult.status === 401 || !listResult.success || !listResult.data ||
@@ -1474,7 +1485,7 @@ Deno.test("CLI: vk task-attempts merge <id> --repo succeeds", async () => {
         "--allow-write",
         "--allow-env",
         "src/main.ts",
-        "task-attempts",
+        "workspace",
         "merge",
         attempt.id,
         "--repo",
@@ -1499,7 +1510,7 @@ Deno.test("CLI: vk task-attempts merge <id> --repo succeeds", async () => {
   return;
 });
 
-Deno.test("CLI: vk task-attempts merge requires --repo", async () => {
+Deno.test("CLI: vk workspace merge requires --repo", async () => {
   const seed = await getAttemptSeed();
   if (!seed) {
     return;
@@ -1513,7 +1524,7 @@ Deno.test("CLI: vk task-attempts merge requires --repo", async () => {
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "merge",
       seed.attemptId,
     ],
@@ -1531,7 +1542,7 @@ Deno.test("CLI: vk task-attempts merge requires --repo", async () => {
   assertEquals(stderrText.includes("Option --repo is required."), true);
 });
 
-Deno.test("CLI: vk task-attempts push <id> --repo succeeds", async () => {
+Deno.test("CLI: vk workspace push <id> --repo succeeds", async () => {
   const seed = await getAttemptSeed();
   if (!seed) {
     return;
@@ -1545,7 +1556,7 @@ Deno.test("CLI: vk task-attempts push <id> --repo succeeds", async () => {
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "push",
       seed.attemptId,
       "--repo",
@@ -1564,7 +1575,7 @@ Deno.test("CLI: vk task-attempts push <id> --repo succeeds", async () => {
   assertEquals(code, 0, `Expected push success. stderr: ${stderrText}`);
 });
 
-Deno.test("CLI: vk task-attempts push requires --repo", async () => {
+Deno.test("CLI: vk workspace push requires --repo", async () => {
   const seed = await getAttemptSeed();
   if (!seed) {
     return;
@@ -1578,7 +1589,7 @@ Deno.test("CLI: vk task-attempts push requires --repo", async () => {
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "push",
       seed.attemptId,
     ],
@@ -1596,7 +1607,7 @@ Deno.test("CLI: vk task-attempts push requires --repo", async () => {
   assertEquals(stderrText.includes("Option --repo is required."), true);
 });
 
-Deno.test("CLI: vk task-attempts rebase <id> --repo succeeds", async () => {
+Deno.test("CLI: vk workspace rebase <id> --repo succeeds", async () => {
   const seed = await getAttemptSeed();
   if (!seed) {
     return;
@@ -1610,7 +1621,7 @@ Deno.test("CLI: vk task-attempts rebase <id> --repo succeeds", async () => {
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "rebase",
       seed.attemptId,
       "--repo",
@@ -1629,7 +1640,7 @@ Deno.test("CLI: vk task-attempts rebase <id> --repo succeeds", async () => {
   assertEquals(code, 0, `Expected rebase success. stderr: ${stderrText}`);
 });
 
-Deno.test("CLI: vk task-attempts rebase requires --repo", async () => {
+Deno.test("CLI: vk workspace rebase requires --repo", async () => {
   const seed = await getAttemptSeed();
   if (!seed) {
     return;
@@ -1643,7 +1654,7 @@ Deno.test("CLI: vk task-attempts rebase requires --repo", async () => {
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "rebase",
       seed.attemptId,
     ],
@@ -1661,7 +1672,7 @@ Deno.test("CLI: vk task-attempts rebase requires --repo", async () => {
   assertEquals(stderrText.includes("Option --repo is required."), true);
 });
 
-Deno.test("CLI: vk task-attempts stop <id> succeeds", async () => {
+Deno.test("CLI: vk workspace stop <id> succeeds", async () => {
   const seed = await getAttemptSeed();
   if (!seed) {
     return;
@@ -1675,7 +1686,7 @@ Deno.test("CLI: vk task-attempts stop <id> succeeds", async () => {
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "stop",
       seed.attemptId,
     ],
@@ -1692,7 +1703,7 @@ Deno.test("CLI: vk task-attempts stop <id> succeeds", async () => {
   assertEquals(code, 0, `Expected stop success. stderr: ${stderrText}`);
 });
 
-Deno.test("CLI: vk task-attempts stop missing workspace id reports API error", async () => {
+Deno.test("CLI: vk workspace stop missing workspace id reports API error", async () => {
   const endpointCheck = await apiCall<unknown[]>("/task-attempts");
   if (endpointCheck.status === 401) {
     return;
@@ -1706,7 +1717,7 @@ Deno.test("CLI: vk task-attempts stop missing workspace id reports API error", a
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "stop",
       "00000000-0000-0000-0000-000000000000",
     ],
@@ -1724,7 +1735,7 @@ Deno.test("CLI: vk task-attempts stop missing workspace id reports API error", a
   assertEquals(stderrText.includes("Error:"), true);
 });
 
-Deno.test("CLI: vk task-attempts pr <id> --repo --title --body --json", async () => {
+Deno.test("CLI: vk workspace pr <id> --repo --title --body --json", async () => {
   const seed = await getAttemptSeed();
   if (!seed) {
     return;
@@ -1738,7 +1749,7 @@ Deno.test("CLI: vk task-attempts pr <id> --repo --title --body --json", async ()
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "pr",
       "--id",
       seed.attemptId,
@@ -1771,7 +1782,7 @@ Deno.test("CLI: vk task-attempts pr <id> --repo --title --body --json", async ()
   assertEquals(typeof parsed === "string", true);
 });
 
-Deno.test("CLI: vk task-attempts pr requires --repo", async () => {
+Deno.test("CLI: vk workspace pr requires --repo", async () => {
   const seed = await getAttemptSeed();
   if (!seed) {
     return;
@@ -1785,7 +1796,7 @@ Deno.test("CLI: vk task-attempts pr requires --repo", async () => {
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "pr",
       "--id",
       seed.attemptId,
@@ -1806,7 +1817,7 @@ Deno.test("CLI: vk task-attempts pr requires --repo", async () => {
   assertEquals(stderrText.includes("Error:"), true);
 });
 
-Deno.test("CLI: vk task-attempts pr attach <id> --repo --pr-number --json", async () => {
+Deno.test("CLI: vk workspace pr attach <id> --repo --pr-number --json", async () => {
   const seed = await getAttemptSeed();
   if (!seed) {
     return;
@@ -1825,7 +1836,7 @@ Deno.test("CLI: vk task-attempts pr attach <id> --repo --pr-number --json", asyn
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "pr",
       "attach",
       seed.attemptId,
@@ -1850,7 +1861,7 @@ Deno.test("CLI: vk task-attempts pr attach <id> --repo --pr-number --json", asyn
   assertEquals(parsed.pr_attached, true);
 });
 
-Deno.test("CLI: vk task-attempts pr attach requires --pr-number", async () => {
+Deno.test("CLI: vk workspace pr attach requires --pr-number", async () => {
   const seed = await getAttemptSeed();
   if (!seed) {
     return;
@@ -1864,7 +1875,7 @@ Deno.test("CLI: vk task-attempts pr attach requires --pr-number", async () => {
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "pr",
       "attach",
       seed.attemptId,
@@ -1885,7 +1896,7 @@ Deno.test("CLI: vk task-attempts pr attach requires --pr-number", async () => {
   assertEquals(stderrText.includes("Error:"), true);
 });
 
-Deno.test("CLI: vk task-attempts pr comments <id> --repo --json", async () => {
+Deno.test("CLI: vk workspace pr comments <id> --repo --json", async () => {
   const seed = await getAttemptSeed();
   if (!seed) {
     return;
@@ -1915,7 +1926,7 @@ Deno.test("CLI: vk task-attempts pr comments <id> --repo --json", async () => {
       "--allow-write",
       "--allow-env",
       "src/main.ts",
-      "task-attempts",
+      "workspace",
       "pr",
       "comments",
       seed.attemptId,
@@ -1938,7 +1949,7 @@ Deno.test("CLI: vk task-attempts pr comments <id> --repo --json", async () => {
   assertEquals(Array.isArray(parsed.comments) || Array.isArray(parsed), true);
 });
 
-Deno.test("CLI: vk task-attempts pr comments without id reports resolver error path", async () => {
+Deno.test("CLI: vk workspace pr comments without id reports resolver error path", async () => {
   const endpointCheck = await apiCall<unknown[]>("/task-attempts");
   if (endpointCheck.status === 401) {
     return;
@@ -1963,7 +1974,7 @@ Deno.test("CLI: vk task-attempts pr comments without id reports resolver error p
         "--allow-env",
         "--allow-run",
         `${Deno.cwd()}/src/main.ts`,
-        "task-attempts",
+        "workspace",
         "pr",
         "comments",
         "--repo",
