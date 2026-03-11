@@ -1,6 +1,8 @@
 services:
   vibe-kanban:
-    image: node:20-slim
+    build:
+      context: .
+      dockerfile: Dockerfile.vibe-kanban-ci
     environment:
       - PORT=3000
       - HOST=0.0.0.0

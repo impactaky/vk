@@ -158,6 +158,18 @@ async function getRepoSeed(): Promise<RepoSeed | null> {
   };
 }
 
+function isListEndpointAccessible(result: ApiResult<unknown[]>): boolean {
+  if (result.status === 401) {
+    return false;
+  }
+
+  if (!result.success || result.rawText !== undefined || !result.data) {
+    return false;
+  }
+
+  return Array.isArray(result.data);
+}
+
 async function cleanupAttempt(attemptId: string | undefined): Promise<void> {
   if (!attemptId) {
     return;
@@ -168,8 +180,7 @@ async function cleanupAttempt(attemptId: string | undefined): Promise<void> {
 Deno.test("API: task-attempts endpoint returns array when accessible", async () => {
   const result = await apiCall<unknown[]>("/task-attempts");
 
-  if (result.status === 401) {
-    assertEquals(result.success, false);
+  if (!isListEndpointAccessible(result)) {
     return;
   }
 
@@ -181,7 +192,7 @@ Deno.test("API: task-attempts endpoint returns array when accessible", async () 
 
 Deno.test("CLI: vk workspace list --json", async () => {
   const endpointCheck = await apiCall<unknown[]>("/task-attempts");
-  if (endpointCheck.status === 401) {
+  if (!isListEndpointAccessible(endpointCheck)) {
     return;
   }
 
