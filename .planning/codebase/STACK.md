@@ -1,79 +1,81 @@
 # Technology Stack
 
-**Analysis Date:** 2026-03-17
+**Analysis Date:** 2026-03-19
 
 ## Languages
 
 **Primary:**
-- TypeScript - CLI source and tests live in `src/` and `tests/`, with the public export surface in `src/mod.ts` and the CLI entrypoint in `src/main.ts`.
+- TypeScript - CLI implementation under `src/` and tests under `tests/`.
 
 **Secondary:**
-- YAML - CI, release, and integration orchestration live in `.github/workflows/ci.yml`, `.github/workflows/release.yml`, and `docker-compose.yml`.
-- Dockerfile syntax - the CI test image is defined in `Dockerfile.vibe-kanban-ci`.
+- YAML - CI and release automation in `.github/workflows/ci.yml` and `.github/workflows/release.yml`.
+- Dockerfile syntax - integration test server image in `Dockerfile.vibe-kanban-ci` and compose orchestration in `docker-compose.yml`.
 
 ## Runtime
 
 **Environment:**
-- Deno v2.x - required by `README.md`, configured in `deno.json`, and installed in CI by `.github/workflows/ci.yml` and `.github/workflows/release.yml`.
-- Node.js 20 - the integration-test server image in `Dockerfile.vibe-kanban-ci` is based on `node:20-slim`.
+- Deno 2.x - required by `README.md` and configured by `deno.json`.
+- Node.js 20 slim - used only for the integration-test backend image in `Dockerfile.vibe-kanban-ci`.
 
 **Package Manager:**
-- Deno module management via `deno.json` imports from JSR and npm.
-- Lockfile: present as `deno.lock`.
+- Deno module resolution via `deno.json` imports and tasks.
+- Lockfile: Not detected.
 
 ## Frameworks
 
 **Core:**
-- Cliffy command framework - `@cliffy/command`, `@cliffy/prompt`, and `@cliffy/table` are configured in `deno.json` and used by `src/main.ts`, `src/commands/repository.ts`, `src/commands/config.ts`, `src/commands/organization.ts`, and `src/commands/task-attempts.ts`.
+- Deno standard runtime - execution, filesystem, environment access, and subprocesses across `src/main.ts`, `src/api/config.ts`, and `src/utils/*.ts`.
+- Cliffy command framework (`jsr:@cliffy/command@1.0.0-rc.7`) - CLI command tree and shell completions in `src/main.ts` and `src/commands/*.ts`.
+- Cliffy prompt/table (`jsr:@cliffy/prompt@1.0.0-rc.7`, `jsr:@cliffy/table@1.0.0-rc.7`) - interactive prompts and tabular output in `src/commands/repository.ts`, `src/commands/task-attempts.ts`, and `src/commands/organization.ts`.
 
 **Testing:**
-- Deno test runner - configured by `deno.json` tasks and used across `src/**/*_test.ts` and `tests/*_test.ts`.
-- `@std/assert` - assertions are imported in files such as `src/utils/git_test.ts`, `tests/api_client_test.ts`, and `tests/task_attempts_integration_test.ts`.
+- Deno test runner - unit and integration commands in `deno.json`.
+- `@std/assert` (`jsr:@std/assert@1.0.9`) - assertions in test files under `src/` and `tests/`.
 
 **Build/Dev:**
-- Deno task runner - `deno.json` defines `dev`, `fmt`, `lint`, `check`, `test`, and `test:integration`.
-- `deno compile` - release binaries are built in `.github/workflows/release.yml`.
-- Docker Compose - integration tests are orchestrated with `docker-compose.yml` and invoked from `.github/workflows/ci.yml`.
+- `deno fmt`, `deno lint`, and `deno check` - wired in `deno.json` tasks and CI workflows.
+- `deno compile` - release binary packaging in `.github/workflows/release.yml`.
+- Docker Compose - integration environment in `docker-compose.yml`.
 
 ## Key Dependencies
 
 **Critical:**
-- `jsr:@cliffy/command@1.0.0-rc.7` - command parsing and CLI composition in `src/main.ts`.
-- `jsr:@cliffy/prompt@1.0.0-rc.7` - interactive input for commands like `repository register` and `repository init` in `src/commands/repository.ts`.
-- `jsr:@cliffy/table@1.0.0-rc.7` - human-readable tabular output in `src/commands/organization.ts`, `src/commands/repository.ts`, and `src/commands/task-attempts.ts`.
-- `npm:nats` exposed as `nats.deno` - NATS pub/sub transport used by `src/commands/notify.ts` and `src/commands/wait.ts`.
+- `jsr:@cliffy/command@1.0.0-rc.7` - backbone of the `vk` CLI in `src/main.ts`.
+- `npm:nats` via `nats.deno` - branch notification publish/subscribe transport in `src/commands/notify.ts` and `src/commands/wait.ts`.
+- `jsr:@std/path@1.0.8` - config file path resolution in `src/api/config.ts`.
 
 **Infrastructure:**
-- `jsr:@std/path@1.0.8` - config path handling in `src/api/config.ts`.
-- `jsr:@std/assert@1.0.9` - unit and integration assertions in `src/**/*_test.ts` and `tests/**/*`.
-- `jsr:@opensrc/deno-open@^1.0.0` - declared in `deno.json`; not detected in `src/` or `tests/`.
+- `jsr:@opensrc/deno-open@^1.0.0` - declared in `deno.json`; not detected in current `src/` imports.
+- Native `fetch` - HTTP client for the vibe-kanban backend in `src/api/client.ts`.
+- `git` subprocess access - repository detection and branch inspection in `src/utils/git.ts`.
+- `fzf` subprocess access - interactive repo/workspace selection in `src/utils/fzf.ts`.
 
 ## Configuration
 
 **Environment:**
-- Runtime configuration is loaded from `~/.config/vibe-kanban/vk-config.json` by `src/api/config.ts`.
-- Environment variable overrides are read in `src/api/config.ts`: `VK_API_URL`, `VK_DEFAULT_EXECUTOR`, `VK_NATS_PORT`, `VK_NATS_HOST`, and `VK_NATS_SUBJECT`.
-- CLI config mutators live in `src/commands/config.ts`.
+- CLI config is persisted to `~/.config/vibe-kanban/vk-config.json` by `src/api/config.ts`.
+- Environment overrides are read in `src/api/config.ts`: `VK_API_URL`, `VK_DEFAULT_EXECUTOR`, `VK_NATS_HOST`, `VK_NATS_PORT`, `VK_NATS_SUBJECT`, and `VK_USE_DEV_API_DEFAULT`.
+- `HOME` or `USERPROFILE` determines the config path in `src/api/config.ts`.
+- `.env` files were not detected at repo root depth 2 during this scan.
 
 **Build:**
-- `deno.json` is the primary project configuration for imports, compiler strictness, formatting, linting, and task commands.
-- `.github/workflows/ci.yml` runs format, lint, type-check, unit tests, and Docker-based integration tests.
-- `.github/workflows/release.yml` builds cross-platform binaries from `src/main.ts`.
-- `docker-compose.yml` provisions the local integration-test environment.
+- `deno.json` is the source of tasks, imports, formatting, linting, and strict TypeScript settings.
+- `.github/workflows/ci.yml` runs formatting, lint, type-checking, unit tests, and Docker-based integration tests.
+- `.github/workflows/release.yml` compiles cross-platform binaries from `src/main.ts`.
+- `docker-compose.yml` and `Dockerfile.vibe-kanban-ci` define the local/CI integration stack.
 
 ## Platform Requirements
 
 **Development:**
-- Deno 2.x is required by `README.md` and `.github/workflows/ci.yml`.
-- Network, filesystem, environment, and subprocess permissions are required by the CLI task definitions in `deno.json`.
-- `git` is required by `src/utils/git.ts` and repository/workspace resolution flows such as `src/utils/repository-resolver.ts`.
-- `fzf` is optional but required for interactive repository/workspace selection in `src/utils/fzf.ts`.
-- Docker and Docker Compose are required for the integration workflow in `docker-compose.yml` and `.github/workflows/ci.yml`.
+- Deno 2.x installed locally, per `README.md`.
+- Network access to a vibe-kanban server reachable at the configured API URL, used by `src/api/client.ts`.
+- `git` available for repo and branch helpers in `src/utils/git.ts`.
+- `fzf` is optional for interactive selection in `src/utils/fzf.ts`.
 
 **Production:**
-- The distributable artifact is a standalone CLI binary compiled from `src/main.ts` in `.github/workflows/release.yml`.
-- The CLI expects a reachable vibe-kanban HTTP API, configured through `src/api/config.ts` and exercised by `src/api/client.ts`.
+- Distribution target is a standalone CLI binary produced by `deno compile` in `.github/workflows/release.yml`.
+- Runtime permissions required by the compiled CLI mirror the install command in `README.md`: network, file read/write, environment access, and subprocess execution for `git` and `fzf`.
 
 ---
 
-*Stack analysis: 2026-03-17*
+*Stack analysis: 2026-03-19*

@@ -1,164 +1,145 @@
 # Architecture
 
-**Analysis Date:** 2026-03-17
+**Analysis Date:** 2026-03-19
 
 ## Pattern Overview
 
-**Overall:** Layered Deno CLI with command orchestration over an HTTP API client and small resolver/utility modules.
+**Overall:** Thin-command CLI over a typed transport client with resolver and utility helpers.
 
 **Key Characteristics:**
-- `src/main.ts` is the only executable entry point and wires the full command tree through Cliffy.
-- Command modules in `src/commands/*.ts` stay thin: they parse flags, call `ApiClient`, invoke resolver helpers, and format output.
-- Shared behavior is centralized in `src/api/*.ts` and `src/utils/*.ts` rather than hidden inside command files.
+- `src/main.ts` is the single runtime entry point and only composition root for the CLI tree.
+- `src/commands/*.ts` modules define user-facing subcommands and orchestrate I/O, but delegate network, config, and auto-detection to lower layers.
+- `src/api/client.ts`, `src/api/config.ts`, and `src/utils/*.ts` form a shared service layer reused across commands and tests.
 
 ## Layers
 
 **CLI Composition Layer:**
-- Purpose: Build the `vk` command surface, register global flags, and dispatch to subcommands.
+- Purpose: Build the `vk` command, register global flags, and wire subcommands.
 - Location: `src/main.ts`
-- Contains: Cliffy `Command` setup, `--ai` handling, `--verbose` handling, top-level command registration.
-- Depends on: `src/commands/organization.ts`, `src/commands/repository.ts`, `src/commands/task-attempts.ts`, `src/commands/config.ts`, `src/commands/notify.ts`, `src/commands/wait.ts`, `src/utils/ai-help.ts`, `src/utils/verbose.ts`
-- Used by: Deno runtime via `deno run ... src/main.ts`
+- Contains: `Command` setup, `--ai` handling, verbose bootstrap, subcommand registration.
+- Depends on: `src/commands/*.ts`, `src/utils/ai-help.ts`, `src/utils/verbose.ts`
+- Used by: End users running `deno run src/main.ts ...` or installed binaries.
 
 **Command Handler Layer:**
-- Purpose: Implement user-facing subcommands and translate CLI input into application operations.
-- Location: `src/commands/`
-- Contains: Resource-oriented handlers in `src/commands/organization.ts`, `src/commands/repository.ts`, `src/commands/task-attempts.ts`, plus local/system commands in `src/commands/config.ts`, `src/commands/notify.ts`, `src/commands/wait.ts`
-- Depends on: `src/api/client.ts`, `src/api/config.ts`, `src/api/types.ts`, and resolver/error helpers from `src/utils/`
+- Purpose: Map CLI verbs and options to application operations.
+- Location: `src/commands/organization.ts`, `src/commands/repository.ts`, `src/commands/task-attempts.ts`, `src/commands/config.ts`, `src/commands/notify.ts`, `src/commands/wait.ts`
+- Contains: Cliffy subcommand definitions, table rendering, JSON/plain-text output, command-local validation like `resolvePrompt()` in `src/commands/task-attempts.ts`.
+- Depends on: `src/api/client.ts`, `src/api/config.ts`, `src/api/types.ts`, `src/utils/*.ts`, `nats.deno` for notify/wait.
 - Used by: `src/main.ts`
 
-**API Access Layer:**
-- Purpose: Encapsulate all HTTP calls to the vibe-kanban server behind typed methods.
-- Location: `src/api/client.ts`
-- Contains: `ApiClient`, generic `request<T>()`, endpoint-specific methods for organizations, repositories, workspaces, PR operations, and branch operations.
-- Depends on: `src/api/config.ts`, `src/api/types.ts`, `src/utils/verbose.ts`
-- Used by: All API-backed command modules and unit/integration tests such as `tests/api_client_test.ts`
+**Transport and Persistence Layer:**
+- Purpose: Centralize HTTP calls and local config persistence.
+- Location: `src/api/client.ts`, `src/api/config.ts`
+- Contains: `ApiClient`, request wrapper logic, workspace endpoint fallback logic, config file load/save, environment overrides.
+- Depends on: native `fetch`, Deno filesystem/env APIs, `@std/path`, `src/api/types.ts`, `src/utils/verbose.ts`
+- Used by: All command modules, `tests/helpers/test-server.ts`, library consumers through `src/mod.ts`
 
-**Configuration Layer:**
-- Purpose: Resolve runtime configuration from disk and environment.
-- Location: `src/api/config.ts`
-- Contains: `Config` shape, config path resolution, load/save functions, API URL lookup.
-- Depends on: `@std/path`, Deno filesystem/env APIs
-- Used by: `src/api/client.ts`, `src/commands/config.ts`, `src/commands/task-attempts.ts`, `src/commands/notify.ts`, `src/commands/wait.ts`, `tests/helpers/test-server.ts`
+**Resolver Layer:**
+- Purpose: Convert partial CLI context into concrete IDs using repo state, branch state, and API lookups.
+- Location: `src/utils/repository-resolver.ts`, `src/utils/attempt-resolver.ts`, `src/utils/organization-resolver.ts`
+- Contains: repo auto-detection from current path/git remote, workspace auto-detection from current branch, explicit name/ID resolution.
+- Depends on: `src/api/client.ts`, `src/utils/git.ts`, `src/utils/fzf.ts`
+- Used by: `src/commands/repository.ts`, `src/commands/task-attempts.ts`, `src/commands/organization.ts`
 
-**Domain Types Layer:**
-- Purpose: Define shared data contracts for API responses and CLI logic.
-- Location: `src/api/types.ts`
-- Contains: resource interfaces (`Organization`, `Repo`, `Workspace`), request payload types, executor types, and constants such as `VALID_EXECUTORS`
-- Depends on: no internal modules
-- Used by: `src/api/client.ts`, command modules, utility modules, and tests
+**Execution Helper Layer:**
+- Purpose: Provide reusable CLI-side helpers that are not domain endpoints.
+- Location: `src/utils/filter.ts`, `src/utils/error-handler.ts`, `src/utils/fzf.ts`, `src/utils/git.ts`, `src/utils/executor-parser.ts`, `src/utils/ai-help.ts`, `src/utils/verbose.ts`
+- Contains: filtering, shared fatal error handling, interactive `fzf` selection, git shell-outs, executor parsing, AI help generation, verbose state.
+- Depends on: Deno subprocess APIs, Cliffy metadata APIs, `src/api/types.ts`
+- Used by: Commands, resolvers, tests.
 
-**Resolution and Shell Utility Layer:**
-- Purpose: Handle context-sensitive lookup, shell integration, and reusable CLI support code.
-- Location: `src/utils/`
-- Contains: repository/workspace resolution in `src/utils/repository-resolver.ts` and `src/utils/attempt-resolver.ts`, interactive selection in `src/utils/fzf.ts`, git introspection in `src/utils/git.ts`, output helpers in `src/utils/error-handler.ts` and `src/utils/verbose.ts`, and data helpers in `src/utils/filter.ts`, `src/utils/executor-parser.ts`, `src/utils/ai-help.ts`
-- Depends on: `src/api/types.ts`, selected `src/api/client.ts` types, Deno subprocess APIs, external binaries `git` and `fzf`
-- Used by: command modules and focused unit tests in `src/utils/*_test.ts`
-
-**Library Export Layer:**
-- Purpose: Expose the CLI package as an importable module in addition to the executable.
-- Location: `src/mod.ts`
-- Contains: re-exports for `ApiClient`, config helpers, API types, and executor constants.
-- Depends on: `src/api/client.ts`, `src/api/config.ts`, `src/api/types.ts`
-- Used by: package consumers through the `deno.json` export map
-
-**Specification and Workflow Layer:**
-- Purpose: Define expected behavior and change history outside runtime code.
-- Location: `specs/cli.md`, `openspec/specs/**/spec.md`, `openspec/changes/archive/**`
-- Contains: human-readable CLI contract, current OpenSpec requirements, and archived proposals/designs/tasks.
-- Depends on: repository workflow conventions rather than runtime code
-- Used by: planning, implementation, and verification work
+**Test Harness Layer:**
+- Purpose: Exercise the CLI and helpers as black-box Deno programs or unit-level modules.
+- Location: `src/**/*_test.ts`, `tests/**/*.ts`
+- Contains: unit tests near utilities, integration tests under `tests/`, shared API readiness helper in `tests/helpers/test-server.ts`
+- Depends on: runtime entry point `src/main.ts`, live or configured API server, Deno test runner.
+- Used by: `deno task test`, `deno task test:integration`
 
 ## Data Flow
 
-**Standard API-backed Command Flow:**
+**Standard CLI Request Flow:**
 
-1. `src/main.ts` registers a subcommand and Cliffy parses CLI arguments.
-2. A handler in `src/commands/*.ts` validates flags and optional arguments.
-3. The command resolves context through helpers such as `src/utils/repository-resolver.ts` or `src/utils/attempt-resolver.ts`.
-4. The command constructs or loads configuration from `src/api/config.ts`.
-5. `src/api/client.ts` sends the HTTP request to `${baseUrl}/api/...` and validates the envelope response.
-6. The command renders human-readable output or JSON, with failures routed through `src/utils/error-handler.ts`.
+1. `src/main.ts` parses global flags, optionally enables verbose logging, and dispatches to a subcommand.
+2. A command module in `src/commands/*.ts` validates options and resolves missing identifiers through resolver helpers when needed.
+3. The command constructs or loads configuration via `src/api/config.ts` and issues remote operations through `ApiClient` in `src/api/client.ts`.
+4. The command formats returned data as JSON, key-value lines, or `@cliffy/table` output and prints to stdout.
 
-**Workspace ID Auto-detect Flow:**
+**Workspace Auto-Detection Flow:**
 
-1. A workspace command in `src/commands/task-attempts.ts` calls `getAttemptIdWithAutoDetect()` from `src/utils/attempt-resolver.ts`.
-2. The resolver prefers an explicit ID argument.
-3. If no ID is provided, `src/utils/git.ts` reads the current branch and `ApiClient.searchWorkspacesByBranch()` filters API results client-side.
-4. If branch matching fails, `src/utils/fzf.ts` offers interactive selection.
-5. If no target can be resolved, the command exits with an actionable error.
+1. `src/commands/task-attempts.ts` calls `getAttemptIdWithAutoDetect()` from `src/utils/attempt-resolver.ts` when `[id]` is omitted.
+2. `src/utils/attempt-resolver.ts` checks the current git branch via `src/utils/git.ts`.
+3. `ApiClient.searchWorkspacesByBranch()` in `src/api/client.ts` fetches all workspaces and filters client-side.
+4. If no branch match exists, `src/utils/fzf.ts` presents an interactive fallback selection.
 
-**Repository Auto-detect Flow:**
+**Repository Auto-Resolution Flow:**
 
-1. Commands such as `vk workspace create` call `getRepositoryId()` in `src/utils/repository-resolver.ts`.
-2. The resolver prefers explicit ID or name.
-3. Without a value, it compares the current repo git remote basename from `src/utils/git.ts` against registered repositories returned by `ApiClient.listRepos()`.
-4. It falls back to path matching, then interactive `fzf` selection.
+1. `src/commands/repository.ts` or `src/commands/task-attempts.ts` calls `getRepositoryId()` from `src/utils/repository-resolver.ts`.
+2. `src/utils/repository-resolver.ts` compares the current repo basename from `src/utils/git.ts` against registered repos returned by `ApiClient.listRepos()`.
+3. If git-based matching is ambiguous, it prefers a path match; if no match exists, it falls back to `fzf`.
 
 **State Management:**
-- Runtime state is mostly stateless per command invocation.
-- Persistent local state lives only in `~/.config/vibe-kanban/vk-config.json` via `src/api/config.ts`.
-- Remote authoritative state lives in the vibe-kanban API server accessed through `src/api/client.ts`.
+- Runtime state is intentionally minimal and process-local.
+- Persistent user state lives only in `~/.config/vibe-kanban/vk-config.json` through `src/api/config.ts`.
+- Verbose logging state is a module-global boolean in `src/utils/verbose.ts`.
+- Remote source of truth remains the vibe-kanban API and, for notify/wait, the configured NATS subject.
 
 ## Key Abstractions
 
 **`ApiClient`:**
-- Purpose: Single abstraction for all HTTP communication and response-envelope handling.
-- Examples: `src/api/client.ts`, `tests/api_client_test.ts`
-- Pattern: Typed service object with one public method per API route family.
+- Purpose: Typed façade over all HTTP endpoints used by the CLI.
+- Examples: `src/api/client.ts`, re-exported by `src/mod.ts`
+- Pattern: Single class with one `request<T>()` primitive and many endpoint-specific methods.
 
-**Resolvers:**
-- Purpose: Turn optional CLI identifiers into concrete resource IDs using local context plus API lookups.
+**`Workspace`:**
+- Purpose: Core remote entity for CLI workflows; commands still expose it as a “workspace” even when backend paths use `task-attempts`.
+- Examples: `src/api/types.ts`, `src/commands/task-attempts.ts`, `src/utils/attempt-resolver.ts`
+- Pattern: Shared DTO interface reused across commands, resolvers, and tests.
+
+**Resolver Helpers:**
+- Purpose: Keep commands from duplicating ID lookup and auto-detection logic.
 - Examples: `src/utils/repository-resolver.ts`, `src/utils/attempt-resolver.ts`, `src/utils/organization-resolver.ts`
-- Pattern: Explicit resolution order with context probing and clear user-facing errors.
+- Pattern: Async functions with small dependency-injection seams for testing.
 
-**Cliffy Command Trees:**
-- Purpose: Model each top-level command and nested subcommand hierarchy.
-- Examples: `src/main.ts`, `src/commands/task-attempts.ts`
-- Pattern: Declarative command composition with `.command()`, `.option()`, `.arguments()`, and async `.action()`.
-
-**Config-backed Messaging Commands:**
-- Purpose: Integrate local git context with NATS notifications.
-- Examples: `src/commands/notify.ts`, `src/commands/wait.ts`
-- Pattern: Commands read config defaults, connect to NATS, and publish/subscribe around a branch string payload.
+**Command Modules:**
+- Purpose: Group all subcommands for a domain under one exported Cliffy `Command`.
+- Examples: `src/commands/repository.ts`, `src/commands/task-attempts.ts`
+- Pattern: Builder-style command registration plus inline async actions.
 
 ## Entry Points
 
 **CLI Binary:**
 - Location: `src/main.ts`
-- Triggers: `deno run ... src/main.ts`, installed binary invocation, and test processes that spawn the CLI
-- Responsibilities: Build the command graph, handle global flags, and parse arguments
+- Triggers: `deno run src/main.ts ...`, `deno install ... src/main.ts`, packaged binary execution.
+- Responsibilities: Build the CLI tree, register top-level commands, intercept `--ai`, enable verbose mode.
 
-**Library Export Surface:**
+**Library Surface:**
 - Location: `src/mod.ts`
-- Triggers: External imports through the package export declared in `deno.json`
-- Responsibilities: Re-export stable programmatic APIs and type definitions
+- Triggers: External import of `@vibe-kanban/cli`
+- Responsibilities: Re-export `ApiClient`, config helpers, and public API types without pulling in CLI wiring.
 
-**Integration Test Harness:**
-- Location: `tests/helpers/test-server.ts`
-- Triggers: Integration tests in `tests/*_integration_test.ts`
-- Responsibilities: Load CLI config and verify the external API server is reachable before command-level tests proceed
+**Integration Test Runner:**
+- Location: `tests/*.ts`
+- Triggers: `deno task test`, `deno task test:integration`
+- Responsibilities: Execute end-to-end CLI commands against a configured server and validate endpoint contracts.
 
 ## Error Handling
 
-**Strategy:** Fail fast in command handlers, centralize user-facing formatting, and let commands terminate the process on handled failures.
+**Strategy:** Commands own the top-level `try/catch` boundary and terminate the process on handled user-facing failures.
 
 **Patterns:**
-- Commands wrap their action bodies in `try/catch`, call `handleCliError()` from `src/utils/error-handler.ts`, then rethrow to satisfy type flow.
-- `ApiClient.request()` in `src/api/client.ts` raises on non-2xx responses and on envelope-level `success: false`.
-- Resolver modules raise domain-specific errors such as `RepositoryResolverError` and `OrganizationResolverError`.
-- Interactive cancellation and missing `fzf` are normalized through `FzfCancelledError` and `FzfNotInstalledError` from `src/utils/fzf.ts`.
+- Most command actions wrap logic in `try/catch`, call `handleCliError()` from `src/utils/error-handler.ts`, then rethrow for type flow even though `Deno.exit(1)` already terminates.
+- Validation failures are thrown as plain `Error` instances close to the source, for example prompt validation in `src/commands/task-attempts.ts` and executor validation in `src/utils/executor-parser.ts`.
+- Transport failures surface as `Error` from `ApiClient.request()` with raw status/body context.
+- `ApiClient.requestWorkspaceResource()` in `src/api/client.ts` contains a compatibility fallback between `/api/task-attempts/*` and `/api/workspaces/*`.
 
 ## Cross-Cutting Concerns
 
-**Logging:** Verbose HTTP request/response logging is toggled globally in `src/main.ts` and implemented in `src/utils/verbose.ts`, with `src/api/client.ts` as the primary emitter.
+**Logging:** `src/utils/verbose.ts` gates request/response diagnostics used only by `src/api/client.ts`; non-verbose user errors go through `console.error`.
 
-**Validation:** Command-level input validation happens inline close to flags, for example prompt-source validation in `src/commands/task-attempts.ts` and executor validation in `src/utils/executor-parser.ts`.
+**Validation:** Commands validate required option combinations locally; shared parsing and resolution rules live in `src/utils/executor-parser.ts`, `src/utils/repository-resolver.ts`, and `src/utils/attempt-resolver.ts`.
 
-**Authentication:** No explicit auth module is present in the CLI. Server access is based on configured API URLs in `src/api/config.ts`; auth is assumed to be handled by the target service or environment outside this repository.
-
-**External Process Integration:** Git and fzf resolution rely on `Deno.Command` calls in `src/utils/git.ts` and `src/utils/fzf.ts`. New shell-dependent behavior belongs in `src/utils/` rather than command modules.
+**Authentication:** Not implemented in the CLI layer. `src/api/client.ts` sends plain JSON requests to the configured base URL and relies on the server/environment for any auth model.
 
 ---
 
-*Architecture analysis: 2026-03-17*
+*Architecture analysis: 2026-03-19*

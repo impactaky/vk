@@ -1,42 +1,48 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-03-17
+**Analysis Date:** 2026-03-19
 
 ## Test Framework
 
 **Runner:**
-- Deno built-in test runner from Deno 2.x, driven by `deno test`.
+- Deno built-in test runner
 - Config: `deno.json`
 
 **Assertion Library:**
-- `@std/assert`, imported directly in test files such as `src/utils/filter_test.ts`, `src/commands/wait_test.ts`, and `tests/repository_resolver_integration_test.ts`.
+- `@std/assert`, imported directly in test files such as `src/utils/attempt-resolver_test.ts`, `src/commands/wait_test.ts`, `tests/api_client_test.ts`, and `tests/config_test.ts`
 
 **Run Commands:**
 ```bash
-deno test --allow-net --allow-read --allow-write --allow-env
-deno test --allow-net --allow-read --allow-write --allow-env --allow-run tests/*_integration_test.ts
-# No watch-mode task is configured in `deno.json`
-# No coverage command is configured in `deno.json` or `.github/workflows/ci.yml`
+deno task test              # Run the full test suite with read/write/env/net permissions
+deno task test:integration  # Run only files matching tests/*_integration_test.ts with --allow-run enabled
+deno task check             # Type-check src/main.ts before or alongside tests
 ```
 
 ## Test File Organization
 
 **Location:**
-- Put focused unit tests next to the code under `src/`, using files such as `src/utils/git_test.ts`, `src/utils/attempt-resolver_test.ts`, and `src/commands/wait_test.ts`.
-- Put integration-style tests under top-level `tests/`, using files such as `tests/cli_commands_integration_test.ts`, `tests/organization_integration_test.ts`, and `tests/task_attempts_integration_test.ts`.
-- Put shared integration helpers under `tests/helpers/`, currently `tests/helpers/test-server.ts`.
+- Use co-located unit tests beside implementation for isolated helpers and command logic, such as `src/commands/wait_test.ts`, `src/utils/filter_test.ts`, and `src/utils/git_test.ts`.
+- Use the top-level `tests/` directory for integration tests and shared helpers, such as `tests/cli_commands_integration_test.ts`, `tests/repository_resolver_integration_test.ts`, and `tests/helpers/test-server.ts`.
 
 **Naming:**
-- Use `_test.ts` for unit-style files.
-- Use `_integration_test.ts` for server- or CLI-level integration files.
-- A small number of broader but still simple tests also use `_test.ts` under `tests/`, for example `tests/api_client_test.ts` and `tests/executor_parser_test.ts`.
+- Name all tests with the Deno `*_test.ts` suffix.
+- Add `_integration_` to filenames in `tests/` when they depend on broader flows, process execution, or a live API/server, such as `tests/task_attempts_integration_test.ts`.
 
 **Structure:**
 ```text
-src/**/<module>_test.ts
-tests/*_test.ts
-tests/*_integration_test.ts
-tests/helpers/*.ts
+src/
+  commands/
+    wait.ts
+    wait_test.ts
+  utils/
+    attempt-resolver.ts
+    attempt-resolver_test.ts
+tests/
+  helpers/
+    test-server.ts
+  api_client_test.ts
+  cli_commands_integration_test.ts
+  filter_integration_test.ts
 ```
 
 ## Test Structure
@@ -44,54 +50,49 @@ tests/helpers/*.ts
 **Suite Organization:**
 ```typescript
 import { assertEquals, assertRejects } from "@std/assert";
-import {
-  getAttemptIdWithAutoDetect,
-  resolveWorkspaceFromBranch,
-} from "./attempt-resolver.ts";
+import { getAttemptIdWithAutoDetect } from "./attempt-resolver.ts";
 
-Deno.test("resolveWorkspaceFromBranch: returns first workspace for current branch", async () => {
-  // setup
-  // execute
-  // assert
+Deno.test("getAttemptIdWithAutoDetect: prefers explicit ID", async () => {
+  const id = await getAttemptIdWithAutoDetect({} as ApiClient, "explicit-id", {
+    resolveWorkspaceFromBranch: () => Promise.resolve(createWorkspace("ws-1", "feature/x")),
+    listWorkspaces: () => Promise.resolve([]),
+    selectWorkspace: () => Promise.resolve("unused"),
+  });
+
+  assertEquals(id, "explicit-id");
 });
 ```
 
 **Patterns:**
-- Use flat `Deno.test(...)` cases instead of nested `describe` blocks, as seen across `src/utils/filter_test.ts` and `tests/organization_integration_test.ts`.
-- Encode scenario details directly in the test name using `feature: expected behavior`, for example `getAttemptIdWithAutoDetect: falls back to interactive workspace selection` in `src/utils/attempt-resolver_test.ts`.
-- Build data inline inside each test unless multiple cases need reuse; reusable helpers are small local functions such as `createWorkspace` in `src/utils/attempt-resolver_test.ts`.
-- Use `try/finally` cleanup for filesystem or server state, as in `tests/cli_commands_integration_test.ts` and `tests/repository_resolver_integration_test.ts`.
+- Use one `Deno.test(...)` per behavior branch, with descriptive names in the format `"functionOrArea: expected behavior"` as seen in `src/utils/attempt-resolver_test.ts`, `src/commands/wait_test.ts`, and `tests/config_test.ts`.
+- Keep setup local to each test unless a helper is reused across files. `createWorkspace` in `src/utils/attempt-resolver_test.ts` is a representative local fixture helper.
+- Clean up temporary state in `finally` blocks, as in `tests/cli_commands_integration_test.ts` and `tests/config_test.ts`.
+- Prefer direct assertions on returned domain objects and error messages rather than snapshot-style testing.
 
 ## Mocking
 
-**Framework:** None
+**Framework:** No dedicated mocking library detected
 
 **Patterns:**
 ```typescript
-const id = await getAttemptIdWithAutoDetect(
-  {} as ApiClient,
-  undefined,
-  {
-    resolveWorkspaceFromBranch: () => Promise.resolve(null),
-    listWorkspaces: () => Promise.resolve([
-      createWorkspace("ws-1", "feature/a"),
-      createWorkspace("ws-2", "feature/b"),
-    ]),
-    selectWorkspace: (workspaces: Workspace[]) =>
-      Promise.resolve(workspaces[1].id),
-  },
-);
+const id = await getAttemptIdWithAutoDetect({} as ApiClient, undefined, {
+  resolveWorkspaceFromBranch: () => Promise.resolve(null),
+  listWorkspaces: () => Promise.resolve([
+    createWorkspace("ws-1", "feature/a"),
+    createWorkspace("ws-2", "feature/b"),
+  ]),
+  selectWorkspace: (workspaces) => Promise.resolve(workspaces[1].id),
+});
 ```
 
 **What to Mock:**
-- Mock dependency edges by passing inline function overrides through `deps` parameters, as in `src/utils/attempt-resolver_test.ts`.
-- Use plain object casts such as `{} as ApiClient` when only the type shape is needed.
-- Simulate async streams with inline async generators, as in `src/commands/wait_test.ts`.
-- Stub external processes indirectly by asserting behavior of pure formatting helpers rather than trying to fake `Deno.Command`, as in `src/utils/fzf_test.ts`.
+- Mock external dependencies by passing inline dependency overrides, especially for git, API lookup, and interactive selection. This is the standard pattern in `src/utils/attempt-resolver.ts` and its tests.
+- Replace remote APIs with lightweight in-process servers where protocol behavior matters. `tests/api_client_test.ts` uses `Deno.serve(...)` to exercise HTTP fallback behavior.
+- Use environment-variable wrappers like `withEnv` in `tests/config_test.ts` to isolate config precedence logic.
 
 **What NOT to Mock:**
-- Do not mock simple pure helpers like `extractRepoBasename` in `src/utils/git_test.ts` or `applyFilters` in `src/utils/filter_test.ts`; test them with real inputs and exact outputs.
-- Integration tests prefer real `fetch`, real CLI invocations through `new Deno.Command("deno", ...)`, real temp directories, and a running server instead of HTTP mocking, as in `tests/task_attempts_integration_test.ts` and `tests/cli_commands_integration_test.ts`.
+- Do not mock pure data transformations such as filtering; `tests/filter_integration_test.ts` passes concrete arrays into `applyFilters`.
+- Do not introduce a general-purpose mocking framework unless existing injection seams are insufficient; the current codebase relies on plain functions, temporary files, and local servers instead.
 
 ## Fixtures and Factories
 
@@ -115,72 +116,61 @@ function createWorkspace(id: string, branch: string): Workspace {
 ```
 
 **Location:**
-- Keep one-off factories inside the test file that uses them, for example `createWorkspace` in `src/utils/attempt-resolver_test.ts` and `createTestRepo` in `tests/repository_resolver_integration_test.ts`.
-- Keep cross-file infrastructure helpers in `tests/helpers/test-server.ts`.
-- Most fixtures are plain object literals created inline per test rather than central fixture modules.
+- Keep small factories in the test file that uses them, such as `createWorkspace` in `src/utils/attempt-resolver_test.ts`.
+- Keep cross-file infrastructure helpers under `tests/helpers/`, currently `tests/helpers/test-server.ts`.
+- Use temporary directories and files instead of checked-in fixtures for config tests, as in `tests/config_test.ts` and `tests/cli_commands_integration_test.ts`.
 
 ## Coverage
 
-**Requirements:** None enforced. No minimum coverage threshold or reporting configuration is present in `deno.json`, `package` metadata, or `.github/workflows/ci.yml`.
+**Requirements:** No enforced coverage threshold detected in `deno.json`
 
 **View Coverage:**
 ```bash
-# Not configured in the repository
+deno test --coverage=coverage --allow-net --allow-read --allow-write --allow-env
+deno coverage coverage
 ```
 
 ## Test Types
 
 **Unit Tests:**
-- Cover pure parsing, filtering, formatting, and small resolver branches in `src/utils/filter_test.ts`, `src/utils/git_test.ts`, `src/utils/fzf_test.ts`, `src/utils/organization-resolver_test.ts`, and `src/commands/wait_test.ts`.
-- These tests generally avoid network and external processes, except where the production helper itself checks local environment behavior, such as `getGitRemoteUrlFromPath` in `src/utils/git_test.ts`.
+- Cover pure helpers and isolated async logic with injected dependencies. Examples include `src/commands/wait_test.ts`, `src/utils/git_test.ts`, `src/utils/fzf_test.ts`, and `src/utils/attempt-resolver_test.ts`.
 
 **Integration Tests:**
-- Exercise CLI entrypoints via `deno run ... src/main.ts ...` and validate end-to-end output, exit codes, persisted files, and API behavior in `tests/cli_commands_integration_test.ts`, `tests/organization_integration_test.ts`, and `tests/task_attempts_integration_test.ts`.
-- Exercise server integration with real HTTP calls to `${config.apiUrl}/api...`, usually through a local `apiCall` helper.
-- Some integration tests are resilient to auth or environment differences by accepting `401` or early-returning when endpoints are inaccessible, as in `tests/organization_integration_test.ts` and `tests/task_attempts_integration_test.ts`.
+- Exercise cross-module behavior, HTTP interactions, config file persistence, and CLI process execution in `tests/api_client_test.ts`, `tests/cli_commands_integration_test.ts`, `tests/organization_integration_test.ts`, and `tests/task_attempts_integration_test.ts`.
+- Integration tests may require `--allow-run` and a reachable backend. `tests/helpers/test-server.ts` polls the configured API health endpoint before running some flows.
 
 **E2E Tests:**
-- No separate browser/UI E2E framework is used.
-- Docker-backed integration coverage is triggered through the `integration-test` job in `.github/workflows/ci.yml`, which runs `docker compose run --rm vk`.
+- Not detected as a separate framework. The nearest equivalent is process-level CLI testing in `tests/cli_commands_integration_test.ts` using `new Deno.Command("deno", ...)`.
 
 ## Common Patterns
 
 **Async Testing:**
 ```typescript
-Deno.test("CLI: vk config set/get shell persists value", async () => {
-  const setCommand = new Deno.Command("deno", { /* ... */ });
-  const setResult = await setCommand.output();
-  assertEquals(setResult.code, 0);
+Deno.test("waitForBranchNotification resolves when target branch is seen", async () => {
+  const branches = (async function* () {
+    yield "feature/one";
+    yield "feature/two";
+    yield "feature/target";
+  })();
+
+  await waitForBranchNotification(branches, "feature/target");
 });
 ```
-- Use `async` tests directly with awaited `Deno.Command`, `fetch`, file I/O, or resolver calls.
 
 **Error Testing:**
 ```typescript
 await assertRejects(
   () =>
-    getAttemptIdWithAutoDetect(
-      {} as ApiClient,
-      undefined,
-      {
-        resolveWorkspaceFromBranch: () => Promise.resolve(null),
-        listWorkspaces: () => Promise.resolve([]),
-        selectWorkspace: () => Promise.reject(new Error("should not be called")),
-      },
-    ),
+    getAttemptIdWithAutoDetect({} as ApiClient, undefined, {
+      resolveWorkspaceFromBranch: () => Promise.resolve(null),
+      listWorkspaces: () => Promise.resolve([]),
+      selectWorkspace: () => Promise.reject(new Error("should not be called")),
+    }),
   Error,
   "Not in a workspace branch. Provide workspace ID.",
 );
 ```
-- Prefer `assertRejects` for async failures and `assertThrows` for sync validation, as seen in `src/commands/wait_test.ts` and `tests/executor_parser_test.ts`.
-
-## CI-Aligned Expectations
-
-- The canonical unit-test command in CI is `deno test --allow-read --allow-write --allow-env src/` from `.github/workflows/ci.yml`.
-- Integration coverage is separated into its own job and depends on Docker Compose rather than the unit-test job.
-- New unit tests should be safe to run within `src/` without network access unless the production code truly requires otherwise.
-- New integration tests should live under `tests/` and assume explicit environment setup through `VK_API_URL`, temp `HOME` directories, and helper loading from `tests/helpers/test-server.ts`.
 
 ---
 
-*Testing analysis: 2026-03-17*
+*Testing analysis: 2026-03-19*

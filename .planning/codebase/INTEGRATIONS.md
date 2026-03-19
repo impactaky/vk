@@ -1,93 +1,90 @@
 # External Integrations
 
-**Analysis Date:** 2026-03-17
+**Analysis Date:** 2026-03-19
 
 ## APIs & External Services
 
-**vibe-kanban API:**
-- The primary external dependency is the vibe-kanban server consumed through `src/api/client.ts`.
-  - SDK/Client: custom `ApiClient` in `src/api/client.ts`
-  - Auth: no explicit auth headers or tokens detected in `src/api/client.ts`
-- The CLI targets `/api/*` endpoints including organizations, repositories, workspaces/task-attempts, sessions, branch operations, and pull-request actions, all implemented as HTTP `fetch` requests in `src/api/client.ts`.
-- Local default server settings come from `src/api/config.ts` with a fallback of `http://localhost:3000`.
+**Primary backend API:**
+- vibe-kanban HTTP API - the CLI issues JSON requests to `/api/*` endpoints through `src/api/client.ts`.
+  - SDK/Client: internal `ApiClient` in `src/api/client.ts` built on native `fetch`.
+  - Auth: Not detected in the CLI code. No authorization header handling is implemented in `src/api/client.ts`.
+  - Key endpoints referenced directly include organizations, repositories, workspaces/task-attempts, sessions, branch status, merge/push/rebase, and pull request operations in `src/api/client.ts`.
 
-**NATS messaging:**
-- Branch notifications are published and consumed through NATS in `src/commands/notify.ts` and `src/commands/wait.ts`.
-  - SDK/Client: `nats.deno` from `deno.json`
-  - Auth: none detected; connections use plain `nats://host:port` built from config in `src/api/config.ts`
+**Messaging:**
+- NATS - branch notification publish/subscribe flow for `vk notify` and `vk wait`.
+  - SDK/Client: `npm:nats` imported as `nats.deno` in `src/commands/notify.ts` and `src/commands/wait.ts`.
+  - Auth: host, port, and subject are configurable via `VK_NATS_HOST`, `VK_NATS_PORT`, `VK_NATS_SUBJECT`, or persisted config handled by `src/api/config.ts`.
 
-**Git hosting / pull request backends:**
-- The CLI exposes PR and repo-branch operations through the vibe-kanban API rather than calling GitHub or GitLab directly. The request surface is in `src/api/client.ts` and the related types are in `src/api/types.ts`.
-  - SDK/Client: indirect via `ApiClient` in `src/api/client.ts`
-  - Auth: delegated to the upstream vibe-kanban server; no provider token handling is present in this repository
+**Source control platform adjacency:**
+- Git hosting providers are inferred from local git remotes, not integrated via provider SDKs. `src/utils/git.ts` parses HTTPS and SSH remote URLs, and pull request URLs are returned by the backend API as strings in `src/api/types.ts`.
 
 ## Data Storage
 
 **Databases:**
-- Not detected in this repository. The CLI is stateless aside from local config and delegates persistence to the upstream vibe-kanban server via `src/api/client.ts`.
-  - Connection: not applicable
-  - Client: not applicable
+- Not detected in this CLI repository.
+  - Connection: Not applicable.
+  - Client: Not applicable.
 
 **File Storage:**
-- Local filesystem only.
-- CLI config is stored at `~/.config/vibe-kanban/vk-config.json` through `src/api/config.ts`.
-- Commands read prompt files from user-provided paths in `src/commands/task-attempts.ts`.
+- Local filesystem for CLI config only.
+  - Config file: `~/.config/vibe-kanban/vk-config.json` managed by `src/api/config.ts`.
+  - Prompt file input: `vk workspace create --file` and `vk workspace spin-off --file` read local text files in `src/commands/task-attempts.ts`.
 
 **Caching:**
-- None detected in `src/` or `tests/`.
+- None detected.
 
 ## Authentication & Identity
 
 **Auth Provider:**
-- Custom / upstream-server-managed.
-  - Implementation: this repository does not implement login, token storage, or request signing; all requests in `src/api/client.ts` send JSON without auth headers.
+- Custom or backend-managed outside this repository.
+  - Implementation: The CLI currently sends unauthenticated requests from `src/api/client.ts`; any auth is expected to be handled by the target vibe-kanban deployment, reverse proxy, or future backend changes.
 
 ## Monitoring & Observability
 
 **Error Tracking:**
-- None detected. Errors are surfaced to stderr by helpers such as `src/utils/error-handler.ts`.
+- None detected.
 
 **Logs:**
-- Local console logging only.
-- Verbose HTTP request/response logging is toggled by `--verbose` in `src/main.ts` and implemented in `src/utils/verbose.ts` and `src/api/client.ts`.
+- Local console output only.
+  - Verbose request/response logging is toggled by `-v` or `--verbose` in `src/main.ts` and implemented in `src/api/client.ts` through `src/utils/verbose.ts`.
 
 ## CI/CD & Deployment
 
 **Hosting:**
-- CI and release automation run on GitHub Actions in `.github/workflows/ci.yml` and `.github/workflows/release.yml`.
-- Integration tests depend on a Docker Compose environment described in `docker-compose.yml`.
-- Release artifacts are uploaded to GitHub Releases by `.github/workflows/release.yml`.
+- GitHub Actions hosts CI and release jobs in `.github/workflows/ci.yml` and `.github/workflows/release.yml`.
+- Integration tests depend on a Docker Compose stack that runs `npx -y vibe-kanban` inside the `vibe-kanban` service from `docker-compose.yml`.
 
 **CI Pipeline:**
 - GitHub Actions.
-- `.github/workflows/ci.yml` runs format, lint, type-check, unit tests, and `docker compose run --rm vk`.
-- `.github/workflows/release.yml` compiles binaries for Linux, macOS, and Windows targets with `deno compile`.
+  - `check` job runs `deno fmt --check`, `deno lint`, `deno check src/main.ts`, and unit tests in `.github/workflows/ci.yml`.
+  - `integration-test` job runs `docker compose run --rm vk` in `.github/workflows/ci.yml`.
+  - `release` workflow compiles binaries and publishes GitHub Releases in `.github/workflows/release.yml`.
 
 ## Environment Configuration
 
 **Required env vars:**
-- `VK_API_URL` - overrides the base API URL in `src/api/config.ts`; also set for integration tests in `docker-compose.yml`.
-- `VK_DEFAULT_EXECUTOR` - default executor profile override in `src/api/config.ts`; set in `docker-compose.yml`.
-- `VK_NATS_HOST` - NATS host override in `src/api/config.ts`.
-- `VK_NATS_PORT` - NATS port override in `src/api/config.ts`.
-- `VK_NATS_SUBJECT` - NATS subject override in `src/api/config.ts`.
-- `HOME` or `USERPROFILE` - used by `src/api/config.ts` to locate `~/.config/vibe-kanban/vk-config.json`.
+- `VK_API_URL` - overrides the persisted backend URL in `src/api/config.ts`.
+- `VK_DEFAULT_EXECUTOR` - overrides default workspace executor profile in `src/api/config.ts` and is consumed by `src/commands/task-attempts.ts`.
+- `VK_NATS_HOST` - overrides NATS host in `src/api/config.ts`.
+- `VK_NATS_PORT` - overrides NATS port in `src/api/config.ts`.
+- `VK_NATS_SUBJECT` - overrides NATS subject in `src/api/config.ts`.
+- `VK_USE_DEV_API_DEFAULT` - forces `http://localhost:3000` when set to `1` and `VK_API_URL` is absent, per `src/api/config.ts`.
+- `HOME` or `USERPROFILE` - determines where config is stored in `src/api/config.ts`.
 
 **Secrets location:**
-- No repository-managed secrets detected.
-- User-specific runtime configuration is stored in `~/.config/vibe-kanban/vk-config.json` via `src/api/config.ts`.
-- GitHub Actions secrets, if any, are not referenced directly in `.github/workflows/ci.yml` or `.github/workflows/release.yml`.
+- Not detected in-repo.
+- `.env` files were not detected at repo root depth 2 during this scan.
+- Runtime configuration is expected from shell environment variables or the local config file written by `src/api/config.ts`.
 
 ## Webhooks & Callbacks
 
 **Incoming:**
-- None implemented in this CLI repository.
-- Test health polling hits `/api/health` from `tests/helpers/test-server.ts`, but that is client polling rather than a callback receiver.
+- None in this CLI repository.
 
 **Outgoing:**
-- HTTP requests from `src/api/client.ts` to the upstream vibe-kanban API.
-- NATS publish events from `src/commands/notify.ts` to the configured subject.
+- HTTP requests from `src/api/client.ts` to the configured vibe-kanban backend.
+- NATS publishes from `src/commands/notify.ts` to the configured subject.
 
 ---
 
-*Integration audit: 2026-03-17*
+*Integration audit: 2026-03-19*

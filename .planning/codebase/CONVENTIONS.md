@@ -1,129 +1,100 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-03-17
+**Analysis Date:** 2026-03-19
 
 ## Naming Patterns
 
 **Files:**
-- Use lowercase filenames with hyphens for production modules, for example `src/commands/task-attempts.ts`, `src/utils/error-handler.ts`, and `src/api/config.ts`.
-- Use colocated unit test filenames ending in `_test.ts`, for example `src/utils/filter_test.ts` and `src/commands/wait_test.ts`.
-- Use top-level integration test filenames ending in `_integration_test.ts` or `_test.ts` under `tests/`, for example `tests/task_attempts_integration_test.ts` and `tests/api_client_test.ts`.
+- Use lowercase kebab-case filenames for implementation modules in `src/`, such as `src/utils/error-handler.ts`, `src/utils/attempt-resolver.ts`, and `src/commands/task-attempts.ts`.
+- Use Deno-style test suffixes: co-located unit tests use `*_test.ts` next to source files such as `src/commands/wait_test.ts` and `src/utils/git_test.ts`; broader integration tests live under `tests/` with names like `tests/cli_commands_integration_test.ts`.
 
 **Functions:**
-- Use `camelCase` for functions and methods, for example `resolvePrompt` in `src/commands/task-attempts.ts`, `loadConfig` in `src/api/config.ts`, and `getRepositoryId` in `src/utils/repository-resolver.ts`.
-- Use verb-based names for async operations, especially API and resolver helpers, for example `listTaskAttempts`, `saveConfig`, `resolveWorkspaceFromBranch`, and `waitForServer`.
+- Use camelCase for functions and methods, such as `loadConfig` in `src/api/config.ts`, `resolveWorkspaceFromBranch` in `src/utils/attempt-resolver.ts`, and `waitForBranchNotification` in `src/commands/wait.ts`.
+- Use verb-first names for exported behavior, especially for command helpers and utilities: `getAttemptIdWithAutoDetect` in `src/utils/attempt-resolver.ts`, `handleCliError` in `src/utils/error-handler.ts`, and `selectWorkspace` in `src/utils/fzf.ts`.
 
 **Variables:**
-- Use `camelCase` for local bindings and parameters, for example `targetBranch`, `responseText`, `repoBasenames`, and `testHome`.
-- Use `UPPER_SNAKE_CASE` for module constants, for example `VERSION` in `src/main.ts`, `CONFIG_FILE` in `src/api/config.ts`, and `DEFAULT_TIMEOUT_MS` in `tests/helpers/test-server.ts`.
+- Use camelCase for local bindings and parameters, such as `timeoutSeconds`, `waitPromise`, and `timeoutPromise` in `src/commands/wait.ts`.
+- Use `UPPER_SNAKE_CASE` for module constants, such as `DEFAULT_TIMEOUT_SECONDS` in `src/commands/wait.ts`, `CONFIG_FILE` in `src/api/config.ts`, and `VERSION` in `src/main.ts`.
 
 **Types:**
-- Use `PascalCase` for interfaces, type aliases, and classes, for example `Config` in `src/api/config.ts`, `Workspace` in `src/api/types.ts`, `PromptSourceOptions` in `src/commands/task-attempts.ts`, and `RepositoryResolverError` in `src/utils/repository-resolver.ts`.
-- Suffix custom error classes with `Error`, for example `FzfNotInstalledError` in `src/utils/fzf.ts` and `OrganizationResolverError` in `src/utils/organization-resolver.ts`.
-- Keep API-shaped fields in the server’s snake_case form inside types, for example `created_at`, `task_id`, and `parent_workspace_id` in `src/api/types.ts` and `tests/filter_integration_test.ts`.
+- Use PascalCase for interfaces, classes, and type exports, such as `Config` in `src/api/config.ts`, `AttemptResolverDeps` in `src/utils/attempt-resolver.ts`, `FzfCancelledError` in `src/utils/fzf.ts`, and re-exported API types in `src/mod.ts`.
+- Prefix dependency-injection shapes with a domain-specific noun and `Deps`, such as `AttemptResolverDeps` and `BranchResolverDeps` in `src/utils/attempt-resolver.ts`.
 
 ## Code Style
 
 **Formatting:**
-- Use Deno’s built-in formatter via `deno fmt`, configured in `deno.json`.
-- `deno.json` limits formatter scope to `src/` and `tests/`.
-- Formatting style is the standard Deno/TypeScript style: 2-space indentation, trailing commas in multiline literals, explicit `.ts` import extensions, and semicolons omitted.
+- Use `deno fmt` via the `fmt` task in `deno.json`.
+- Formatting scope is limited to `src/` and `tests/` by `deno.json`.
+- Follow Deno formatter output: trailing commas in multiline literals, 2-space indentation, double-quoted strings, and wrapped chained calls as seen in `src/main.ts` and `src/commands/wait.ts`.
 
 **Linting:**
-- Use Deno’s built-in linter via `deno lint`, configured in `deno.json`.
-- No separate `eslint`, `prettier`, or `biome` config is present in the repository root.
-- CI runs `deno fmt --check`, `deno lint`, and `deno check src/main.ts` in `.github/workflows/ci.yml`.
+- Use `deno lint` via the `lint` task in `deno.json`.
+- Lint scope is limited to `src/` and `tests/` by `deno.json`.
+- Keep code type-safe under `compilerOptions.strict: true` in `deno.json`; narrow types explicitly or return `null` rather than relying on loose inference.
 
 ## Import Organization
 
 **Order:**
-1. External JSR/npm imports first, for example `@cliffy/command` in `src/main.ts` and `@std/assert` in `src/utils/git_test.ts`.
-2. Local value imports second, using relative paths with explicit `.ts` extensions, for example `./commands/organization.ts` in `src/main.ts`.
-3. Local type-only imports last or near related local imports, using `import type`, for example `import type { UpdateWorkspace } from "../api/types.ts";` in `src/commands/task-attempts.ts`.
+1. External JSR/npm imports first, such as `@cliffy/command`, `@std/assert`, and `nats.deno`.
+2. Type-only imports before value imports when both are needed, as in `src/utils/attempt-resolver.ts` and `src/utils/fzf.ts`.
+3. Relative local imports after external imports, grouped by feature area, as in `src/main.ts` and `tests/helpers/test-server.ts`.
 
 **Path Aliases:**
-- No path aliases are used.
-- Import paths stay relative throughout `src/` and `tests/`, for example `../src/api/client.ts` in `tests/api_client_test.ts` and `./git.ts` in `src/utils/git_test.ts`.
+- No path aliases are configured in `deno.json`.
+- Use explicit relative `.ts` import paths, such as `../api/config.ts` in `src/commands/wait.ts` and `../../src/api/config.ts` in `tests/helpers/test-server.ts`.
 
 ## Error Handling
 
 **Patterns:**
-- Throw plain `Error` or a small custom error subclass from utilities when a caller needs context, for example `RepositoryResolverError` in `src/utils/repository-resolver.ts`.
-- CLI command handlers wrap actions in `try/catch`, call `handleCliError`, and then rethrow to satisfy control flow, as in `src/commands/task-attempts.ts`.
-- Utility helpers often return `null` instead of throwing for environment-dependent failures, for example `getGitRemoteUrl`, `getCurrentBranch`, and `resolveWorkspaceFromBranch`.
-- Validation failures usually produce direct user-facing error messages and exit with `Deno.exit(1)`, as in `src/commands/config.ts` and `src/utils/error-handler.ts`.
+- Treat operational failures as `Error` instances with user-facing messages, then centralize CLI exit behavior through `handleCliError` in `src/utils/error-handler.ts`.
+- For CLI commands, wrap action bodies in `try/catch`, call `handleCliError(error)`, and rethrow when needed, as in `src/commands/wait.ts`.
+- For optional environment or shell interactions, prefer safe fallbacks over surfacing low-level failures. `resolveWorkspaceFromBranch` in `src/utils/attempt-resolver.ts` and git helpers in `src/utils/git.ts` return `null` on lookup failure.
+- Throw explicit errors when user action is required, such as `"Not in a workspace branch. Provide workspace ID."` in `src/utils/attempt-resolver.ts` and `"No workspaces available."` in `src/utils/fzf.ts`.
 
 ## Logging
 
-**Framework:** console
+**Framework:** `console`
 
 **Patterns:**
-- Normal command output uses `console.log`, for example table-free status output in `src/commands/config.ts` and JSON output in `src/commands/task-attempts.ts`.
-- User-visible failures use `console.error`, centralized in `src/utils/error-handler.ts`.
-- Verbose request/response logging is opt-in through `--verbose`, implemented in `src/main.ts` and `src/api/client.ts`.
-- There is no dedicated logging library or structured logger.
+- Use `console.log` for successful CLI output, as in `src/commands/wait.ts` and the `--ai` path in `src/main.ts`.
+- Use `console.error` only in centralized error handling paths, primarily `src/utils/error-handler.ts`.
+- Keep logs concise and user-facing; verbose request/response behavior is toggled through `setVerbose(true)` in `src/main.ts` and implemented in `src/utils/verbose.ts`.
 
 ## Comments
 
 **When to Comment:**
-- Use short file header comments for modules with non-trivial responsibilities, common in `src/api/client.ts`, `src/api/config.ts`, and `tests/helpers/test-server.ts`.
-- Add inline comments only where behavior is non-obvious or environment-specific, for example the path matching notes in `src/utils/repository-resolver.ts` and cleanup notes in `tests/repository_resolver_integration_test.ts`.
-- Avoid comment-heavy code in simple command handlers and pure helpers.
+- Use short file headers for modules with a clear responsibility, as in `src/api/config.ts`, `src/utils/git.ts`, and `tests/helpers/test-server.ts`.
+- Add inline comments only where the reason is not obvious from the code, such as `// Environment variable overrides config file` in `src/api/config.ts` or cleanup notes in `tests/cli_commands_integration_test.ts`.
 
 **JSDoc/TSDoc:**
-- Public utilities and API types frequently use JSDoc-style block comments, especially in `src/api/client.ts`, `src/api/types.ts`, `src/utils/git.ts`, and `src/utils/attempt-resolver.ts`.
-- Tests generally do not use JSDoc, apart from brief file headers describing integration scope.
+- Use JSDoc on exported interfaces, functions, and modules when behavior, precedence rules, or return values need clarification. Examples appear in `src/api/config.ts`, `src/utils/attempt-resolver.ts`, and `src/mod.ts`.
+- Keep docs practical and behavior-focused; most small helpers and tests do not use formal docblocks.
 
 ## Function Design
 
-**Size:** Keep helpers small to medium-sized. Most utilities in `src/utils/*.ts` stay focused on one concern, while command files such as `src/commands/task-attempts.ts` accumulate multiple chained subcommands in a single exported module.
+**Size:**
+- Keep functions narrowly scoped. Parsing, selection, and config helpers are usually compact single-purpose functions in `src/utils/git.ts`, `src/utils/fzf.ts`, and `src/api/config.ts`.
+- Put branching command orchestration in `.action(...)` handlers, but move reusable logic into exported helpers such as `waitForBranchNotification` in `src/commands/wait.ts`.
 
 **Parameters:**
-- Prefer strongly typed parameter objects when options grow, for example `PromptSourceOptions` in `src/commands/task-attempts.ts`.
-- Pass dependency overrides through optional `deps` objects for testability instead of using a mocking framework, as in `src/utils/attempt-resolver.ts`.
-- Preserve API payload shapes directly in request methods, for example `createWorkspace(workspace: CreateAndStartWorkspaceRequest)` in `src/api/client.ts`.
+- Pass dependencies explicitly for testability. Utility functions accept a `deps` object with `Partial<...Deps>` overrides, as in `getAttemptIdWithAutoDetect` and `resolveWorkspaceFromBranch` in `src/utils/attempt-resolver.ts`.
+- Use typed primitives for CLI option values and domain objects for API behavior; avoid untyped bags beyond controlled dependency injection.
 
 **Return Values:**
-- Async I/O helpers usually return `Promise<T>` or `Promise<T | null>`, for example `getApiUrl` in `src/api/config.ts` and `getCurrentRepoBasename` in `src/utils/git.ts`.
-- Resolver helpers return IDs or typed objects, then let CLI layers decide presentation, for example `getAttemptIdWithAutoDetect` and `resolveRepositoryFromPath`.
-- Commands print results directly rather than returning domain objects.
+- Use `Promise<T>` consistently for async boundaries.
+- Return `null` for recoverable lookup misses, such as `getCurrentBranch(): Promise<string | null>` in `src/utils/git.ts`.
+- Throw `Error` for unrecoverable or user-actionable states, such as `waitForBranchNotification` in `src/commands/wait.ts`.
 
 ## Module Design
 
 **Exports:**
-- Use named exports throughout the codebase. Examples include `export const configCommand` in `src/commands/config.ts`, `export class ApiClient` in `src/api/client.ts`, and `export function applyFilters` in `src/utils/filter.ts`.
-- No default exports are present in the inspected `src/` and `tests/` files.
+- Export small, focused units from source modules and keep command construction local to each command file, such as `waitCommand` in `src/commands/wait.ts`.
+- Re-export public library surface from the barrel file `src/mod.ts`. Add new externally supported API types and helpers there rather than requiring consumers to import from internal paths.
 
-**Barrel Files:** Minimal usage. `src/mod.ts` is the only barrel-like entry point exposed through `deno.json`, while most modules are imported directly by path.
-
-## Representative Patterns
-
-**Command module pattern:**
-```typescript
-export const configCommand = new Command()
-  .description("Manage CLI configuration")
-  .action(function () {
-    this.showHelp();
-  });
-```
-- Use this style for new CLI groups under `src/commands/`.
-
-**Dependency injection for testability:**
-```typescript
-export async function getAttemptIdWithAutoDetect(
-  client: ApiClient,
-  providedId: string | undefined,
-  deps: Partial<AttemptResolverDeps> = {},
-): Promise<string> {
-```
-- Follow this approach in `src/utils/attempt-resolver.ts` when logic needs isolated unit tests.
-
-**Type-only imports:**
-```typescript
-import type { UpdateWorkspace } from "../api/types.ts";
-```
-- Keep type imports explicit instead of mixing them into value imports.
+**Barrel Files:**
+- Use `src/mod.ts` as the only observed barrel file.
+- Prefer direct relative imports inside `src/`; reserve `src/mod.ts` for package consumers and top-level public API organization.
 
 ---
 
-*Convention analysis: 2026-03-17*
+*Convention analysis: 2026-03-19*

@@ -1,152 +1,146 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-03-17
+**Analysis Date:** 2026-03-19
 
 ## Directory Layout
 
 ```text
-vk/
-├── src/                 # Runtime CLI code, library exports, and colocated unit tests
-├── tests/               # Integration tests and shared integration helpers
-├── openspec/            # OpenSpec source-of-truth specs and archived change artifacts
-├── specs/               # Human-readable product/CLI behavior notes
-├── .planning/codebase/  # Generated codebase reference documents
-├── deno.json            # Deno tasks, imports, exports, fmt, and lint config
-└── README.md            # User-facing installation and usage guide
+[project-root]/
+├── src/                # CLI implementation: entry point, commands, API client, shared utilities
+├── tests/              # Integration-style Deno tests and shared test helpers
+├── specs/              # Human-readable product/CLI behavior notes
+├── openspec/           # OpenSpec source-of-truth specs, schemas, and archived changes
+├── .planning/codebase/ # Generated codebase reference docs for future planning
+├── .github/workflows/  # CI workflow definitions
+├── deno.json           # Deno tasks, imports, formatter, and linter config
+└── README.md           # User-facing install and usage documentation
 ```
 
 ## Directory Purposes
 
 **`src/`:**
-- Purpose: All executable and importable TypeScript source for the CLI package.
-- Contains: top-level entry points, API client/config/types, command handlers, shared utilities, and some colocated unit tests.
+- Purpose: All shipped runtime and library code.
+- Contains: `src/main.ts`, `src/mod.ts`, domain command modules under `src/commands/`, API transport/config under `src/api/`, and helper modules under `src/utils/`.
 - Key files: `src/main.ts`, `src/mod.ts`, `src/api/client.ts`, `src/commands/task-attempts.ts`
 
+**`src/commands/`:**
+- Purpose: One file per top-level command domain.
+- Contains: Cliffy `Command` definitions for `organization`, `repository`, `workspace`, `config`, `notify`, and `wait`.
+- Key files: `src/commands/organization.ts`, `src/commands/repository.ts`, `src/commands/task-attempts.ts`, `src/commands/config.ts`, `src/commands/notify.ts`, `src/commands/wait.ts`
+
 **`src/api/`:**
-- Purpose: API-facing infrastructure and shared domain contracts.
-- Contains: `ApiClient` in `src/api/client.ts`, config persistence in `src/api/config.ts`, and broad type definitions in `src/api/types.ts`.
+- Purpose: Remote transport, config persistence, and shared DTOs.
+- Contains: `ApiClient`, config file helpers, and API-facing TypeScript interfaces.
 - Key files: `src/api/client.ts`, `src/api/config.ts`, `src/api/types.ts`
 
-**`src/commands/`:**
-- Purpose: Cliffy command definitions for each top-level command family.
-- Contains: resource commands (`src/commands/organization.ts`, `src/commands/repository.ts`, `src/commands/task-attempts.ts`) and local/messaging commands (`src/commands/config.ts`, `src/commands/notify.ts`, `src/commands/wait.ts`).
-- Key files: `src/commands/task-attempts.ts`, `src/commands/repository.ts`, `src/commands/config.ts`
-
 **`src/utils/`:**
-- Purpose: Shared helper modules used across command handlers.
-- Contains: resolvers, git/fzf helpers, parsing helpers, filtering, AI help generation, verbose logging, and error handling.
+- Purpose: Reusable helpers consumed by commands and tests.
+- Contains: resolvers, git helpers, `fzf` integration, filter logic, error handling, executor parsing, verbose logging, and AI help generation.
 - Key files: `src/utils/repository-resolver.ts`, `src/utils/attempt-resolver.ts`, `src/utils/git.ts`, `src/utils/fzf.ts`
 
 **`tests/`:**
-- Purpose: Cross-module and end-to-end style integration coverage against a running vibe-kanban instance.
-- Contains: integration tests by feature area plus shared helper bootstrapping.
-- Key files: `tests/task_attempts_integration_test.ts`, `tests/cli_commands_integration_test.ts`, `tests/helpers/test-server.ts`
-
-**`openspec/`:**
-- Purpose: Specification workflow artifacts for feature planning and archival.
-- Contains: active source specs under `openspec/specs/`, configuration in `openspec/config.yaml`, and archived change folders under `openspec/changes/archive/`.
-- Key files: `openspec/specs/task-attempts-subcommands/spec.md`, `openspec/specs/task-attempts-id-autodetect/spec.md`, `openspec/config.yaml`
+- Purpose: End-to-end and integration coverage that runs the CLI as an external process or talks to a configured API.
+- Contains: integration tests per feature area plus the server readiness helper.
+- Key files: `tests/cli_commands_integration_test.ts`, `tests/task_attempts_integration_test.ts`, `tests/helpers/test-server.ts`
 
 **`specs/`:**
-- Purpose: Lightweight prose spec outside the OpenSpec tree.
-- Contains: `specs/cli.md`
+- Purpose: Human-maintained behavioral reference outside OpenSpec deltas.
+- Contains: current CLI behavior notes.
 - Key files: `specs/cli.md`
 
-**Tooling and agent directories:**
-- Purpose: Store agent/skill definitions for Codex, Claude, Cursor, Gemini, and Opencode workflows.
-- Contains: `.codex/skills/**`, `.claude/skills/**`, `.cursor/skills/**`, `.gemini/skills/**`, `.opencode/skills/**`
-- Key files: `.codex/skills/lint/SKILL.md`, `.codex/skills/test/SKILL.md`
+**`openspec/`:**
+- Purpose: Formal specification artifacts and archived change history.
+- Contains: active and archived changes, source-of-truth specs, templates, and schema definitions.
+- Key files: `openspec/specs/task-attempts-subcommands/spec.md`, `openspec/specs/task-attempts-id-autodetect/spec.md`, `openspec/config.yaml`
+
+**`.planning/codebase/`:**
+- Purpose: Generated analysis docs consumed by GSD planning and execution commands.
+- Contains: `ARCHITECTURE.md`, `STRUCTURE.md`, `STACK.md`, `INTEGRATIONS.md`, `CONVENTIONS.md`, `TESTING.md`, `CONCERNS.md`
+- Key files: `.planning/codebase/ARCHITECTURE.md`, `.planning/codebase/STRUCTURE.md`
 
 ## Key File Locations
 
 **Entry Points:**
-- `src/main.ts`: CLI executable entry point and command registration root.
-- `src/mod.ts`: Package/library export surface referenced by `deno.json`.
+- `src/main.ts`: Runtime CLI entry point and command composition root.
+- `src/mod.ts`: Library export surface for external TypeScript consumers.
 
 **Configuration:**
-- `deno.json`: Runtime tasks, dependency imports, package export map, and lint/fmt scopes.
-- `src/api/config.ts`: Runtime config file loading and environment overrides.
-- `openspec/config.yaml`: OpenSpec workflow configuration.
+- `deno.json`: Runtime tasks, dependency imports, strict compiler config, fmt/lint include paths.
+- `src/api/config.ts`: User config persistence in `~/.config/vibe-kanban/vk-config.json` plus env overrides.
+- `openspec/config.yaml`: OpenSpec project configuration.
 
 **Core Logic:**
-- `src/api/client.ts`: Typed HTTP client for all server operations.
-- `src/commands/task-attempts.ts`: Largest command surface; workspace lifecycle and PR subcommands.
-- `src/utils/repository-resolver.ts`: Repository autodetection and fallback selection.
-- `src/utils/attempt-resolver.ts`: Workspace autodetection and fallback selection.
+- `src/api/client.ts`: All HTTP endpoint calls and workspace endpoint fallback logic.
+- `src/commands/task-attempts.ts`: Largest command domain and the main workflow surface for workspace operations.
+- `src/utils/repository-resolver.ts`: Auto-detect repo IDs from git/path context.
+- `src/utils/attempt-resolver.ts`: Auto-detect workspace IDs from current branch or `fzf`.
 
 **Testing:**
-- `tests/helpers/test-server.ts`: Shared API-availability helper for integration tests.
-- `tests/api_client_test.ts`: API client coverage.
-- `tests/task_attempts_integration_test.ts`: Workspace command integration coverage.
-- `src/utils/*_test.ts`: Small unit tests colocated with helpers.
+- `src/utils/*_test.ts`: Small unit tests beside helper modules.
+- `src/commands/wait_test.ts`: Unit test beside `wait` command logic.
+- `tests/*.ts`: Integration and CLI process tests.
 
 ## Naming Conventions
 
 **Files:**
-- Use lowercase kebab-case or simple lowercase names with `.ts`, matching feature responsibility: `src/commands/task-attempts.ts`, `src/utils/error-handler.ts`, `tests/task_attempts_integration_test.ts`.
-- Use `_test.ts` for tests inside `src/` and `_integration_test.ts` for tests in `tests/`.
-- Use `spec.md`, `proposal.md`, `design.md`, and `tasks.md` inside `openspec/` change/spec folders.
+- Lowercase kebab-style or noun-based TypeScript filenames ending in `.ts`: `src/utils/error-handler.ts`, `src/commands/task-attempts.ts`
+- Unit tests stay next to the module with `_test.ts`: `src/utils/filter_test.ts`
+- Integration tests live in `tests/` with `_integration_test.ts`: `tests/repository_resolver_integration_test.ts`
 
 **Directories:**
-- Keep top-level runtime code grouped by concern: `src/api`, `src/commands`, `src/utils`.
-- Keep integration helpers under `tests/helpers/`.
-- Keep OpenSpec source specs under `openspec/specs/<capability>/` and archived work under `openspec/changes/archive/<date-change-name>/`.
+- Top-level runtime directories are short, role-based nouns: `src/`, `tests/`, `specs/`, `openspec/`
+- Subdirectories under `src/` represent layers, not feature packages: `src/commands/`, `src/api/`, `src/utils/`
 
 ## Where to Add New Code
 
-**New CLI Feature:**
-- Primary command wiring: add the top-level or nested command in `src/main.ts` or the relevant existing command file in `src/commands/`.
-- Shared API call: add the typed method to `src/api/client.ts` and any payload/response interfaces to `src/api/types.ts`.
-- Tests: put integration coverage in `tests/` when the feature depends on the real API, and colocated helper tests in `src/**/_test.ts` for pure utility logic.
+**New Top-Level CLI Feature:**
+- Primary code: add a new command module under `src/commands/` and register it in `src/main.ts`
+- Shared remote calls: extend `src/api/client.ts` and add/update DTOs in `src/api/types.ts`
+- Tests: add command-facing integration coverage under `tests/` and unit coverage beside any new helper module
 
-**New Command Under an Existing Domain:**
-- Organization behavior: extend `src/commands/organization.ts`.
-- Repository behavior: extend `src/commands/repository.ts`.
-- Workspace/task-attempt behavior: extend `src/commands/task-attempts.ts`.
-- Avoid creating a new top-level command file unless the command family is conceptually separate and also needs registration in `src/main.ts`.
+**New Subcommand Within an Existing Domain:**
+- Implementation: edit the relevant domain file in `src/commands/`
+- Shared validation or lookup logic: move reusable pieces into `src/utils/` instead of growing long inline action bodies
+- Specs: update `specs/cli.md` and any relevant `openspec/specs/**/spec.md`
 
-**New Resolver or Shell Helper:**
-- Implementation: place reusable context-detection or subprocess code in `src/utils/`.
-- Tests: colocate pure helper tests beside the module, following the existing `src/utils/*_test.ts` pattern.
+**New API Model or Endpoint Support:**
+- Implementation: add request/response types to `src/api/types.ts` and methods to `src/api/client.ts`
+- Consumers: call the new client method from the appropriate command module rather than issuing `fetch` directly
 
-**New Public Library Export:**
-- Implementation: add the runtime module under `src/`.
-- Exposure: re-export it from `src/mod.ts` only if it is intended for package consumers.
+**Utilities:**
+- Shared helpers: `src/utils/`
+- Git-aware helpers: `src/utils/git.ts` or a sibling module in `src/utils/`
+- Interactive selection helpers: `src/utils/fzf.ts` or sibling resolver modules
 
-**Specification Updates:**
-- Source-of-truth delta or capability specs: update `openspec/specs/**/spec.md`.
-- User-readable behavior summary: update `specs/cli.md` when command behavior changes materially.
+**Tests:**
+- Pure helper behavior: colocate `_test.ts` next to the source file in `src/`
+- End-to-end CLI flows or server-backed behavior: add `*_integration_test.ts` under `tests/`
 
 ## Special Directories
 
-**`.planning/codebase/`:**
-- Purpose: Generated analysis docs consumed by planning and execution workflows.
-- Generated: Yes
+**`.github/workflows/`:**
+- Purpose: CI automation definitions
+- Generated: No
 - Committed: Yes
 
 **`openspec/changes/archive/`:**
-- Purpose: Historical record of completed OpenSpec changes with proposal/design/tasks/spec deltas.
-- Generated: No
+- Purpose: Historical record of completed OpenSpec changes with proposal/design/tasks/spec deltas
+- Generated: Semi-generated by workflow, then maintained in git
 - Committed: Yes
 
-**`tests/helpers/`:**
-- Purpose: Shared integration-test support code.
-- Generated: No
+**`.codex/`, `.claude/`, `.cursor/`, `.gemini/`, `.opencode/`, `.agents/`:**
+- Purpose: Agent and command metadata for different tooling environments
+- Generated: Mixed; treated as repository configuration
 - Committed: Yes
 
-**Agent metadata directories (`.codex/`, `.claude/`, `.cursor/`, `.gemini/`, `.opencode/`):**
-- Purpose: Local automation commands and skill definitions.
-- Generated: No
-- Committed: Yes
+## Placement Guidance
 
-## Placement Rules
-
-- Put CLI argument parsing and output formatting in `src/commands/*.ts`; do not embed fetch or config persistence details there when a shared helper already exists.
-- Put all new HTTP endpoint wrappers in `src/api/client.ts` and define the corresponding request/response types in `src/api/types.ts`.
-- Put filesystem, git, subprocess, and interactive selection support in `src/utils/`.
-- Keep unit tests near utilities when they do not need external services, matching `src/utils/filter_test.ts` and `src/commands/wait_test.ts`.
-- Keep integration tests in `tests/` when they spawn the CLI or talk to the configured API server, matching `tests/cli_commands_integration_test.ts` and `tests/task_attempts_integration_test.ts`.
+- Keep `src/main.ts` thin. Register commands there, but place domain behavior in `src/commands/`.
+- Do not create feature-specific service directories unless the current three-layer split (`commands` / `api` / `utils`) stops being sufficient. The codebase currently prefers expanding those existing buckets.
+- Put reusable lookup logic in resolver/helper modules, not inline in command actions. `src/utils/repository-resolver.ts` and `src/utils/attempt-resolver.ts` are the precedent.
+- Keep HTTP concerns centralized in `src/api/client.ts`. New commands should call client methods instead of duplicating URL construction or response parsing.
+- Put CLI contract changes in both executable code and text specs: `specs/cli.md` for the human-readable summary, and `openspec/specs/**/spec.md` when the change is under formal spec management.
 
 ---
 
-*Structure analysis: 2026-03-17*
+*Structure analysis: 2026-03-19*
