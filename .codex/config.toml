@@ -2,27 +2,23 @@
 multi_agent = true
 
 [agents]
-max_threads = 8
+max_threads = 4
 
 [agents.default]
-description = "General VK coding agent."
+description = "General development tasks in this repository."
 
-[agents.opsx_triage]
-description = "Triage OpenSpec change state and pick the smallest next action."
-config_file = "agents/opsx-triage.toml"
+[agents.explorer]
+description = "Read-only scout for codebase mapping and impact analysis."
+config_file = "agents/explorer.toml"
 
-[agents.opsx_artifacts]
-description = "Own proposal/design/tasks artifacts for OpenSpec changes."
-config_file = "agents/opsx-artifacts.toml"
+[agents.implementer]
+description = "Implements scoped changes with minimal, testable patches."
+config_file = "agents/implementer.toml"
 
-[agents.opsx_spec_delta]
-description = "Own delta specs and spec-sync coherence for OpenSpec changes."
-config_file = "agents/opsx-spec-delta.toml"
+[agents.programmer]
+description = "Implementation agent for code changes and task execution."
+config_file = "agents/programmer.toml"
 
-[agents.opsx_apply]
-description = "Implement one OpenSpec task at a time with minimal diffs."
-config_file = "agents/opsx-apply.toml"
-
-[agents.opsx_verify_archive]
-description = "Verify and archive completed OpenSpec changes."
-config_file = "agents/opsx-verify-archive.toml"
+[agents.reviewer]
+description = "Read-only reviewer focused on regressions and missing tests."
+config_file = "agents/reviewer.toml"
