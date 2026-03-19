@@ -7,14 +7,6 @@ max_threads = 4
 [agents.default]
 description = "General development tasks in this repository."
 
-[agents.explorer]
-description = "Read-only scout for codebase mapping and impact analysis."
-config_file = "agents/explorer.toml"
-
-[agents.implementer]
-description = "Implements scoped changes with minimal, testable patches."
-config_file = "agents/implementer.toml"
-
 [agents.programmer]
 description = "Implementation agent for code changes and task execution."
 config_file = "agents/programmer.toml"
