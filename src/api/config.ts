@@ -44,6 +44,11 @@ export async function loadConfig(): Promise<Config> {
     };
   }
 
+  const useDevApiDefault = Deno.env.get("VK_USE_DEV_API_DEFAULT");
+  if (useDevApiDefault === "1" && !Deno.env.get("VK_API_URL")) {
+    config.apiUrl = "http://localhost:3000";
+  }
+
   // Environment variable overrides config file
   const envApiUrl = Deno.env.get("VK_API_URL");
   if (envApiUrl) {

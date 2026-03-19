@@ -5,7 +5,7 @@
     ".": "./src/mod.ts"
   },
   "tasks": {
-    "dev": "deno run --allow-net --allow-read --allow-write --allow-env --allow-run src/main.ts",
+    "dev": "VK_USE_DEV_API_DEFAULT=1 deno run --allow-net --allow-read --allow-write --allow-env --allow-run src/main.ts",
     "fmt": "deno fmt",
     "lint": "deno lint",
     "check": "deno check src/main.ts",

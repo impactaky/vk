@@ -99,6 +99,30 @@ export class ApiClient {
     return result.data as T;
   }
 
+  private shouldFallbackToWorkspaceEndpoint(error: unknown): boolean {
+    if (error instanceof SyntaxError) {
+      return true;
+    }
+
+    const message = error instanceof Error ? error.message : String(error);
+    return message.includes("API error (404)");
+  }
+
+  private async requestWorkspaceResource<T>(
+    legacyPath: string,
+    workspacePath: string,
+    options: RequestInit = {},
+  ): Promise<T> {
+    try {
+      return await this.request<T>(legacyPath, options);
+    } catch (error) {
+      if (!this.shouldFallbackToWorkspaceEndpoint(error)) {
+        throw error;
+      }
+      return await this.request<T>(workspacePath, options);
+    }
+  }
+
   /** List all organizations. Calls GET /api/organizations. */
   listOrganizations(): Promise<Organization[]> {
     return (async () => {
@@ -135,7 +159,10 @@ export class ApiClient {
   /** List workspaces (attempts). Calls GET /api/task-attempts with optional task_id filter. */
   listWorkspaces(taskId?: string): Promise<Workspace[]> {
     const query = taskId ? `?task_id=${taskId}` : "";
-    return this.request<Workspace[]>(`/task-attempts${query}`);
+    return this.requestWorkspaceResource<Workspace[]>(
+      `/task-attempts${query}`,
+      `/workspaces${query}`,
+    );
   }
 
   /** Backward-compatible alias for task-attempt naming. */
@@ -145,7 +172,10 @@ export class ApiClient {
 
   /** Get a single workspace by ID. Calls GET /api/task-attempts/:id. */
   getWorkspace(id: string): Promise<Workspace> {
-    return this.request<Workspace>(`/task-attempts/${id}`);
+    return this.requestWorkspaceResource<Workspace>(
+      `/task-attempts/${id}`,
+      `/workspaces/${id}`,
+    );
   }
 
   /** Backward-compatible alias for task-attempt naming. */
@@ -158,7 +188,7 @@ export class ApiClient {
    * Fetches all workspaces and filters client-side (API doesn't support branch filtering).
    */
   async searchWorkspacesByBranch(branchName: string): Promise<Workspace[]> {
-    const allWorkspaces = await this.request<Workspace[]>(`/task-attempts`);
+    const allWorkspaces = await this.listWorkspaces();
     return allWorkspaces.filter((workspace) => workspace.branch === branchName);
   }
 
