@@ -16,10 +16,10 @@ DoD report should be output in Japanese.
 
 ## Steps
 
-- [ ] `/prompts:opsx-new <input>`
-- [ ] `/prompts:opsx-ff`
+- [ ] Call `/prompts:opsx-new` skill with <input>
+- [ ] Call `/prompts:opsx-ff` skill
 - [ ] Loop these steps until verify and review pass. Up to 5 times.
-  - [ ] `/prompts:opsx-apply` in `programmer` agent
-  - [ ] `/prompts:opsx-verify` and `/review` in `reviewer` agent
-- [ ] `/prompts:opsx-sync`
+  - [ ] Call `/prompts:opsx-apply` skill in `programmer` agent
+  - [ ] Call `/prompts:opsx-verify` skill and `/review` in `reviewer` agent
+- [ ] Call `/prompts:opsx-sync` skill
 - [ ] Output the DoD check report in Japanese.
