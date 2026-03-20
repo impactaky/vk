@@ -1,6 +1,6 @@
 # Workflow
 
-Please complete user request.
+This is the workflow to develop.
 **IMPORTANT** You need to follow **Steps** strictly.
 
 ## Input
@@ -23,5 +23,3 @@ DoD report should be output in Japanese.
   - [ ] `/prompts:opsx-verify` and `/review` in `reviewer` agent
 - [ ] `/prompts:opsx-sync`
 - [ ] Output the DoD check report in Japanese.
-
-## From User
