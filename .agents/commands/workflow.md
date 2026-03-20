@@ -1,9 +1,14 @@
 # Workflow
 
-Workflow how to develop.
-You need to follow steps.
+Please complete user request.
+**IMPORTANT** You need to follow **Steps** strictly.
 
-## Goal
+## Input
+
+User request.
+It might contain DoD.
+
+## Output
 
 DoD check report.
 Explain how each DoD is satisfied by the implementation.
@@ -19,6 +24,4 @@ DoD report should be output in Japanese.
 - `/prompts:opsx-sync`
 - Output the DoD check report in Japanese.
 
-## User Input
-
-
+## From User
