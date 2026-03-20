@@ -3,11 +3,7 @@
 Workflow how to develop.
 You need to follow steps.
 
-## Input
-
-Description for implementation and DoD.
-
-## Output
+## Goal
 
 DoD check report.
 Explain how each DoD is satisfied by the implementation.
@@ -22,3 +18,7 @@ DoD report should be output in Japanese.
   - `/prompts:opsx-verify` and `/review` in `reviewer` agent
 - `/prompts:opsx-sync`
 - Output the DoD check report in Japanese.
+
+## User Input
+
+
