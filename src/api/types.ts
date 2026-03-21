@@ -161,7 +161,7 @@ export type CreateWorkspace = CreateAndStartWorkspaceRequest;
 /** Response body for creating and starting a new workspace. */
 export interface CreateAndStartWorkspaceResponse {
   workspace: Workspace;
-  execution_process: ExecutionProcess;
+  execution_process: ExecutionProcess | null;
 }
 
 /** Request body for renaming a workspace's git branch. */

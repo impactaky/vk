@@ -148,7 +148,9 @@ taskAttemptsCommand
       }
 
       console.log(
-        `Workspace ${createResult.workspace.id} created and started.`,
+        createResult.execution_process
+          ? `Workspace ${createResult.workspace.id} created and started.`
+          : `Workspace ${createResult.workspace.id} created.`,
       );
     } catch (error) {
       handleCliError(error);
@@ -202,7 +204,9 @@ taskAttemptsCommand
       }
 
       console.log(
-        `Workspace ${spinOffResult.workspace.id} spun off from ${attemptId}.`,
+        spinOffResult.execution_process
+          ? `Workspace ${spinOffResult.workspace.id} spun off from ${attemptId}.`
+          : `Workspace ${spinOffResult.workspace.id} created from ${attemptId}.`,
       );
     } catch (error) {
       handleCliError(error);

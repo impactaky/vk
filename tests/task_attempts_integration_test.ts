@@ -8,6 +8,16 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { config } from "./helpers/test-server.ts";
 
+function assertWorkspaceCreateResponse(parsed: {
+  workspace?: { id?: string };
+  execution_process?: { id?: string } | null;
+}) {
+  assertExists(parsed.workspace?.id);
+  if (parsed.execution_process !== undefined && parsed.execution_process !== null) {
+    assertExists(parsed.execution_process.id);
+  }
+}
+
 type ApiResult<T> = {
   success: boolean;
   data?: T;
@@ -384,6 +394,114 @@ Deno.test("CLI: vk workspace create requires prompt source", async () => {
   );
 });
 
+Deno.test("CLI: vk workspace create --description falls back to /workspaces on 405", async () => {
+  const testHome = await Deno.makeTempDir({
+    prefix: "vk-workspace-create-405-",
+  });
+  let taskAttemptsCreateCalls = 0;
+  let workspaceCreateBody = "";
+
+  const server = Deno.serve(
+    { hostname: "127.0.0.1", port: 0 },
+    async (request) => {
+      const { pathname } = new URL(request.url);
+
+      if (pathname === "/api/repos") {
+        return Response.json({
+          success: true,
+          data: [{
+            id: "repo-1",
+            path: Deno.cwd(),
+            name: "vk",
+            display_name: "VK",
+            setup_script: null,
+            cleanup_script: null,
+            copy_files: null,
+            parallel_setup_script: false,
+            dev_server_script: null,
+            default_target_branch: null,
+            default_working_dir: null,
+            created_at: "2026-01-01T00:00:00Z",
+            updated_at: "2026-01-01T00:00:00Z",
+          }],
+        });
+      }
+
+      if (pathname === "/api/task-attempts/create-and-start") {
+        taskAttemptsCreateCalls += 1;
+        return new Response("", { status: 405 });
+      }
+
+      if (pathname === "/api/workspaces/create-and-start") {
+        workspaceCreateBody = await request.text();
+        return Response.json({
+          success: true,
+          data: {
+            workspace: {
+              id: "ws-405",
+              branch: "feature/test",
+              name: "Workspace 405",
+            },
+            execution_process: { id: "proc-405" },
+          },
+        });
+      }
+
+      return new Response("Not found", { status: 404 });
+    },
+  );
+
+  try {
+    const address = server.addr as Deno.NetAddr;
+    const command = new Deno.Command("deno", {
+      args: [
+        "run",
+        "--allow-net",
+        "--allow-read",
+        "--allow-write",
+        "--allow-env",
+        "src/main.ts",
+        "workspace",
+        "create",
+        "--description",
+        "test",
+        "--json",
+      ],
+      stdout: "piped",
+      stderr: "piped",
+      env: {
+        VK_API_URL: `http://127.0.0.1:${address.port}`,
+        HOME: testHome,
+      },
+    });
+
+    const { code, stdout, stderr } = await command.output();
+    const stderrText = new TextDecoder().decode(stderr);
+
+    assertEquals(
+      code,
+      0,
+      `Expected exit code 0 for workspace create fallback on 405. stderr: ${stderrText}`,
+    );
+    assertEquals(taskAttemptsCreateCalls, 1);
+    assertEquals(
+      workspaceCreateBody,
+      JSON.stringify({
+        prompt: "test",
+        executor_config: { executor: "CLAUDE_CODE", variant: "DEFAULT" },
+        repos: [{ repo_id: "repo-1", target_branch: "main" }],
+      }),
+    );
+
+    const parsed = JSON.parse(new TextDecoder().decode(stdout));
+    assertEquals(parsed.workspace.id, "ws-405");
+    assertEquals(parsed.execution_process.id, "proc-405");
+  } finally {
+    await server.shutdown();
+    await Deno.remove(testHome, { recursive: true });
+  }
+});
+
 Deno.test(
   "CLI: vk workspace create rejects --description with --file",
   async () => {
@@ -481,8 +599,7 @@ Deno.test("CLI: vk workspace create supports --file", async () => {
     );
 
     const parsed = JSON.parse(new TextDecoder().decode(stdout));
-    assertExists(parsed.workspace?.id);
-    assertExists(parsed.execution_process?.id);
+    assertWorkspaceCreateResponse(parsed);
     await cleanupAttempt(parsed.workspace?.id);
   } finally {
     await Deno.remove(promptFile, { recursive: true });
@@ -578,8 +695,7 @@ Deno.test("CLI: vk workspace create resolves repo by name and supports --json ou
   );
 
   const parsed = JSON.parse(new TextDecoder().decode(stdout));
-  assertExists(parsed.workspace?.id);
-  assertExists(parsed.execution_process?.id);
+  assertWorkspaceCreateResponse(parsed);
   await cleanupAttempt(parsed.workspace?.id);
 });
 
@@ -634,8 +750,7 @@ Deno.test("CLI: vk workspace create auto-detects repo from current directory", a
   );
 
   const parsed = JSON.parse(new TextDecoder().decode(stdout));
-  assertExists(parsed.workspace?.id);
-  assertExists(parsed.execution_process?.id);
+  assertWorkspaceCreateResponse(parsed);
   await cleanupAttempt(parsed.workspace?.id);
 });
 
@@ -683,8 +798,7 @@ Deno.test("CLI: vk workspace create resolves repo by id", async () => {
   );
 
   const parsed = JSON.parse(new TextDecoder().decode(stdout));
-  assertExists(parsed.workspace?.id);
-  assertExists(parsed.execution_process?.id);
+  assertWorkspaceCreateResponse(parsed);
   await cleanupAttempt(parsed.workspace?.id);
 });
 
@@ -808,8 +922,7 @@ Deno.test("CLI: vk workspace spin-off <id> --description --json", async () => {
   );
 
   const parsed = JSON.parse(new TextDecoder().decode(stdout));
-  assertExists(parsed.workspace?.id);
-  assertExists(parsed.execution_process?.id);
+  assertWorkspaceCreateResponse(parsed);
   await cleanupAttempt(parsed.workspace?.id);
 });
 
@@ -860,8 +973,7 @@ Deno.test("CLI: vk workspace spin-off <id> --file --json", async () => {
     );
 
     const parsed = JSON.parse(new TextDecoder().decode(stdout));
-    assertExists(parsed.workspace?.id);
-    assertExists(parsed.execution_process?.id);
+    assertWorkspaceCreateResponse(parsed);
     await cleanupAttempt(parsed.workspace?.id);
   } finally {
     await Deno.remove(promptFile, { recursive: true });

@@ -48,7 +48,10 @@ Start a new change using the experimental artifact-driven approach.
    ```
    This outputs the template and context for creating the first artifact.
 
-6. **STOP and wait for user direction**
+6. **Continue automatically when used in the required workflow**
+
+   - If running as part of a required repository workflow, report the artifact status briefly and continue to the next workflow step unless blocked or user clarification is required.
+   - Otherwise, stop and wait for user direction.
 
 **Output**
 
@@ -57,7 +60,7 @@ After completing the steps, summarize:
 - Schema/workflow being used and its artifact sequence
 - Current status (0/N artifacts complete)
 - The template for the first artifact
-- Prompt: "Ready to create the first artifact? Run `/opsx:continue` or just describe what this change is about and I'll draft it."
+- Prompt: If running interactively, "Ready to create the first artifact? Run `/opsx:continue` or just describe what this change is about and I'll draft it."
 
 **Guardrails**
 - Do NOT create any artifacts yet - just show the instructions

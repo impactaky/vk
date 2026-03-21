@@ -105,7 +105,10 @@ export class ApiClient {
     }
 
     const message = error instanceof Error ? error.message : String(error);
-    return message.includes("API error (404)");
+    return message.includes("API error (404)") ||
+      message.includes("API error (405)") ||
+      (message.includes("API error (400)") &&
+        message.includes("create-and-start"));
   }
 
   private async requestWorkspaceResource<T>(
@@ -193,16 +196,41 @@ export class ApiClient {
   }
 
   /** Create and start a new workspace for a prompt. Calls POST /api/task-attempts/create-and-start. */
-  createWorkspace(
+  async createWorkspace(
     workspace: CreateAndStartWorkspaceRequest,
   ): Promise<CreateAndStartWorkspaceResponse> {
-    return this.request<CreateAndStartWorkspaceResponse>(
-      "/task-attempts/create-and-start",
-      {
-        method: "POST",
-        body: JSON.stringify(workspace),
-      },
-    );
+    const options = {
+      method: "POST",
+      body: JSON.stringify(workspace),
+    };
+
+    try {
+      return await this.request<CreateAndStartWorkspaceResponse>(
+        "/task-attempts/create-and-start",
+        options,
+      );
+    } catch (legacyError) {
+      if (!this.shouldFallbackToWorkspaceEndpoint(legacyError)) {
+        throw legacyError;
+      }
+    }
+
+    try {
+      return await this.request<CreateAndStartWorkspaceResponse>(
+        "/workspaces/create-and-start",
+        options,
+      );
+    } catch (workspaceStartError) {
+      if (!this.shouldFallbackToWorkspaceEndpoint(workspaceStartError)) {
+        throw workspaceStartError;
+      }
+    }
+
+    const createdWorkspace = await this.request<Workspace>("/workspaces", options);
+    return {
+      workspace: createdWorkspace,
+      execution_process: null,
+    };
   }
 
   /** Update workspace properties. Calls PUT /api/task-attempts/:id. */

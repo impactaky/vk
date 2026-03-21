@@ -10,6 +10,11 @@ artifacts:
       Create the definition of done document that lists the concrete checks
       required to consider the change complete.
 
+      If `.agents/reporting/dod-points.md` exists, treat it as repo-specific
+      guidance for what the final DoD report should emphasize. Reflect those
+      points in the completion criteria when relevant, especially for
+      user-facing commands, validation method, and confidence labeling.
+
       Usually the user provides the DoD content. If not, derive it from the
       proposal, specs, design, and tasks.
 
@@ -44,4 +49,3 @@ apply:
   instruction: |
     Read context files, work through pending tasks, mark complete as you go.
     Pause if you hit blockers or need clarification.
-
