@@ -13,29 +13,79 @@ type PromptSourceOptions = {
   file?: string;
 };
 
+const EDITOR_TEMPLATE = [
+  "# Enter the workspace prompt. Lines starting with # are ignored.",
+  "# Save and close the editor to continue.",
+  "",
+].join("\n");
+
+function validatePrompt(prompt: string, errorMessage: string): string {
+  if (prompt.trim().length === 0) {
+    throw new Error(errorMessage);
+  }
+  return prompt;
+}
+
+function normalizeEditorPrompt(prompt: string): string {
+  return prompt
+    .split("\n")
+    .filter((line) => !line.startsWith("#"))
+    .join("\n")
+    .trim();
+}
+
+async function resolvePromptFromEditor(): Promise<string> {
+  const tempFile = await Deno.makeTempFile({
+    prefix: "vk-workspace-prompt-",
+    suffix: ".md",
+  });
+
+  try {
+    await Deno.writeTextFile(tempFile, EDITOR_TEMPLATE);
+    const editor = Deno.env.get("GIT_EDITOR") ?? Deno.env.get("VISUAL") ??
+      Deno.env.get("EDITOR") ?? "vi";
+    const result = await new Deno.Command("sh", {
+      args: ["-lc", 'eval "$VK_EDITOR \\"$1\\""', "sh", tempFile],
+      env: { VK_EDITOR: editor },
+      stdin: "inherit",
+      stdout: "inherit",
+      stderr: "inherit",
+    }).output();
+
+    if (result.code !== 0) {
+      throw new Error(`Editor exited with code ${result.code}.`);
+    }
+
+    const prompt = await Deno.readTextFile(tempFile);
+    return validatePrompt(
+      normalizeEditorPrompt(prompt),
+      "Editor prompt must contain non-empty text.",
+    );
+  } finally {
+    await Deno.remove(tempFile);
+  }
+}
+
 async function resolvePrompt(options: PromptSourceOptions): Promise<string> {
   if (options.description && options.file) {
     throw new Error("Options --description and --file are mutually exclusive.");
   }
 
-  let prompt: string | undefined;
   if (options.file) {
-    prompt = await Deno.readTextFile(options.file);
-    if (prompt.trim().length === 0) {
-      throw new Error("Option --file must contain non-empty text.");
-    }
-    return prompt;
+    return validatePrompt(
+      await Deno.readTextFile(options.file),
+      "Option --file must contain non-empty text.",
+    );
   }
 
   if (options.description) {
-    prompt = options.description;
-    if (prompt.trim().length === 0) {
-      throw new Error("Option --description must be non-empty.");
-    }
-    return prompt;
+    return validatePrompt(
+      options.description,
+      "Option --description must be non-empty.",
+    );
   }
 
-  throw new Error("Option --description or --file is required.");
+  return await resolvePromptFromEditor();
 }
 
 export const taskAttemptsCommand = new Command()

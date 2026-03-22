@@ -163,15 +163,19 @@ Current top-level commands:
 ### `vk workspace create`
 
 - Creates and starts a new workspace.
-- Required options:
-  - Exactly one prompt source:
-    - `--description <text>`
-    - `--file <path>`
+- Prompt source:
+  - `--description <text>` or `--file <path>` when provided
+  - if neither is provided, opens the configured editor and uses the saved
+    content as the prompt
 - Repository selection:
   - `--repo <id-or-name>` (optional)
-  - if omitted, repository is auto-resolved from current directory context
-    using existing repository resolver behavior
+  - if omitted, repository is auto-resolved from current directory context using
+    existing repository resolver behavior
 - Prompt content must be non-empty text (empty/whitespace input is rejected).
+- Editor behavior:
+  - resolves editor from `GIT_EDITOR`, then `VISUAL`, then `EDITOR`, otherwise
+    `vi`
+  - editor comment lines beginning with `#` are ignored
 - Optional options:
   - `--target-branch <name>` (defaults to `main`)
   - `--executor <name:variant>` (defaults to configured `defaultExecutor`,
@@ -187,11 +191,15 @@ Current top-level commands:
 
 - Creates and starts a new workspace from a parent workspace branch.
 - If `id` is missing, uses the same resolver order as `show`.
-- Required option:
-  - Exactly one prompt source:
-    - `--description <text>`
-    - `--file <path>`
+- Prompt source:
+  - `--description <text>` or `--file <path>` when provided
+  - if neither is provided, opens the configured editor and uses the saved
+    content as the prompt
 - Prompt content must be non-empty text (empty/whitespace input is rejected).
+- Editor behavior:
+  - resolves editor from `GIT_EDITOR`, then `VISUAL`, then `EDITOR`, otherwise
+    `vi`
+  - editor comment lines beginning with `#` are ignored
 - API request:
   - `POST /api/task-attempts/create-and-start`
   - body includes:
@@ -247,8 +255,8 @@ Current top-level commands:
 
 ### `vk workspace rename-branch [id]`
 
-- Command placement decision: keep `rename-branch` as a standalone
-  `workspace` subcommand.
+- Command placement decision: keep `rename-branch` as a standalone `workspace`
+  subcommand.
 - Renames the workspace branch for one workspace.
 - Required option:
   - `--new-branch-name <name>`
