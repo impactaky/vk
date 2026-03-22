@@ -226,7 +226,10 @@ export class ApiClient {
       }
     }
 
-    const createdWorkspace = await this.request<Workspace>("/workspaces", options);
+    const createdWorkspace = await this.request<Workspace>(
+      "/workspaces",
+      options,
+    );
     return {
       workspace: createdWorkspace,
       execution_process: null,
