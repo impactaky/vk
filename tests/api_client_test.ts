@@ -162,7 +162,10 @@ Deno.test("ApiClient - workspace git and pull-request operations use latest nest
     { hostname: "127.0.0.1", port: 0 },
     async (request) => {
       const url = new URL(request.url);
-      requests.push({ method: request.method, path: `${url.pathname}${url.search}` });
+      requests.push({
+        method: request.method,
+        path: `${url.pathname}${url.search}`,
+      });
 
       switch (url.pathname) {
         case "/api/workspaces/ws-1/git/branch":

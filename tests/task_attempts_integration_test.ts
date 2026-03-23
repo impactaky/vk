@@ -13,7 +13,9 @@ function assertWorkspaceCreateResponse(parsed: {
   execution_process?: { id?: string } | null;
 }) {
   assertExists(parsed.workspace?.id);
-  if (parsed.execution_process !== undefined && parsed.execution_process !== null) {
+  if (
+    parsed.execution_process !== undefined && parsed.execution_process !== null
+  ) {
     assertExists(parsed.execution_process.id);
   }
 }
