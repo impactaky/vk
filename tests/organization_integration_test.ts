@@ -64,7 +64,9 @@ Deno.test("API: Organizations endpoint exists", async () => {
 Deno.test("API: List organizations returns array when accessible", async () => {
   const result = await apiCall<{ organizations?: unknown[] }>("/organizations");
 
-  if (result.status === 401 || result.rawText !== undefined || !result.success) {
+  if (
+    result.status === 401 || result.rawText !== undefined || !result.success
+  ) {
     return;
   }
 

@@ -16,8 +16,10 @@ import type {
   CreateAndStartWorkspaceResponse,
   CreatePRRequest,
   FollowUpRequest,
+  GetOrganizationResponse,
   GitBranch,
   InitRepoRequest,
+  ListOrganizationsResponse,
   MergeResult,
   MergeWorkspaceRequest,
   Organization,
@@ -32,8 +34,6 @@ import type {
   Repo,
   RepoBranchStatus,
   Session,
-  GetOrganizationResponse,
-  ListOrganizationsResponse,
   UnifiedPRComment,
   UpdateRepo,
   UpdateWorkspace,
@@ -268,8 +268,8 @@ export class ApiClient {
     return this.request<PRAttachResult>(
       `/workspaces/${id}/pull-requests/attach`,
       {
-      method: "POST",
-      body: JSON.stringify(request),
+        method: "POST",
+        body: JSON.stringify(request),
       },
     );
   }
