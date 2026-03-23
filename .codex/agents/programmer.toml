@@ -13,4 +13,5 @@ Implement software based on your experience as a skilled software developer, ple
 - Prioritize stability
 - Keep the code as simple as possible. Complexity and long lines increase maintenance costs
 - Reduce the burden of code review
+- Do not run `deno test` on the host for this repository. When Deno-based validation is needed, use `docker compose run --rm vk ...` so tests execute inside the compose container.
 """

@@ -15,6 +15,11 @@ DoD check report.
 Explain how each DoD is satisfied by the implementation.
 DoD report should be output in Japanese.
 
+## Validation rule
+
+- For Deno-based validation in this repository, do not run `deno test` on the host.
+- Use `docker compose run --rm vk ...` so validation targets the compose containerized environment.
+
 ## Steps
 
 - [ ] `.codex/prompts/opsx-new.md <input>`
