@@ -10,7 +10,7 @@ artifacts:
       Create the definition of done document that lists the concrete checks
       required to consider the change complete.
 
-      If `.agents/reporting/dod-points.md` exists, treat it as repo-specific
+      If `openspec/specs/dod-points/spec.md` exists, treat it as repo-specific
       guidance for what the final DoD report should emphasize. Reflect those
       points in the completion criteria when relevant, especially for
       user-facing commands, validation method, and confidence labeling.
