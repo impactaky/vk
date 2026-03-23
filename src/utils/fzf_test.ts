@@ -10,6 +10,7 @@ Deno.test("formatRepository formats repository correctly", () => {
     display_name: "Demo Repo",
     setup_script: null,
     cleanup_script: null,
+    archive_script: null,
     copy_files: null,
     parallel_setup_script: false,
     dev_server_script: null,

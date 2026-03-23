@@ -160,7 +160,7 @@ Deno.test("ApiClient - workspace git and pull-request operations use latest nest
 
   const server = Deno.serve(
     { hostname: "127.0.0.1", port: 0 },
-    async (request) => {
+    (request) => {
       const url = new URL(request.url);
       requests.push({
         method: request.method,
