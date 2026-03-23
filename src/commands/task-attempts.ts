@@ -1,5 +1,6 @@
 import { Command } from "@cliffy/command";
 import { Table } from "@cliffy/table";
+import { parseArgsStringToArgv } from "string-argv";
 import { loadConfig } from "../api/config.ts";
 import { ApiClient } from "../api/client.ts";
 import type { UpdateWorkspace } from "../api/types.ts";
@@ -30,63 +31,6 @@ function getConfiguredEditor(): string {
   return editor.trim();
 }
 
-function splitCommand(command: string): string[] {
-  const args: string[] = [];
-  let current = "";
-  let quote: "'" | '"' | null = null;
-
-  for (let i = 0; i < command.length; i += 1) {
-    const char = command[i];
-
-    if (quote) {
-      if (char === quote) {
-        quote = null;
-      } else if (char === "\\" && quote === '"' && i + 1 < command.length) {
-        i += 1;
-        current += command[i];
-      } else {
-        current += char;
-      }
-      continue;
-    }
-
-    if (char === "'" || char === '"') {
-      quote = char;
-      continue;
-    }
-
-    if (/\s/.test(char)) {
-      if (current.length > 0) {
-        args.push(current);
-        current = "";
-      }
-      continue;
-    }
-
-    if (char === "\\" && i + 1 < command.length) {
-      i += 1;
-      current += command[i];
-      continue;
-    }
-
-    current += char;
-  }
-
-  if (quote) {
-    throw new Error("Editor command contains an unmatched quote.");
-  }
-
-  if (current.length > 0) {
-    args.push(current);
-  }
-
-  if (args.length === 0) {
-    throw new Error("Editor command is empty.");
-  }
-
-  return args;
-}
-
 function normalizeEditorPrompt(text: string): string {
   return text
     .split("\n")
@@ -96,7 +40,10 @@ function normalizeEditorPrompt(text: string): string {
 }
 
 async function resolvePromptFromEditor(): Promise<string> {
-  const [command, ...args] = splitCommand(getConfiguredEditor());
+  const [command, ...args] = parseArgsStringToArgv(getConfiguredEditor());
+  if (!command) {
+    throw new Error("Editor command is empty.");
+  }
   const tempFile = await Deno.makeTempFile({
     prefix: "vk-workspace-prompt-",
     suffix: ".md",

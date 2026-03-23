@@ -16,6 +16,12 @@ Get started with `vk` in under 2 minutes:
 deno install -g --allow-net --allow-read --allow-write --allow-env --allow-run -n vk https://raw.githubusercontent.com/BloopAI/vk/main/src/main.ts
 ```
 
+`vk workspace create` / `vk workspace spin-off` can launch the editor from
+`$GIT_EDITOR`, `$VISUAL`, or `$EDITOR`. The install example keeps
+`--allow-run` broad because the executable name is user-configured. If you pin
+your editor command ahead of time, you can replace it with a narrower
+`--allow-run=<editor>,git,fzf`.
+
 **From GitHub releases:** Download pre-built binaries from the
 [releases page](https://github.com/BloopAI/vk/releases).
 
@@ -69,6 +75,10 @@ cd vk
 # Install globally
 deno install -g --allow-net --allow-read --allow-write --allow-env --allow-run -n vk --config deno.json src/main.ts
 ```
+
+As above, `--allow-run` is broad by default so editor fallback works with the
+user's configured editor. If you operate with a fixed editor command, you can
+narrow the allowlist manually.
 
 To uninstall:
 
