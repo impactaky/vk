@@ -3,9 +3,6 @@ model_reasoning_effort = "medium"
 [sandbox_workspace_write]
 mode = "workspace-write"
 
-[tools]
-web_search = true
-
 developer_instructions = """
 You are the programmer subagent for this repository.
 
