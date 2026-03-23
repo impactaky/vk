@@ -8,19 +8,36 @@
  */
 
 /** Standard API response wrapper for all endpoints. */
-export interface ApiResponse<T> {
+export interface ApiResponse<T, E = unknown> {
   success: boolean;
   data?: T;
-  error?: string;
   message?: string;
+  error?: string;
+  error_data?: E;
 }
 
 /** An organization represents a tenant/grouping unit in the system. */
 export interface Organization {
   id: string;
   name: string;
+  slug?: string;
+  is_personal?: boolean;
+  issue_prefix?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface OrganizationWithRole extends Organization {
+  user_role: string;
+}
+
+export interface ListOrganizationsResponse {
+  organizations: OrganizationWithRole[];
+}
+
+export interface GetOrganizationResponse {
+  organization: Organization;
+  user_role: string;
 }
 
 /**
@@ -29,7 +46,7 @@ export interface Organization {
  */
 export interface Workspace {
   id: string;
-  task_id: string;
+  task_id: string | null;
   /** Docker container reference for the workspace environment. */
   container_ref: string | null;
   branch: string;
@@ -40,6 +57,7 @@ export interface Workspace {
   archived: boolean;
   pinned: boolean;
   name: string | null;
+  worktree_deleted?: boolean;
 }
 
 /** Request body for updating workspace properties. */
@@ -145,14 +163,19 @@ export interface WorkspaceRepoInput {
 /** Executor configuration accepted by create-and-start workspace APIs. */
 export type ExecutorConfig = ExecutorProfileID;
 
+export interface LinkedIssueInfo {
+  remote_project_id: string;
+  issue_id: string;
+}
+
 /** Request body for creating and starting a new workspace. */
 export interface CreateAndStartWorkspaceRequest {
   prompt: string;
   executor_config: ExecutorConfig;
   repos: WorkspaceRepoInput[];
   name?: string;
-  linked_issue?: string;
-  image_ids?: string[];
+  linked_issue?: LinkedIssueInfo;
+  attachment_ids?: string[];
 }
 
 /** @deprecated Use CreateAndStartWorkspaceRequest. */
@@ -167,6 +190,10 @@ export interface CreateAndStartWorkspaceResponse {
 /** Request body for renaming a workspace's git branch. */
 export interface RenameBranchRequest {
   new_branch_name: string;
+}
+
+export interface RenameBranchResponse {
+  branch: string;
 }
 
 /** Request body for creating a pull request from a workspace. */
@@ -298,6 +325,7 @@ export interface Repo {
   display_name: string;
   setup_script: string | null;
   cleanup_script: string | null;
+  archive_script: string | null;
   copy_files: string | null;
   parallel_setup_script: boolean;
   dev_server_script: string | null;
@@ -312,9 +340,12 @@ export interface UpdateRepo {
   display_name?: string | null;
   setup_script?: string | null;
   cleanup_script?: string | null;
+  archive_script?: string | null;
   copy_files?: string | null;
   parallel_setup_script?: boolean | null;
   dev_server_script?: string | null;
+  default_target_branch?: string | null;
+  default_working_dir?: string | null;
 }
 
 /** Request body for registering an existing git repository. */

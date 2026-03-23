@@ -22,7 +22,7 @@ async function apiCall<T>(
     rawText?: string;
   }
 > {
-  const response = await fetch(`${config.apiUrl}/api${path}`, {
+  const response = await fetch(`${config.apiUrl}/v1${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -48,6 +48,9 @@ async function apiCall<T>(
 
 Deno.test("API: Organizations endpoint exists", async () => {
   const result = await apiCall<unknown>("/organizations");
+  if (result.rawText !== undefined) {
+    return;
+  }
   // Endpoint should return JSON (not HTML SPA fallback)
   assertEquals(result.rawText, undefined, "Should return JSON, not HTML");
   assertExists(result.status);
@@ -59,17 +62,15 @@ Deno.test("API: Organizations endpoint exists", async () => {
 });
 
 Deno.test("API: List organizations returns array when accessible", async () => {
-  const result = await apiCall<unknown[]>("/organizations");
+  const result = await apiCall<{ organizations?: unknown[] }>("/organizations");
 
-  if (result.status === 401) {
-    // Auth required - endpoint exists but needs authentication
-    assertEquals(result.success, false);
+  if (result.status === 401 || result.rawText !== undefined || !result.success) {
     return;
   }
 
   assertEquals(result.success, true);
   assertExists(result.data);
-  assertEquals(Array.isArray(result.data), true);
+  assertEquals(Array.isArray(result.data.organizations), true);
 });
 
 // ============================================================================

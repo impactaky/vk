@@ -40,13 +40,18 @@ organizationCommand
       }
 
       const table = new Table()
-        .header(["ID", "Name", "Created", "Updated"])
-        .body(organizations.map((org) => [
-          org.id,
-          org.name,
-          org.created_at,
-          org.updated_at,
-        ]));
+        .header(["ID", "Name", "Slug", "Role", "Created", "Updated"])
+        .body(organizations.map((org): string[] => {
+          const role = "user_role" in org ? String(org.user_role) : "-";
+          return [
+            org.id,
+            org.name,
+            org.slug || "-",
+            role,
+            org.created_at,
+            org.updated_at,
+          ];
+        }));
 
       table.render();
     } catch (error) {
@@ -74,6 +79,12 @@ organizationCommand
 
       console.log(`ID:       ${organization.id}`);
       console.log(`Name:     ${organization.name}`);
+      if (organization.slug) {
+        console.log(`Slug:     ${organization.slug}`);
+      }
+      if (organization.issue_prefix) {
+        console.log(`Issue:    ${organization.issue_prefix}`);
+      }
       console.log(`Created:  ${organization.created_at}`);
       console.log(`Updated:  ${organization.updated_at}`);
     } catch (error) {

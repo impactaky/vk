@@ -10,6 +10,8 @@ Use these repo-specific points when writing or evaluating a DoD report for VK.
 - `MUST`: State whether validation used the live API, a mock endpoint, tests, or static inspection.
 - `MUST`: Distinguish observed behavior from inference. Do not report inferred behavior as confirmed behavior.
 - `MUST`: When a command still depends on external state, state that dependency explicitly.
+- `MUST`: When the request is about the latest API or latest behavior, explicitly state which authoritative source was used to confirm it. If DeepWiki was required, say that DeepWiki was used and whether it was used for implementation guidance, static verification, or both.
+- `MUST`: For VK CLI validation that runs via Deno, state whether it was executed through `docker compose run --rm vk ...`. In this repo, prefer compose-based execution over host-side `deno run` / `deno test`, because validation should target the isolated `vibe-kanban` service rather than any host-side instance.
 
 ## Recommended Points
 

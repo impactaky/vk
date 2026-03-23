@@ -96,6 +96,9 @@ repositoryCommand
       if (repo.cleanup_script) {
         console.log(`Cleanup Script:       ${repo.cleanup_script}`);
       }
+      if (repo.archive_script) {
+        console.log(`Archive Script:       ${repo.archive_script}`);
+      }
       if (repo.copy_files) {
         console.log(`Copy Files:           ${repo.copy_files}`);
       }
@@ -104,6 +107,12 @@ repositoryCommand
       );
       if (repo.dev_server_script) {
         console.log(`Dev Server Script:    ${repo.dev_server_script}`);
+      }
+      if (repo.default_target_branch) {
+        console.log(`Default Target:       ${repo.default_target_branch}`);
+      }
+      if (repo.default_working_dir) {
+        console.log(`Default Working Dir:  ${repo.default_working_dir}`);
       }
       console.log(`Created:              ${repo.created_at}`);
       console.log(`Updated:              ${repo.updated_at}`);
@@ -196,10 +205,19 @@ repositoryCommand
   .option("--display-name <name:string>", "New display name")
   .option("--setup-script <script:string>", "Setup script command")
   .option("--cleanup-script <script:string>", "Cleanup script command")
+  .option("--archive-script <script:string>", "Archive script command")
   .option("--copy-files <files:string>", "Files to copy (glob patterns)")
   .option("--parallel-setup", "Enable parallel setup script")
   .option("--no-parallel-setup", "Disable parallel setup script")
   .option("--dev-server-script <script:string>", "Dev server script command")
+  .option(
+    "--default-target-branch <name:string>",
+    "Default target branch for new workspaces",
+  )
+  .option(
+    "--default-working-dir <path:string>",
+    "Default working directory for workspace execution",
+  )
   .action(async (options, id?: string) => {
     try {
       const update: UpdateRepo = {};
@@ -213,6 +231,9 @@ repositoryCommand
       if (options.cleanupScript !== undefined) {
         update.cleanup_script = options.cleanupScript || null;
       }
+      if (options.archiveScript !== undefined) {
+        update.archive_script = options.archiveScript || null;
+      }
       if (options.copyFiles !== undefined) {
         update.copy_files = options.copyFiles || null;
       }
@@ -221,6 +242,12 @@ repositoryCommand
       }
       if (options.devServerScript !== undefined) {
         update.dev_server_script = options.devServerScript || null;
+      }
+      if (options.defaultTargetBranch !== undefined) {
+        update.default_target_branch = options.defaultTargetBranch || null;
+      }
+      if (options.defaultWorkingDir !== undefined) {
+        update.default_working_dir = options.defaultWorkingDir || null;
       }
 
       if (Object.keys(update).length === 0) {

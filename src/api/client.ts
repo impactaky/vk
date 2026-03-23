@@ -28,9 +28,12 @@ import type {
   RebaseWorkspaceRequest,
   RegisterRepoRequest,
   RenameBranchRequest,
+  RenameBranchResponse,
   Repo,
   RepoBranchStatus,
   Session,
+  GetOrganizationResponse,
+  ListOrganizationsResponse,
   UnifiedPRComment,
   UpdateRepo,
   UpdateWorkspace,
@@ -55,8 +58,9 @@ export class ApiClient {
   private async request<T>(
     path: string,
     options: RequestInit = {},
+    prefix = "/api",
   ): Promise<T> {
-    const url = `${this.baseUrl}/api${path}`;
+    const url = `${this.baseUrl}${prefix}${path}`;
     const method = options.method || "GET";
 
     // Verbose: Log request details
@@ -99,86 +103,44 @@ export class ApiClient {
     return result.data as T;
   }
 
-  private shouldFallbackToWorkspaceEndpoint(error: unknown): boolean {
-    if (error instanceof SyntaxError) {
-      return true;
-    }
-
-    const message = error instanceof Error ? error.message : String(error);
-    return message.includes("API error (404)") ||
-      message.includes("API error (405)") ||
-      (message.includes("API error (400)") &&
-        message.includes("create-and-start"));
-  }
-
-  private async requestWorkspaceResource<T>(
-    legacyPath: string,
-    workspacePath: string,
-    options: RequestInit = {},
-  ): Promise<T> {
-    try {
-      return await this.request<T>(legacyPath, options);
-    } catch (error) {
-      if (!this.shouldFallbackToWorkspaceEndpoint(error)) {
-        throw error;
-      }
-      return await this.request<T>(workspacePath, options);
-    }
-  }
-
-  /** List all organizations. Calls GET /api/organizations. */
+  /** List all organizations. Calls GET /v1/organizations. */
   listOrganizations(): Promise<Organization[]> {
     return (async () => {
-      const response = await this.request<
-        Organization[] | { organizations: Organization[] }
-      >("/organizations");
-      if (Array.isArray(response)) {
-        return response;
-      }
-      if (
-        response &&
-        "organizations" in response &&
-        Array.isArray(response.organizations)
-      ) {
-        return response.organizations;
-      }
-      return [];
+      const response = await this.request<ListOrganizationsResponse>(
+        "/organizations",
+        {},
+        "/v1",
+      );
+      return response.organizations;
     })();
   }
 
-  /** Get a single organization by ID. Calls GET /api/organizations/:id. */
+  /** Get a single organization by ID. Calls GET /v1/organizations/:id. */
   getOrganization(id: string): Promise<Organization> {
     return (async () => {
-      const response = await this.request<
-        Organization | { organization: Organization }
-      >(`/organizations/${id}`);
-      if (response && "organization" in response) {
-        return response.organization;
-      }
-      return response;
+      const response = await this.request<GetOrganizationResponse>(
+        `/organizations/${id}`,
+        {},
+        "/v1",
+      );
+      return response.organization;
     })();
   }
 
-  /** List workspaces (attempts). Calls GET /api/task-attempts with optional task_id filter. */
+  /** List workspaces. Calls GET /api/workspaces with optional task_id filter. */
   listWorkspaces(taskId?: string): Promise<Workspace[]> {
     const query = taskId ? `?task_id=${taskId}` : "";
-    return this.requestWorkspaceResource<Workspace[]>(
-      `/task-attempts${query}`,
-      `/workspaces${query}`,
-    );
+    return this.request<Workspace[]>(`/workspaces${query}`);
   }
 
-  /** Backward-compatible alias for task-attempt naming. */
+  /** CLI-facing alias retained for command module naming. */
   listTaskAttempts(taskId?: string): Promise<Workspace[]> {
     return this.listWorkspaces(taskId);
   }
 
-  /** Get a single workspace by ID. Calls GET /api/task-attempts/:id. */
+  /** Get a single workspace by ID. Calls GET /api/workspaces/:id. */
   getWorkspace(id: string): Promise<Workspace> {
-    return this.requestWorkspaceResource<Workspace>(
-      `/task-attempts/${id}`,
-      `/workspaces/${id}`,
-    );
+    return this.request<Workspace>(`/workspaces/${id}`);
   }
 
   /** Backward-compatible alias for task-attempt naming. */
@@ -195,152 +157,129 @@ export class ApiClient {
     return allWorkspaces.filter((workspace) => workspace.branch === branchName);
   }
 
-  /** Create and start a new workspace for a prompt. Calls POST /api/task-attempts/create-and-start. */
+  /** Create and start a new workspace for a prompt. Calls POST /api/workspaces/start. */
   async createWorkspace(
     workspace: CreateAndStartWorkspaceRequest,
   ): Promise<CreateAndStartWorkspaceResponse> {
-    const options = {
-      method: "POST",
-      body: JSON.stringify(workspace),
-    };
-
-    try {
-      return await this.request<CreateAndStartWorkspaceResponse>(
-        "/task-attempts/create-and-start",
-        options,
-      );
-    } catch (legacyError) {
-      if (!this.shouldFallbackToWorkspaceEndpoint(legacyError)) {
-        throw legacyError;
-      }
-    }
-
-    try {
-      return await this.request<CreateAndStartWorkspaceResponse>(
-        "/workspaces/create-and-start",
-        options,
-      );
-    } catch (workspaceStartError) {
-      if (!this.shouldFallbackToWorkspaceEndpoint(workspaceStartError)) {
-        throw workspaceStartError;
-      }
-    }
-
-    const createdWorkspace = await this.request<Workspace>("/workspaces", options);
-    return {
-      workspace: createdWorkspace,
-      execution_process: null,
-    };
+    return await this.request<CreateAndStartWorkspaceResponse>(
+      "/workspaces/start",
+      {
+        method: "POST",
+        body: JSON.stringify(workspace),
+      },
+    );
   }
 
-  /** Update workspace properties. Calls PUT /api/task-attempts/:id. */
+  /** Update workspace properties. Calls PUT /api/workspaces/:id. */
   updateWorkspace(id: string, update: UpdateWorkspace): Promise<Workspace> {
-    return this.request<Workspace>(`/task-attempts/${id}`, {
+    return this.request<Workspace>(`/workspaces/${id}`, {
       method: "PUT",
       body: JSON.stringify(update),
     });
   }
 
-  /** Delete a workspace. Calls DELETE /api/task-attempts/:id. */
+  /** Delete a workspace. Calls DELETE /api/workspaces/:id. */
   deleteWorkspace(id: string): Promise<void> {
-    return this.request<void>(`/task-attempts/${id}`, {
+    return this.request<void>(`/workspaces/${id}`, {
       method: "DELETE",
     });
   }
 
-  /** Get all repositories attached to a workspace. Calls GET /api/task-attempts/:id/repos. */
+  /** Get all repositories attached to a workspace. Calls GET /api/workspaces/:id/repos. */
   getWorkspaceRepos(workspaceId: string): Promise<WorkspaceRepo[]> {
-    return this.request<WorkspaceRepo[]>(
-      `/task-attempts/${workspaceId}/repos`,
-    );
+    return this.request<WorkspaceRepo[]>(`/workspaces/${workspaceId}/repos`);
   }
 
-  /** Rename a workspace's git branch. Calls POST /api/task-attempts/:id/rename-branch. */
-  renameBranch(id: string, request: RenameBranchRequest): Promise<Workspace> {
-    return this.request<Workspace>(`/task-attempts/${id}/rename-branch`, {
-      method: "POST",
+  /** Rename a workspace's git branch. Calls PUT /api/workspaces/:id/git/branch. */
+  renameBranch(
+    id: string,
+    request: RenameBranchRequest,
+  ): Promise<RenameBranchResponse> {
+    return this.request<RenameBranchResponse>(`/workspaces/${id}/git/branch`, {
+      method: "PUT",
       body: JSON.stringify(request),
     });
   }
 
-  /** Merge workspace branch with its target branch. Calls POST /api/task-attempts/:id/merge. */
+  /** Merge workspace branch with its target branch. Calls POST /api/workspaces/:id/git/merge. */
   mergeWorkspace(
     id: string,
     request: MergeWorkspaceRequest,
   ): Promise<MergeResult> {
-    return this.request<MergeResult>(`/task-attempts/${id}/merge`, {
+    return this.request<MergeResult>(`/workspaces/${id}/git/merge`, {
       method: "POST",
       body: JSON.stringify(request),
     });
   }
 
-  /** Push workspace branch to remote. Calls POST /api/task-attempts/:id/push. */
+  /** Push workspace branch to remote. Calls POST /api/workspaces/:id/git/push. */
   pushWorkspace(id: string, request: PushWorkspaceRequest): Promise<void> {
-    return this.request<void>(`/task-attempts/${id}/push`, {
+    return this.request<void>(`/workspaces/${id}/git/push`, {
       method: "POST",
       body: JSON.stringify(request),
     });
   }
 
-  /** Rebase workspace branch onto a new base. Calls POST /api/task-attempts/:id/rebase. */
+  /** Rebase workspace branch onto a new base. Calls POST /api/workspaces/:id/git/rebase. */
   rebaseWorkspace(id: string, request: RebaseWorkspaceRequest): Promise<void> {
-    return this.request<void>(`/task-attempts/${id}/rebase`, {
+    return this.request<void>(`/workspaces/${id}/git/rebase`, {
       method: "POST",
       body: JSON.stringify(request),
     });
   }
 
-  /** Stop a running workspace session. Calls POST /api/task-attempts/:id/stop. */
+  /** Stop a running workspace session. Calls POST /api/workspaces/:id/execution/stop. */
   stopWorkspace(id: string): Promise<void> {
-    return this.request<void>(`/task-attempts/${id}/stop`, {
+    return this.request<void>(`/workspaces/${id}/execution/stop`, {
       method: "POST",
     });
   }
 
-  /** Create a pull request from a workspace. Calls POST /api/task-attempts/:id/pr. */
+  /** Create a pull request from a workspace. Calls POST /api/workspaces/:id/pull-requests. */
   createPR(id: string, request: CreatePRRequest): Promise<PRResult> {
-    return this.request<PRResult>(`/task-attempts/${id}/pr`, {
+    return this.request<PRResult>(`/workspaces/${id}/pull-requests`, {
       method: "POST",
       body: JSON.stringify(request),
     });
   }
 
-  /** Get branch status for all repositories in a workspace. Calls GET /api/task-attempts/:id/branch-status. */
+  /** Get branch status for all repositories in a workspace. Calls GET /api/workspaces/:id/git/status. */
   getBranchStatus(id: string): Promise<RepoBranchStatus[]> {
-    return this.request<RepoBranchStatus[]>(
-      `/task-attempts/${id}/branch-status`,
+    return this.request<RepoBranchStatus[]>(`/workspaces/${id}/git/status`);
+  }
+
+  /** Force push workspace branch to remote. Calls POST /api/workspaces/:id/git/push/force. */
+  forcePushWorkspace(id: string, request: PushWorkspaceRequest): Promise<void> {
+    return this.request<void>(`/workspaces/${id}/git/push/force`, {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
+  }
+
+  /** Abort ongoing git conflicts in a workspace. Calls POST /api/workspaces/:id/git/conflicts/abort. */
+  abortConflicts(id: string): Promise<void> {
+    return this.request<void>(`/workspaces/${id}/git/conflicts/abort`, {
+      method: "POST",
+    });
+  }
+
+  /** Attach an existing pull request to a workspace. Calls POST /api/workspaces/:id/pull-requests/attach. */
+  attachPR(id: string, request: AttachPRRequest): Promise<PRAttachResult> {
+    return this.request<PRAttachResult>(
+      `/workspaces/${id}/pull-requests/attach`,
+      {
+      method: "POST",
+      body: JSON.stringify(request),
+      },
     );
   }
 
-  /** Force push workspace branch to remote. Calls POST /api/task-attempts/:id/push/force. */
-  forcePushWorkspace(id: string, request: PushWorkspaceRequest): Promise<void> {
-    return this.request<void>(`/task-attempts/${id}/push/force`, {
-      method: "POST",
-      body: JSON.stringify(request),
-    });
-  }
-
-  /** Abort ongoing git conflicts in a workspace. Calls POST /api/task-attempts/:id/conflicts/abort. */
-  abortConflicts(id: string): Promise<void> {
-    return this.request<void>(`/task-attempts/${id}/conflicts/abort`, {
-      method: "POST",
-    });
-  }
-
-  /** Attach an existing pull request to a workspace. Calls POST /api/task-attempts/:id/pr/attach. */
-  attachPR(id: string, request: AttachPRRequest): Promise<PRAttachResult> {
-    return this.request<PRAttachResult>(`/task-attempts/${id}/pr/attach`, {
-      method: "POST",
-      body: JSON.stringify(request),
-    });
-  }
-
-  /** Get all comments on a workspace's pull request. Calls GET /api/task-attempts/:id/pr/comments. */
+  /** Get all comments on a workspace's pull request. Calls GET /api/workspaces/:id/pull-requests/comments. */
   async getPRComments(id: string, repoId: string): Promise<PRCommentsResponse> {
     const response = await this.request<
       PRCommentsResponse | UnifiedPRComment[]
     >(
-      `/task-attempts/${id}/pr/comments?repo_id=${repoId}`,
+      `/workspaces/${id}/pull-requests/comments?repo_id=${repoId}`,
     );
     return Array.isArray(response) ? { comments: response } : response;
   }

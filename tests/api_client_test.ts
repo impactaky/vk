@@ -4,27 +4,22 @@ import type { CreateAndStartWorkspaceRequest } from "../src/api/types.ts";
 
 Deno.test("ApiClient - constructor strips trailing slash", () => {
   const client = new ApiClient("http://localhost:3000/");
-  // @ts-ignore - accessing private field for testing
+  // @ts-ignore private field access for test coverage
   assertEquals(client.baseUrl, "http://localhost:3000");
 });
 
 Deno.test("ApiClient - constructor preserves URL without trailing slash", () => {
   const client = new ApiClient("http://localhost:3000");
-  // @ts-ignore - accessing private field for testing
+  // @ts-ignore private field access for test coverage
   assertEquals(client.baseUrl, "http://localhost:3000");
 });
 
-Deno.test("ApiClient - listWorkspaces falls back to /workspaces when task-attempts is unavailable", async () => {
-  const server = Deno.serve({ hostname: "127.0.0.1", port: 0 }, (request) => {
-    const { pathname } = new URL(request.url);
-    if (pathname === "/api/task-attempts") {
-      return new Response("<!DOCTYPE html><html></html>", {
-        status: 200,
-        headers: { "content-type": "text/html" },
-      });
-    }
+Deno.test("ApiClient - listWorkspaces uses latest /api/workspaces endpoint", async () => {
+  let requestedPath = "";
 
-    if (pathname === "/api/workspaces") {
+  const server = Deno.serve({ hostname: "127.0.0.1", port: 0 }, (request) => {
+    requestedPath = new URL(request.url).pathname;
+    if (requestedPath === "/api/workspaces") {
       return Response.json({
         success: true,
         data: [{ id: "ws-1", branch: "feature/test", name: "Workspace 1" }],
@@ -40,6 +35,7 @@ Deno.test("ApiClient - listWorkspaces falls back to /workspaces when task-attemp
 
     const workspaces = await client.listWorkspaces();
 
+    assertEquals(requestedPath, "/api/workspaces");
     assertEquals(workspaces.length, 1);
     assertEquals(workspaces[0].id, "ws-1");
   } finally {
@@ -47,31 +43,25 @@ Deno.test("ApiClient - listWorkspaces falls back to /workspaces when task-attemp
   }
 });
 
-Deno.test("ApiClient - createWorkspace falls back to /workspaces when task-attempts is unavailable", async () => {
+Deno.test("ApiClient - createWorkspace uses latest /api/workspaces/start endpoint", async () => {
   const requestBody: CreateAndStartWorkspaceRequest = {
     prompt: "test prompt",
     executor_config: { executor: "CLAUDE_CODE", variant: "DEFAULT" },
     repos: [{ repo_id: "repo-1", target_branch: "main" }],
   };
 
-  let workspaceEndpointMethod = "";
-  let workspaceEndpointBody = "";
+  let requestMethod = "";
+  let requestPath = "";
+  let requestPayload = "";
 
   const server = Deno.serve(
     { hostname: "127.0.0.1", port: 0 },
     async (request) => {
-      const { pathname } = new URL(request.url);
-      if (pathname === "/api/task-attempts/create-and-start") {
-        return new Response("<!DOCTYPE html><html></html>", {
-          status: 200,
-          headers: { "content-type": "text/html" },
-        });
-      }
+      requestMethod = request.method;
+      requestPath = new URL(request.url).pathname;
+      requestPayload = await request.text();
 
-      if (pathname === "/api/workspaces/create-and-start") {
-        workspaceEndpointMethod = request.method;
-        workspaceEndpointBody = await request.text();
-
+      if (requestPath === "/api/workspaces/start") {
         return Response.json({
           success: true,
           data: {
@@ -95,8 +85,9 @@ Deno.test("ApiClient - createWorkspace falls back to /workspaces when task-attem
 
     const result = await client.createWorkspace(requestBody);
 
-    assertEquals(workspaceEndpointMethod, "POST");
-    assertEquals(workspaceEndpointBody, JSON.stringify(requestBody));
+    assertEquals(requestMethod, "POST");
+    assertEquals(requestPath, "/api/workspaces/start");
+    assertEquals(requestPayload, JSON.stringify(requestBody));
     assertEquals(result.workspace.id, "ws-1");
     assertExists(result.execution_process);
     assertEquals(result.execution_process.id, "proc-1");
@@ -105,100 +96,110 @@ Deno.test("ApiClient - createWorkspace falls back to /workspaces when task-attem
   }
 });
 
-Deno.test("ApiClient - createWorkspace falls back to /workspaces on 405 from task-attempts endpoint", async () => {
-  const requestBody: CreateAndStartWorkspaceRequest = {
-    prompt: "test prompt",
-    executor_config: { executor: "CLAUDE_CODE", variant: "DEFAULT" },
-    repos: [{ repo_id: "repo-1", target_branch: "main" }],
-  };
+Deno.test("ApiClient - organization endpoints use /v1 namespace and latest wrappers", async () => {
+  const requests: string[] = [];
 
-  let workspaceEndpointMethod = "";
-  let workspaceEndpointBody = "";
+  const server = Deno.serve({ hostname: "127.0.0.1", port: 0 }, (request) => {
+    const pathname = new URL(request.url).pathname;
+    requests.push(pathname);
 
-  const server = Deno.serve(
-    { hostname: "127.0.0.1", port: 0 },
-    async (request) => {
-      const { pathname } = new URL(request.url);
-      if (pathname === "/api/task-attempts/create-and-start") {
-        return new Response("", { status: 405 });
-      }
+    if (pathname === "/v1/organizations") {
+      return Response.json({
+        success: true,
+        data: {
+          organizations: [{
+            id: "org-1",
+            name: "Acme",
+            slug: "acme",
+            user_role: "owner",
+            created_at: "2026-01-01T00:00:00Z",
+            updated_at: "2026-01-02T00:00:00Z",
+          }],
+        },
+      });
+    }
 
-      if (pathname === "/api/workspaces/create-and-start") {
-        workspaceEndpointMethod = request.method;
-        workspaceEndpointBody = await request.text();
-
-        return Response.json({
-          success: true,
-          data: {
-            workspace: {
-              id: "ws-405",
-              branch: "feature/test",
-              name: "Workspace 405",
-            },
-            execution_process: { id: "proc-405" },
+    if (pathname === "/v1/organizations/org-1") {
+      return Response.json({
+        success: true,
+        data: {
+          organization: {
+            id: "org-1",
+            name: "Acme",
+            slug: "acme",
+            created_at: "2026-01-01T00:00:00Z",
+            updated_at: "2026-01-02T00:00:00Z",
           },
-        });
-      }
+          user_role: "owner",
+        },
+      });
+    }
 
-      return new Response("Not found", { status: 404 });
-    },
-  );
+    return new Response("Not found", { status: 404 });
+  });
 
   try {
     const address = server.addr as Deno.NetAddr;
     const client = new ApiClient(`http://127.0.0.1:${address.port}`);
 
-    const result = await client.createWorkspace(requestBody);
+    const organizations = await client.listOrganizations();
+    const organization = await client.getOrganization("org-1");
 
-    assertEquals(workspaceEndpointMethod, "POST");
-    assertEquals(workspaceEndpointBody, JSON.stringify(requestBody));
-    assertEquals(result.workspace.id, "ws-405");
-    assertExists(result.execution_process);
-    assertEquals(result.execution_process.id, "proc-405");
+    assertEquals(requests, ["/v1/organizations", "/v1/organizations/org-1"]);
+    assertEquals(organizations[0].id, "org-1");
+    assertEquals(organizations[0].slug, "acme");
+    assertEquals(organization.id, "org-1");
+    assertEquals(organization.slug, "acme");
   } finally {
     await server.shutdown();
   }
 });
 
-Deno.test("ApiClient - createWorkspace falls back to /workspaces on create-and-start 400 from task-attempts endpoint", async () => {
-  const requestBody: CreateAndStartWorkspaceRequest = {
-    prompt: "test prompt",
-    executor_config: { executor: "CLAUDE_CODE", variant: "DEFAULT" },
-    repos: [{ repo_id: "repo-1", target_branch: "main" }],
-  };
-
-  let workspaceEndpointMethod = "";
-  let workspaceEndpointBody = "";
+Deno.test("ApiClient - workspace git and pull-request operations use latest nested routes", async () => {
+  const requests: Array<{ method: string; path: string }> = [];
 
   const server = Deno.serve(
     { hostname: "127.0.0.1", port: 0 },
     async (request) => {
-      const { pathname } = new URL(request.url);
-      if (pathname === "/api/task-attempts/create-and-start") {
-        return new Response(
-          "Invalid URL: Cannot parse `id` with value `create-and-start`",
-          { status: 400 },
-        );
-      }
+      const url = new URL(request.url);
+      requests.push({ method: request.method, path: `${url.pathname}${url.search}` });
 
-      if (pathname === "/api/workspaces/create-and-start") {
-        workspaceEndpointMethod = request.method;
-        workspaceEndpointBody = await request.text();
-
-        return Response.json({
-          success: true,
-          data: {
-            workspace: {
-              id: "ws-400",
-              branch: "feature/test",
-              name: "Workspace 400",
+      switch (url.pathname) {
+        case "/api/workspaces/ws-1/git/branch":
+          return Response.json({
+            success: true,
+            data: { branch: "feature/renamed" },
+          });
+        case "/api/workspaces/ws-1/git/status":
+          return Response.json({ success: true, data: [] });
+        case "/api/workspaces/ws-1/git/merge":
+        case "/api/workspaces/ws-1/git/push":
+        case "/api/workspaces/ws-1/git/rebase":
+        case "/api/workspaces/ws-1/execution/stop":
+          return Response.json({ success: true, data: null });
+        case "/api/workspaces/ws-1/pull-requests":
+          return Response.json({
+            success: true,
+            data: "https://github.com/acme/repo/pull/1",
+          });
+        case "/api/workspaces/ws-1/pull-requests/attach":
+          return Response.json({
+            success: true,
+            data: {
+              pr_attached: true,
+              pr_url: "https://github.com/acme/repo/pull/1",
+              pr_number: 1,
+              pr_status: "open",
             },
-            execution_process: { id: "proc-400" },
-          },
-        });
+          });
+        case "/api/workspaces/ws-1/pull-requests/comments":
+          return Response.json({
+            success: true,
+            data: { comments: [] },
+          });
+        default:
+          return new Response("Not found", { status: 404 });
       }
-
-      return new Response("Not found", { status: 404 });
     },
   );
 
@@ -206,70 +207,42 @@ Deno.test("ApiClient - createWorkspace falls back to /workspaces on create-and-s
     const address = server.addr as Deno.NetAddr;
     const client = new ApiClient(`http://127.0.0.1:${address.port}`);
 
-    const result = await client.createWorkspace(requestBody);
+    const renameResult = await client.renameBranch("ws-1", {
+      new_branch_name: "feature/renamed",
+    });
+    await client.getBranchStatus("ws-1");
+    await client.mergeWorkspace("ws-1", { repo_id: "repo-1" });
+    await client.pushWorkspace("ws-1", { repo_id: "repo-1" });
+    await client.rebaseWorkspace("ws-1", { repo_id: "repo-1" });
+    await client.stopWorkspace("ws-1");
+    const prUrl = await client.createPR("ws-1", {
+      repo_id: "repo-1",
+      title: "Test PR",
+    });
+    const attachResult = await client.attachPR("ws-1", {
+      repo_id: "repo-1",
+      pr_number: 1,
+    });
+    const comments = await client.getPRComments("ws-1", "repo-1");
 
-    assertEquals(workspaceEndpointMethod, "POST");
-    assertEquals(workspaceEndpointBody, JSON.stringify(requestBody));
-    assertEquals(result.workspace.id, "ws-400");
-    assertExists(result.execution_process);
-    assertEquals(result.execution_process.id, "proc-400");
-  } finally {
-    await server.shutdown();
-  }
-});
-
-Deno.test("ApiClient - createWorkspace falls back to POST /workspaces when create-and-start endpoints are unavailable", async () => {
-  const requestBody: CreateAndStartWorkspaceRequest = {
-    prompt: "test prompt",
-    executor_config: { executor: "CLAUDE_CODE", variant: "DEFAULT" },
-    repos: [{ repo_id: "repo-1", target_branch: "main" }],
-  };
-
-  let createdWorkspaceMethod = "";
-  let createdWorkspaceBody = "";
-
-  const server = Deno.serve(
-    { hostname: "127.0.0.1", port: 0 },
-    async (request) => {
-      const { pathname } = new URL(request.url);
-      if (pathname === "/api/task-attempts/create-and-start") {
-        return new Response("", { status: 405 });
-      }
-
-      if (pathname === "/api/workspaces/create-and-start") {
-        return new Response(
-          "Invalid URL: Cannot parse `id` with value `create-and-start`",
-          { status: 400 },
-        );
-      }
-
-      if (pathname === "/api/workspaces") {
-        createdWorkspaceMethod = request.method;
-        createdWorkspaceBody = await request.text();
-        return Response.json({
-          success: true,
-          data: {
-            id: "ws-direct",
-            branch: "feature/test",
-            name: "Workspace direct",
-          },
-        });
-      }
-
-      return new Response("Not found", { status: 404 });
-    },
-  );
-
-  try {
-    const address = server.addr as Deno.NetAddr;
-    const client = new ApiClient(`http://127.0.0.1:${address.port}`);
-
-    const result = await client.createWorkspace(requestBody);
-
-    assertEquals(createdWorkspaceMethod, "POST");
-    assertEquals(createdWorkspaceBody, JSON.stringify(requestBody));
-    assertEquals(result.workspace.id, "ws-direct");
-    assertEquals(result.execution_process, null);
+    assertEquals(renameResult.branch, "feature/renamed");
+    assertEquals(prUrl, "https://github.com/acme/repo/pull/1");
+    assertEquals(attachResult.pr_number, 1);
+    assertEquals(comments.comments.length, 0);
+    assertEquals(requests, [
+      { method: "PUT", path: "/api/workspaces/ws-1/git/branch" },
+      { method: "GET", path: "/api/workspaces/ws-1/git/status" },
+      { method: "POST", path: "/api/workspaces/ws-1/git/merge" },
+      { method: "POST", path: "/api/workspaces/ws-1/git/push" },
+      { method: "POST", path: "/api/workspaces/ws-1/git/rebase" },
+      { method: "POST", path: "/api/workspaces/ws-1/execution/stop" },
+      { method: "POST", path: "/api/workspaces/ws-1/pull-requests" },
+      { method: "POST", path: "/api/workspaces/ws-1/pull-requests/attach" },
+      {
+        method: "GET",
+        path: "/api/workspaces/ws-1/pull-requests/comments?repo_id=repo-1",
+      },
+    ]);
   } finally {
     await server.shutdown();
   }

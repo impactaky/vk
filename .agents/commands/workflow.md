@@ -23,5 +23,5 @@ DoD report should be output in Japanese.
   - [ ] `.codex/prompts/opsx-apply.md` in `programmer` agent
   - [ ] `.codex/prompts/opsx-verify.md` and `/review` in `reviewer` agent
 - [ ] `.codex/prompts/opsx-sync.md`
-- [ ] Reflect on the completed run. If it revealed reusable reporting or workflow guidance worth codifying, update the relevant guidance file (for example `.agents/reporting/dod-points.md` or this workflow) before final output.
+- [ ] Reflect on the completed run. If it revealed reusable guidance worth codifying, keep project-specific reporting rules in `.agents/reporting/dod-points.md` and reserve this workflow file for shared procedure steps.
 - [ ] Output the DoD check report in Japanese.

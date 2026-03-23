@@ -48,21 +48,26 @@ Current top-level commands:
 
 ### `vk organization list`
 
-- Fetches all organizations from API.
+- Fetches all organizations from latest API.
+- API:
+  - `GET /v1/organizations`
 - Supports optional filter:
   - `--name <name>`
 - Output:
   - `--json`: prints JSON array
-  - default: table with `ID | Name | Created | Updated`
+  - default: table with `ID | Name | Slug | Role | Created | Updated`
 - If no results: prints `No organizations found.`
 
 ### `vk organization show [id]`
 
 - Shows one organization.
 - If `id` is missing, resolver selects organization.
+- API:
+  - `GET /v1/organizations/:id`
 - Output:
   - `--json`: prints JSON object
   - default: prints `ID`, `Name`, `Created`, `Updated`
+  - prints `Slug` and `Issue` when present
 
 ## Repository Command
 
@@ -116,9 +121,12 @@ Current top-level commands:
   - `--display-name <name>`
   - `--setup-script <script>`
   - `--cleanup-script <script>`
+  - `--archive-script <script>`
   - `--copy-files <files>`
   - `--parallel-setup` / `--no-parallel-setup`
   - `--dev-server-script <script>`
+  - `--default-target-branch <name>`
+  - `--default-working-dir <path>`
 - If no update option is provided:
   - prints `No updates specified.`
 - On success:
@@ -177,7 +185,7 @@ Current top-level commands:
   - `--executor <name:variant>` (defaults to configured `defaultExecutor`,
     otherwise `CLAUDE_CODE:DEFAULT`)
 - API request:
-  - `POST /api/task-attempts/create-and-start`
+  - `POST /api/workspaces/start`
   - body includes `prompt`, `repos`, and `executor_config`
 - Output:
   - `--json`: prints `{ workspace, execution_process }`
@@ -193,7 +201,7 @@ Current top-level commands:
     - `--file <path>`
 - Prompt content must be non-empty text (empty/whitespace input is rejected).
 - API request:
-  - `POST /api/task-attempts/create-and-start`
+  - `POST /api/workspaces/start`
   - body includes:
     - `prompt` from `--description` or file content from `--file`
     - `repos` derived from parent workspace repos
@@ -239,6 +247,8 @@ Current top-level commands:
 
 - Lists branch status for repositories in one workspace.
 - If `id` is missing, uses the same resolver order as `show`.
+- API:
+  - `GET /api/workspaces/:id/git/status`
 - Output:
   - `--json`: prints JSON array
   - default: table with
@@ -253,6 +263,8 @@ Current top-level commands:
 - Required option:
   - `--new-branch-name <name>`
 - If `id` is missing, uses the same resolver order as `show`.
+- API:
+  - `PUT /api/workspaces/:id/git/branch`
 - Output:
   - `--json`: prints API response JSON
   - default: prints `Workspace <id> branch renamed to <name>.`
@@ -263,6 +275,8 @@ Current top-level commands:
 - Required option:
   - `--repo <id-or-name>`
 - If `id` is missing, uses the same resolver order as `show`.
+- API:
+  - `POST /api/workspaces/:id/git/merge`
 - Output:
   - default: prints `Workspace <id> merged for repo <repo-id>.`
 
@@ -272,6 +286,8 @@ Current top-level commands:
 - Required option:
   - `--repo <id-or-name>`
 - If `id` is missing, uses the same resolver order as `show`.
+- API:
+  - `POST /api/workspaces/:id/git/push`
 - Output:
   - default: prints `Workspace <id> pushed for repo <repo-id>.`
 
@@ -284,6 +300,8 @@ Current top-level commands:
   - `--old-base-branch <name>`
   - `--new-base-branch <name>`
 - If `id` is missing, uses the same resolver order as `show`.
+- API:
+  - `POST /api/workspaces/:id/git/rebase`
 - Output:
   - default: prints `Workspace <id> rebased for repo <repo-id>.`
 
@@ -291,6 +309,8 @@ Current top-level commands:
 
 - Stops an active workspace.
 - If `id` is missing, uses the same resolver order as `show`.
+- API:
+  - `POST /api/workspaces/:id/execution/stop`
 - Output:
   - default: prints `Workspace <id> stopped.`
 
@@ -305,6 +325,8 @@ Current top-level commands:
   - `--title <title>`
   - `--body <body>`
 - If `--id` is missing, uses the same resolver order as `show`.
+- API:
+  - `POST /api/workspaces/:id/pull-requests`
 - Output:
   - `--json`: prints PR creation result JSON
   - default: prints `Pull request created: <url>`
@@ -316,6 +338,8 @@ Current top-level commands:
   - `--repo <id-or-name>`
   - `--pr-number <number>`
 - If `id` is missing, uses the same resolver order as `show`.
+- API:
+  - `POST /api/workspaces/:id/pull-requests/attach`
 - Output:
   - `--json`: prints attach result JSON
   - default: prints `Pull request attached: <url>`
@@ -326,6 +350,8 @@ Current top-level commands:
 - Required option:
   - `--repo <id-or-name>`
 - If `id` is missing, uses the same resolver order as `show`.
+- API:
+  - `GET /api/workspaces/:id/pull-requests/comments?repo_id=<repo-id>`
 - Output:
   - `--json`: prints comments JSON payload
   - default: table with `ID | Type | User | Path | Line | Created`
