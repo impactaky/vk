@@ -17,7 +17,9 @@ Use these repo-specific points when writing or evaluating a DoD report for VK.
 
 - `SHOULD`: Summarize the expected user-visible result of the command, not only the code change.
 - `SHOULD`: Call out notable fallback behavior, compatibility shims, or environment assumptions when they matter to the user.
+- `SHOULD`: If the change introduces a new library or package, state whether an equivalent capability was already available in an existing project dependency and prefer the existing dependency when that is practical.
 - `SHOULD`: Mention the narrow scope of the change when that reduces regression risk for adjacent commands.
+- `SHOULD`: When broad runtime permissions are documented or required, explain why a narrower permission scope was not used if that tradeoff matters to the user.
 
 ## Avoid
 
