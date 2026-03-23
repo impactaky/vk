@@ -13,6 +13,68 @@ type PromptSourceOptions = {
   file?: string;
 };
 
+const PROMPT_EDITOR_TEMPLATE =
+  `# Enter the workspace prompt. Lines starting with # are ignored.
+#
+`;
+
+function getEditorCommand(): string {
+  const editor = Deno.env.get("VISUAL")?.trim() ||
+    Deno.env.get("EDITOR")?.trim();
+  if (!editor) {
+    throw new Error(
+      "Set $EDITOR or $VISUAL, or provide --description or --file.",
+    );
+  }
+  return editor;
+}
+
+function getEditorShell(): { command: string; args: string[] } {
+  if (Deno.build.os === "windows") {
+    return { command: "cmd", args: ["/d", "/s", "/c"] };
+  }
+  return { command: "sh", args: ["-c"] };
+}
+
+async function openPromptInEditor(): Promise<string> {
+  const promptFile = await Deno.makeTempFile({
+    suffix: ".md",
+    prefix: "vk-prompt-",
+  });
+
+  try {
+    await Deno.writeTextFile(promptFile, PROMPT_EDITOR_TEMPLATE);
+    const editor = getEditorCommand();
+    const shell = getEditorShell();
+    const process = new Deno.Command(shell.command, {
+      args: [...shell.args, `${editor} "$1"`, "vk-editor", promptFile],
+      stdin: "inherit",
+      stdout: "inherit",
+      stderr: "inherit",
+    }).spawn();
+    const status = await process.status;
+
+    if (!status.success) {
+      throw new Error(`Editor exited with status ${status.code}.`);
+    }
+
+    const prompt = await Deno.readTextFile(promptFile);
+    const cleanedPrompt = prompt
+      .split("\n")
+      .filter((line) => !line.startsWith("#"))
+      .join("\n")
+      .trim();
+
+    if (cleanedPrompt.length === 0) {
+      throw new Error("Prompt from editor must contain non-empty text.");
+    }
+
+    return cleanedPrompt;
+  } finally {
+    await Deno.remove(promptFile).catch(() => undefined);
+  }
+}
+
 async function resolvePrompt(options: PromptSourceOptions): Promise<string> {
   if (options.description && options.file) {
     throw new Error("Options --description and --file are mutually exclusive.");
@@ -35,7 +97,7 @@ async function resolvePrompt(options: PromptSourceOptions): Promise<string> {
     return prompt;
   }
 
-  throw new Error("Option --description or --file is required.");
+  return await openPromptInEditor();
 }
 
 export const taskAttemptsCommand = new Command()

@@ -171,15 +171,17 @@ Current top-level commands:
 ### `vk workspace create`
 
 - Creates and starts a new workspace.
-- Required options:
-  - Exactly one prompt source:
-    - `--description <text>`
-    - `--file <path>`
+- Prompt input:
+  - `--description <text>`
+  - `--file <path>`
+  - if neither flag is provided, opens `$VISUAL` or `$EDITOR` for prompt entry
 - Repository selection:
   - `--repo <id-or-name>` (optional)
-  - if omitted, repository is auto-resolved from current directory context
-    using existing repository resolver behavior
-- Prompt content must be non-empty text (empty/whitespace input is rejected).
+  - if omitted, repository is auto-resolved from current directory context using
+    existing repository resolver behavior
+- `--description` and `--file` are mutually exclusive.
+- Prompt content must be non-empty text (empty/whitespace input is rejected),
+  including editor-entered content after stripping lines starting with `#`.
 - Optional options:
   - `--target-branch <name>` (defaults to `main`)
   - `--executor <name:variant>` (defaults to configured `defaultExecutor`,
@@ -195,11 +197,13 @@ Current top-level commands:
 
 - Creates and starts a new workspace from a parent workspace branch.
 - If `id` is missing, uses the same resolver order as `show`.
-- Required option:
-  - Exactly one prompt source:
-    - `--description <text>`
-    - `--file <path>`
-- Prompt content must be non-empty text (empty/whitespace input is rejected).
+- Prompt input:
+  - `--description <text>`
+  - `--file <path>`
+  - if neither flag is provided, opens `$VISUAL` or `$EDITOR` for prompt entry
+- `--description` and `--file` are mutually exclusive.
+- Prompt content must be non-empty text (empty/whitespace input is rejected),
+  including editor-entered content after stripping lines starting with `#`.
 - API request:
   - `POST /api/workspaces/start`
   - body includes:
@@ -257,8 +261,8 @@ Current top-level commands:
 
 ### `vk workspace rename-branch [id]`
 
-- Command placement decision: keep `rename-branch` as a standalone
-  `workspace` subcommand.
+- Command placement decision: keep `rename-branch` as a standalone `workspace`
+  subcommand.
 - Renames the workspace branch for one workspace.
 - Required option:
   - `--new-branch-name <name>`
