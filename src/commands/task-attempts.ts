@@ -13,6 +13,120 @@ type PromptSourceOptions = {
   file?: string;
 };
 
+const EDITOR_INSTRUCTIONS = [
+  "# Enter the workspace prompt.",
+  "# Lines starting with # are ignored.",
+  "# Save and close the editor to continue.",
+].join("\n");
+
+function getConfiguredEditor(): string {
+  const editor = Deno.env.get("GIT_EDITOR") ?? Deno.env.get("VISUAL") ??
+    Deno.env.get("EDITOR");
+  if (!editor || editor.trim().length === 0) {
+    throw new Error(
+      "Option --description or --file is required unless GIT_EDITOR, VISUAL, or EDITOR is set.",
+    );
+  }
+  return editor.trim();
+}
+
+function splitCommand(command: string): string[] {
+  const args: string[] = [];
+  let current = "";
+  let quote: "'" | '"' | null = null;
+
+  for (let i = 0; i < command.length; i += 1) {
+    const char = command[i];
+
+    if (quote) {
+      if (char === quote) {
+        quote = null;
+      } else if (char === "\\" && quote === '"' && i + 1 < command.length) {
+        i += 1;
+        current += command[i];
+      } else {
+        current += char;
+      }
+      continue;
+    }
+
+    if (char === "'" || char === '"') {
+      quote = char;
+      continue;
+    }
+
+    if (/\s/.test(char)) {
+      if (current.length > 0) {
+        args.push(current);
+        current = "";
+      }
+      continue;
+    }
+
+    if (char === "\\" && i + 1 < command.length) {
+      i += 1;
+      current += command[i];
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (quote) {
+    throw new Error("Editor command contains an unmatched quote.");
+  }
+
+  if (current.length > 0) {
+    args.push(current);
+  }
+
+  if (args.length === 0) {
+    throw new Error("Editor command is empty.");
+  }
+
+  return args;
+}
+
+function normalizeEditorPrompt(text: string): string {
+  return text
+    .split("\n")
+    .filter((line) => !line.trimStart().startsWith("#"))
+    .join("\n")
+    .trim();
+}
+
+async function resolvePromptFromEditor(): Promise<string> {
+  const [command, ...args] = splitCommand(getConfiguredEditor());
+  const tempFile = await Deno.makeTempFile({
+    prefix: "vk-workspace-prompt-",
+    suffix: ".md",
+  });
+
+  try {
+    await Deno.writeTextFile(tempFile, `${EDITOR_INSTRUCTIONS}\n`);
+
+    const result = await new Deno.Command(command, {
+      args: [...args, tempFile],
+      stdin: "inherit",
+      stdout: "inherit",
+      stderr: "inherit",
+    }).output();
+
+    if (result.code !== 0) {
+      throw new Error(`Editor exited with status ${result.code}.`);
+    }
+
+    const prompt = normalizeEditorPrompt(await Deno.readTextFile(tempFile));
+    if (prompt.length === 0) {
+      throw new Error("Editor content must contain non-comment text.");
+    }
+
+    return prompt;
+  } finally {
+    await Deno.remove(tempFile).catch(() => undefined);
+  }
+}
+
 async function resolvePrompt(options: PromptSourceOptions): Promise<string> {
   if (options.description && options.file) {
     throw new Error("Options --description and --file are mutually exclusive.");
@@ -35,7 +149,7 @@ async function resolvePrompt(options: PromptSourceOptions): Promise<string> {
     return prompt;
   }
 
-  throw new Error("Option --description or --file is required.");
+  return await resolvePromptFromEditor();
 }
 
 export const taskAttemptsCommand = new Command()
@@ -116,7 +230,10 @@ taskAttemptsCommand
 taskAttemptsCommand
   .command("create")
   .description("Create workspace")
-  .option("--description <text:string>", "Task description/prompt")
+  .option(
+    "--description <text:string>",
+    "Task description/prompt (opens editor when omitted with no --file)",
+  )
   .option("--file <path:string>", "Read task description/prompt from file")
   .option("--repo <repo:string>", "Repository ID or name")
   .option("--target-branch <name:string>", "Target branch name")
@@ -162,7 +279,10 @@ taskAttemptsCommand
   .command("spin-off")
   .description("Create workspace by spinning off from a parent workspace")
   .arguments("[id:string]")
-  .option("--description <text:string>", "Task description/prompt")
+  .option(
+    "--description <text:string>",
+    "Task description/prompt (opens editor when omitted with no --file)",
+  )
   .option("--file <path:string>", "Read task description/prompt from file")
   .option("--json", "Output as JSON")
   .action(async (options, id?: string) => {

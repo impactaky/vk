@@ -13,7 +13,7 @@ Get started with `vk` in under 2 minutes:
 **From Deno:**
 
 ```bash
-deno install -g --allow-net --allow-read --allow-write --allow-env --allow-run=git,fzf -n vk https://raw.githubusercontent.com/BloopAI/vk/main/src/main.ts
+deno install -g --allow-net --allow-read --allow-write --allow-env --allow-run -n vk https://raw.githubusercontent.com/BloopAI/vk/main/src/main.ts
 ```
 
 **From GitHub releases:** Download pre-built binaries from the
@@ -67,7 +67,7 @@ git clone https://github.com/BloopAI/vk.git
 cd vk
 
 # Install globally
-deno install -g --allow-net --allow-read --allow-write --allow-env --allow-run=git,fzf -n vk --config deno.json src/main.ts
+deno install -g --allow-net --allow-read --allow-write --allow-env --allow-run -n vk --config deno.json src/main.ts
 ```
 
 To uninstall:
@@ -116,6 +116,8 @@ vk workspace list --json
 vk workspace list --task-id <task-id>
 vk workspace show <attempt-id>
 vk workspace show --json <attempt-id>
+vk workspace create --repo <repo-id-or-name>   # opens $GIT_EDITOR / $VISUAL / $EDITOR if prompt flags are omitted
+vk workspace spin-off <attempt-id>             # opens editor if prompt flags are omitted
 vk workspace spin-off <attempt-id> --description "Follow-up work"
 ```
 
