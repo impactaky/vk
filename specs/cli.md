@@ -176,7 +176,8 @@ Current top-level commands:
     - `--description <text>`
     - `--file <path>`
 - Repository selection:
-  - `--repo <id-or-name>` (optional)
+  - `--repo <id-or-name>` (optional, repeatable)
+  - repeated `--repo` values are attached in the order provided
   - if omitted, repository is auto-resolved from current directory context
     using existing repository resolver behavior
 - Prompt content must be non-empty text (empty/whitespace input is rejected).

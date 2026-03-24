@@ -14,6 +14,8 @@ type PromptSourceOptions = {
   file?: string;
 };
 
+type RepoOptionValue = string | string[] | undefined;
+
 const EDITOR_INSTRUCTIONS = [
   "# Enter the workspace prompt.",
   "# Lines starting with # are ignored.",
@@ -99,6 +101,29 @@ async function resolvePrompt(options: PromptSourceOptions): Promise<string> {
   return await resolvePromptFromEditor();
 }
 
+function normalizeRepoOptionValues(repoOption: RepoOptionValue): string[] {
+  const values = Array.isArray(repoOption) ? repoOption : [repoOption];
+  return values
+    .flatMap((value) => (value ? value.split(",") : []))
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+}
+
+async function resolveWorkspaceRepoInputs(
+  repoOption: RepoOptionValue,
+  targetBranch: string,
+  client: ApiClient,
+): Promise<Array<{ repo_id: string; target_branch: string }>> {
+  const requestedRepos = normalizeRepoOptionValues(repoOption);
+  const repoIds = requestedRepos.length > 0
+    ? await Promise.all(
+      requestedRepos.map((repo) => getRepositoryId(repo, client)),
+    )
+    : [await getRepositoryId(undefined, client)];
+
+  return repoIds.map((repo_id) => ({ repo_id, target_branch: targetBranch }));
+}
+
 export const taskAttemptsCommand = new Command()
   .description("Manage workspaces")
   .action(function () {
@@ -182,7 +207,9 @@ taskAttemptsCommand
     "Task description/prompt (opens editor when omitted with no --file)",
   )
   .option("--file <path:string>", "Read task description/prompt from file")
-  .option("--repo <repo:string>", "Repository ID or name")
+  .option("--repo <repo:string>", "Repository ID or name (repeatable)", {
+    collect: true,
+  })
   .option("--target-branch <name:string>", "Target branch name")
   .option(
     "--executor <executor:string>",
@@ -193,17 +220,21 @@ taskAttemptsCommand
     try {
       const prompt = await resolvePrompt(options);
       const client = await ApiClient.create();
-      const repoId = await getRepositoryId(options.repo, client);
       const config = await loadConfig();
       const executor = parseExecutorString(
         options.executor || config.defaultExecutor || "CLAUDE_CODE:DEFAULT",
       );
       const targetBranch = options.targetBranch || "main";
+      const repos = await resolveWorkspaceRepoInputs(
+        options.repo,
+        targetBranch,
+        client,
+      );
 
       const createResult = await client.createWorkspace({
         prompt,
         executor_config: executor,
-        repos: [{ repo_id: repoId, target_branch: targetBranch }],
+        repos,
       });
 
       if (options.json) {
