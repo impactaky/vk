@@ -118,3 +118,20 @@ Deno.test("applyFilters - mixed filter types", () => {
     { id: "1", status: "completed", priority: 5, archived: false },
   ]);
 });
+
+Deno.test("applyFilters - repeated scalar filter values use OR logic", () => {
+  const items = [
+    { id: "1", status: "completed" },
+    { id: "2", status: "in_progress" },
+    { id: "3", status: "todo" },
+  ];
+
+  const result = applyFilters(items, {
+    status: ["completed", "in_progress"],
+  });
+
+  assertEquals(result, [
+    { id: "1", status: "completed" },
+    { id: "2", status: "in_progress" },
+  ]);
+});

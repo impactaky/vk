@@ -258,6 +258,151 @@ Deno.test("CLI: vk workspace list --json", async () => {
   assertEquals(Array.isArray(parsed), true);
 });
 
+Deno.test("CLI: vk workspace list --filter applies derived status filters", async () => {
+  const testHome = await Deno.makeTempDir({
+    prefix: "vk-workspace-list-filter-",
+  });
+  let requestedSearch = "";
+
+  const server = Deno.serve(
+    { hostname: "127.0.0.1", port: 0 },
+    (request) => {
+      const url = new URL(request.url);
+      requestedSearch = url.search;
+
+      if (url.pathname === "/api/workspaces") {
+        return Response.json({
+          success: true,
+          data: [
+            {
+              id: "ws-ready",
+              task_id: "task-1",
+              branch: "feature/ready",
+              container_ref: null,
+              agent_working_dir: null,
+              setup_completed_at: "2026-01-01T00:00:00Z",
+              archived: false,
+              pinned: false,
+              name: "Ready Workspace",
+              created_at: "2026-01-01T00:00:00Z",
+              updated_at: "2026-01-01T00:00:00Z",
+            },
+            {
+              id: "ws-archived",
+              task_id: "task-1",
+              branch: "feature/archived",
+              container_ref: null,
+              agent_working_dir: null,
+              setup_completed_at: "2026-01-01T00:00:00Z",
+              archived: true,
+              pinned: false,
+              name: "Archived Workspace",
+              created_at: "2026-01-01T00:00:00Z",
+              updated_at: "2026-01-01T00:00:00Z",
+            },
+            {
+              id: "ws-pending",
+              task_id: "task-1",
+              branch: "feature/pending",
+              container_ref: null,
+              agent_working_dir: null,
+              setup_completed_at: null,
+              archived: false,
+              pinned: false,
+              name: "Pending Workspace",
+              created_at: "2026-01-01T00:00:00Z",
+              updated_at: "2026-01-01T00:00:00Z",
+            },
+          ],
+        });
+      }
+
+      return new Response("Not found", { status: 404 });
+    },
+  );
+
+  try {
+    const address = server.addr as Deno.NetAddr;
+    const command = new Deno.Command("deno", {
+      args: [
+        "run",
+        "--allow-net",
+        "--allow-read",
+        "--allow-write",
+        "--allow-env",
+        "src/main.ts",
+        "workspace",
+        "list",
+        "--filter",
+        "status=ready",
+        "--filter",
+        "archived=false",
+        "--json",
+      ],
+      stdout: "piped",
+      stderr: "piped",
+      env: {
+        VK_API_URL: `http://127.0.0.1:${address.port}`,
+        HOME: testHome,
+      },
+    });
+
+    const { code, stdout, stderr } = await command.output();
+    const stderrText = new TextDecoder().decode(stderr);
+
+    assertEquals(code, 0, stderrText);
+    assertEquals(requestedSearch, "?status=ready&archived=false");
+
+    const parsed = JSON.parse(new TextDecoder().decode(stdout));
+    assertEquals(parsed.map((workspace: { id: string }) => workspace.id), [
+      "ws-ready",
+    ]);
+  } finally {
+    await server.shutdown();
+    await Deno.remove(testHome, { recursive: true });
+  }
+});
+
+Deno.test("CLI: vk workspace list rejects invalid filter values", async () => {
+  const testHome = await Deno.makeTempDir({
+    prefix: "vk-workspace-list-filter-error-",
+  });
+
+  try {
+    const command = new Deno.Command("deno", {
+      args: [
+        "run",
+        "--allow-net",
+        "--allow-read",
+        "--allow-write",
+        "--allow-env",
+        "src/main.ts",
+        "workspace",
+        "list",
+        "--filter",
+        "archived=yes",
+      ],
+      stdout: "piped",
+      stderr: "piped",
+      env: {
+        VK_API_URL: config.apiUrl,
+        HOME: testHome,
+      },
+    });
+
+    const { code, stderr } = await command.output();
+    const stderrText = new TextDecoder().decode(stderr);
+
+    assertEquals(code, 1);
+    assertEquals(
+      stderrText.includes('Invalid value for filter "archived"'),
+      true,
+    );
+  } finally {
+    await Deno.remove(testHome, { recursive: true });
+  }
+});
+
 Deno.test("CLI: vk workspace show <id> --json", async () => {
   const listResult = await apiCall<Array<{ id: string }>>("/workspaces");
   if (

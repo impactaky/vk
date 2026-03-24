@@ -8,6 +8,10 @@ import { getAttemptIdWithAutoDetect } from "../utils/attempt-resolver.ts";
 import { handleCliError } from "../utils/error-handler.ts";
 import { parseExecutorString } from "../utils/executor-parser.ts";
 import { getRepositoryId } from "../utils/repository-resolver.ts";
+import {
+  applyWorkspaceListFilters,
+  parseWorkspaceListFilters,
+} from "../utils/workspace-list-filters.ts";
 
 type PromptSourceOptions = {
   description?: string;
@@ -134,11 +138,20 @@ taskAttemptsCommand
   .command("list")
   .description("List workspaces")
   .option("--task-id <id:string>", "Filter by task ID")
+  .option(
+    "--filter <expression:string>",
+    "Filter by workspace field (repeatable). Supports status=active|archived|pinned|ready|pending|deleted",
+    { collect: true },
+  )
   .option("--json", "Output as JSON")
   .action(async (options) => {
     try {
+      const filters = parseWorkspaceListFilters(options.filter);
       const client = await ApiClient.create();
-      const attempts = await client.listTaskAttempts(options.taskId);
+      const attempts = applyWorkspaceListFilters(
+        await client.listTaskAttempts(options.taskId, filters),
+        filters,
+      );
 
       if (options.json) {
         console.log(JSON.stringify(attempts, null, 2));

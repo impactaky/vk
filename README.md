@@ -17,9 +17,9 @@ deno install -g --allow-net --allow-read --allow-write --allow-env --allow-run -
 ```
 
 `vk workspace create` / `vk workspace spin-off` can launch the editor from
-`$GIT_EDITOR`, `$VISUAL`, or `$EDITOR`. The install example keeps
-`--allow-run` broad because the executable name is user-configured. If you pin
-your editor command ahead of time, you can replace it with a narrower
+`$GIT_EDITOR`, `$VISUAL`, or `$EDITOR`. The install example keeps `--allow-run`
+broad because the executable name is user-configured. If you pin your editor
+command ahead of time, you can replace it with a narrower
 `--allow-run=<editor>,git,fzf`.
 
 **From GitHub releases:** Download pre-built binaries from the
@@ -124,6 +124,8 @@ vk repository branches <repository-id>
 vk workspace list
 vk workspace list --json
 vk workspace list --task-id <task-id>
+vk workspace list --filter status=ready
+vk workspace list --filter archived=false --filter pinned=true
 vk workspace show <attempt-id>
 vk workspace show --json <attempt-id>
 vk workspace create --repo <repo-id-or-name>   # opens $GIT_EDITOR / $VISUAL / $EDITOR if prompt flags are omitted
