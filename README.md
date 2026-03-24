@@ -121,7 +121,7 @@ vk repository branches <repository-id>
 ### Workspace Commands
 
 ```bash
-vk workspace list
+vk workspace list                         # defaults to active workspaces
 vk workspace list --json
 vk workspace list --task-id <task-id>
 vk workspace list --filter status=ready
