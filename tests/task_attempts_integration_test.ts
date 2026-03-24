@@ -628,111 +628,167 @@ Deno.test("CLI: vk workspace show --json auto-detects ID from branch", async () 
   }
 });
 
-Deno.test("CLI: vk workspace create uses EDITOR when prompt source is omitted", async () => {
-  const testHome = await Deno.makeTempDir({
-    prefix: "vk-workspace-create-editor-",
-  });
-  const editorScript = await makeEditorScript(
-    "Prompt from editor\n# ignored comment\n",
-  );
-  let workspaceCreateBody = "";
-
-  const server = Deno.serve(
-    { hostname: "127.0.0.1", port: 0 },
-    async (request) => {
-      const { pathname } = new URL(request.url);
-
-      if (pathname === "/api/repos") {
-        return Response.json({
-          success: true,
-          data: [{
-            id: "repo-1",
-            path: Deno.cwd(),
-            name: "vk",
-            display_name: "VK",
-            setup_script: null,
-            cleanup_script: null,
-            copy_files: null,
-            parallel_setup_script: false,
-            dev_server_script: null,
-            default_target_branch: null,
-            default_working_dir: null,
-            created_at: "2026-01-01T00:00:00Z",
-            updated_at: "2026-01-01T00:00:00Z",
-          }],
-        });
-      }
-
-      if (pathname === "/api/workspaces/start") {
-        workspaceCreateBody = await request.text();
-        return Response.json({
-          success: true,
-          data: {
-            workspace: {
-              id: "ws-editor",
-              branch: "feature/editor",
-              name: "Workspace Editor",
-            },
-            execution_process: { id: "proc-editor" },
-          },
-        });
-      }
-
-      return new Response("Not found", { status: 404 });
-    },
-  );
-
-  try {
-    const address = server.addr as Deno.NetAddr;
-    const command = new Deno.Command("deno", {
-      args: [
-        "run",
-        "--allow-net",
-        "--allow-read",
-        "--allow-write",
-        "--allow-env",
-        "--allow-run",
-        "src/main.ts",
-        "workspace",
-        "create",
-        "--repo",
-        "repo-1",
-        "--json",
-      ],
-      stdout: "piped",
-      stderr: "piped",
-      env: {
-        VK_API_URL: `http://127.0.0.1:${address.port}`,
-        HOME: testHome,
-        EDITOR: editorScript,
-      },
+Deno.test(
+  "CLI: vk workspace create reports editor allowlist mismatch clearly",
+  async () => {
+    const testHome = await Deno.makeTempDir({
+      prefix: "vk-workspace-create-editor-denied-",
     });
+    const editorScript = await makeEditorScript("Prompt from denied editor\n");
+    try {
+      const command = new Deno.Command("deno", {
+        args: [
+          "run",
+          "--allow-net",
+          "--allow-read",
+          "--allow-write",
+          "--allow-env",
+          "--allow-run=git,fzf",
+          "src/main.ts",
+          "workspace",
+          "create",
+          "--repo",
+          "repo-1",
+        ],
+        stdout: "piped",
+        stderr: "piped",
+        env: {
+          VK_API_URL: "http://127.0.0.1:9",
+          HOME: testHome,
+          EDITOR: editorScript,
+        },
+      });
 
-    const { code, stdout, stderr } = await command.output();
-    const stderrText = new TextDecoder().decode(stderr);
+      const { code, stderr } = await command.output();
+      const stderrText = new TextDecoder().decode(stderr);
 
-    assertEquals(
-      code,
-      0,
-      `Expected exit code 0 for workspace create via editor. stderr: ${stderrText}`,
+      assertEquals(code, 1);
+      assertEquals(
+        stderrText.includes(
+          `Configured editor "${editorScript}" is not allowed to run.`,
+        ),
+        true,
+      );
+      assertEquals(stderrText.includes("--allow-run allowlist"), true);
+    } finally {
+      await Deno.remove(editorScript);
+      await Deno.remove(testHome, { recursive: true });
+    }
+  },
+);
+
+Deno.test(
+  "CLI: vk workspace create prefers GIT_EDITOR over EDITOR when prompt source is omitted",
+  async () => {
+    const testHome = await Deno.makeTempDir({
+      prefix: "vk-workspace-create-editor-",
+    });
+    const gitEditorScript = await makeEditorScript(
+      "Prompt from GIT_EDITOR\n# ignored comment\n",
     );
-    assertEquals(
-      workspaceCreateBody,
-      JSON.stringify({
-        prompt: "Prompt from editor",
-        executor_config: { executor: "CLAUDE_CODE", variant: "DEFAULT" },
-        repos: [{ repo_id: "repo-1", target_branch: "main" }],
-      }),
+    const editorScript = await makeEditorScript("Prompt from EDITOR\n");
+    let workspaceCreateBody = "";
+
+    const server = Deno.serve(
+      { hostname: "127.0.0.1", port: 0 },
+      async (request) => {
+        const { pathname } = new URL(request.url);
+
+        if (pathname === "/api/repos") {
+          return Response.json({
+            success: true,
+            data: [{
+              id: "repo-1",
+              path: Deno.cwd(),
+              name: "vk",
+              display_name: "VK",
+              setup_script: null,
+              cleanup_script: null,
+              copy_files: null,
+              parallel_setup_script: false,
+              dev_server_script: null,
+              default_target_branch: null,
+              default_working_dir: null,
+              created_at: "2026-01-01T00:00:00Z",
+              updated_at: "2026-01-01T00:00:00Z",
+            }],
+          });
+        }
+
+        if (pathname === "/api/workspaces/start") {
+          workspaceCreateBody = await request.text();
+          return Response.json({
+            success: true,
+            data: {
+              workspace: {
+                id: "ws-editor",
+                branch: "feature/editor",
+                name: "Workspace Editor",
+              },
+              execution_process: { id: "proc-editor" },
+            },
+          });
+        }
+
+        return new Response("Not found", { status: 404 });
+      },
     );
 
-    const parsed = JSON.parse(new TextDecoder().decode(stdout));
-    assertEquals(parsed.workspace.id, "ws-editor");
-  } finally {
-    await server.shutdown();
-    await Deno.remove(editorScript);
-    await Deno.remove(testHome, { recursive: true });
-  }
-});
+    try {
+      const address = server.addr as Deno.NetAddr;
+      const command = new Deno.Command("deno", {
+        args: [
+          "run",
+          "--allow-net",
+          "--allow-read",
+          "--allow-write",
+          "--allow-env",
+          `--allow-run=${gitEditorScript}`,
+          "src/main.ts",
+          "workspace",
+          "create",
+          "--repo",
+          "repo-1",
+          "--json",
+        ],
+        stdout: "piped",
+        stderr: "piped",
+        env: {
+          VK_API_URL: `http://127.0.0.1:${address.port}`,
+          HOME: testHome,
+          TMPDIR: testHome,
+          GIT_EDITOR: gitEditorScript,
+          EDITOR: editorScript,
+        },
+      });
+
+      const { code, stdout, stderr } = await command.output();
+      const stderrText = new TextDecoder().decode(stderr);
+
+      assertEquals(
+        code,
+        0,
+        `Expected exit code 0 for workspace create via editor. stderr: ${stderrText}`,
+      );
+      assertEquals(
+        workspaceCreateBody,
+        JSON.stringify({
+          prompt: "Prompt from GIT_EDITOR",
+          executor_config: { executor: "CLAUDE_CODE", variant: "DEFAULT" },
+          repos: [{ repo_id: "repo-1", target_branch: "main" }],
+        }),
+      );
+
+      const parsed = JSON.parse(new TextDecoder().decode(stdout));
+      assertEquals(parsed.workspace.id, "ws-editor");
+    } finally {
+      await server.shutdown();
+      await Deno.remove(gitEditorScript);
+      await Deno.remove(editorScript);
+      await Deno.remove(testHome, { recursive: true });
+    }
+  },
+);
 
 Deno.test("CLI: vk workspace create --description uses /api/workspaces/start", async () => {
   const testHome = await Deno.makeTempDir({
@@ -1307,6 +1363,115 @@ Deno.test(
       );
     } finally {
       await Deno.remove(editorScript);
+    }
+  },
+);
+
+Deno.test(
+  "CLI: vk workspace spin-off uses VISUAL when explicitly allowed",
+  async () => {
+    const testHome = await Deno.makeTempDir({
+      prefix: "vk-workspace-spin-off-visual-",
+    });
+    const visualScript = await makeEditorScript(
+      "Prompt from VISUAL\n# ignored comment\n",
+    );
+    let workspaceCreateBody = "";
+
+    const server = Deno.serve(
+      { hostname: "127.0.0.1", port: 0 },
+      async (request) => {
+        const { pathname } = new URL(request.url);
+
+        if (pathname === "/api/workspaces/parent-attempt-1") {
+          return Response.json({
+            success: true,
+            data: {
+              id: "parent-attempt-1",
+              branch: "feature/parent",
+              name: "Parent Workspace",
+            },
+          });
+        }
+
+        if (pathname === "/api/workspaces/parent-attempt-1/repos") {
+          return Response.json({
+            success: true,
+            data: [{
+              id: "repo-1",
+              repo_id: "repo-1",
+            }],
+          });
+        }
+
+        if (pathname === "/api/workspaces/start") {
+          workspaceCreateBody = await request.text();
+          return Response.json({
+            success: true,
+            data: {
+              workspace: {
+                id: "ws-spin-off",
+                branch: "feature/parent",
+                name: "Workspace Spin-off",
+              },
+              execution_process: { id: "proc-spin-off" },
+            },
+          });
+        }
+
+        return new Response("Not found", { status: 404 });
+      },
+    );
+
+    try {
+      const address = server.addr as Deno.NetAddr;
+      const command = new Deno.Command("deno", {
+        args: [
+          "run",
+          "--allow-net",
+          "--allow-read",
+          "--allow-write",
+          "--allow-env",
+          `--allow-run=${visualScript}`,
+          "src/main.ts",
+          "workspace",
+          "spin-off",
+          "parent-attempt-1",
+          "--json",
+        ],
+        stdout: "piped",
+        stderr: "piped",
+        env: {
+          VK_API_URL: `http://127.0.0.1:${address.port}`,
+          HOME: testHome,
+          TMPDIR: testHome,
+          VISUAL: visualScript,
+        },
+      });
+
+      const { code, stdout, stderr } = await command.output();
+      const stderrText = new TextDecoder().decode(stderr);
+
+      assertEquals(
+        code,
+        0,
+        `Expected exit code 0 for workspace spin-off via VISUAL. stderr: ${stderrText}`,
+      );
+      assertEquals(
+        workspaceCreateBody,
+        JSON.stringify({
+          prompt: "Prompt from VISUAL",
+          executor_config: { executor: "CLAUDE_CODE", variant: "DEFAULT" },
+          repos: [{ repo_id: "repo-1", target_branch: "feature/parent" }],
+        }),
+      );
+
+      const parsed = JSON.parse(new TextDecoder().decode(stdout));
+      assertEquals(parsed.workspace.id, "ws-spin-off");
+    } finally {
+      await server.shutdown();
+      await Deno.remove(visualScript);
+      await Deno.remove(testHome, { recursive: true });
     }
   },
 );
