@@ -7,6 +7,7 @@ import { taskAttemptsCommand } from "./commands/task-attempts.ts";
 import { notifyCommand } from "./commands/notify.ts";
 import { waitCommand } from "./commands/wait.ts";
 import { generateAIHelp } from "./utils/ai-help.ts";
+import { reportCliError } from "./utils/error-handler.ts";
 import { setVerbose } from "./utils/verbose.ts";
 
 const VERSION = "0.1.0";
@@ -28,16 +29,27 @@ const cli = new Command()
   .command("wait", waitCommand)
   .command("completions", new CompletionsCommand());
 
-// Handle --ai flag before normal parsing
-if (Deno.args.includes("--ai")) {
-  const help = generateAIHelp(cli, VERSION);
-  console.log(JSON.stringify(help, null, 2));
-  Deno.exit(0);
+async function runCli(args: string[]): Promise<number> {
+  if (args.includes("--ai")) {
+    const help = generateAIHelp(cli, VERSION);
+    console.log(JSON.stringify(help, null, 2));
+    return 0;
+  }
+
+  if (args.includes("-v") || args.includes("--verbose")) {
+    setVerbose(true);
+  }
+
+  await cli.parse(args);
+  return 0;
 }
 
-// Handle --verbose flag before normal parsing
-if (Deno.args.includes("-v") || Deno.args.includes("--verbose")) {
-  setVerbose(true);
+try {
+  Deno.exit(await runCli(Deno.args));
+} catch (error) {
+  const exitCode = reportCliError(error);
+  if (exitCode !== undefined) {
+    Deno.exit(exitCode);
+  }
+  throw error;
 }
-
-await cli.parse(Deno.args);

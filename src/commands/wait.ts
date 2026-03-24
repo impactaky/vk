@@ -1,7 +1,6 @@
 import { Command } from "@cliffy/command";
 import { connect } from "nats.deno";
 import { loadConfig } from "../api/config.ts";
-import { handleCliError } from "../utils/error-handler.ts";
 
 const DEFAULT_NATS_HOST = "localhost";
 const DEFAULT_NATS_PORT = 4222;
@@ -39,53 +38,48 @@ export const waitCommand = new Command()
   .action(async (options, branch) => {
     let timeoutId: number | undefined;
 
+    const config = await loadConfig();
+    const host = options.host || config.natsHost || DEFAULT_NATS_HOST;
+    const port = options.port || config.natsPort || DEFAULT_NATS_PORT;
+    const subject = options.subject || config.natsSubject ||
+      DEFAULT_NATS_SUBJECT;
+    const timeoutSeconds = options.timeout ?? DEFAULT_TIMEOUT_SECONDS;
+    const timeoutMs = timeoutSeconds * 1000;
+
+    const nc = await connect({ servers: [`nats://${host}:${port}`] });
+
     try {
-      const config = await loadConfig();
-      const host = options.host || config.natsHost || DEFAULT_NATS_HOST;
-      const port = options.port || config.natsPort || DEFAULT_NATS_PORT;
-      const subject = options.subject || config.natsSubject ||
-        DEFAULT_NATS_SUBJECT;
-      const timeoutSeconds = options.timeout ?? DEFAULT_TIMEOUT_SECONDS;
-      const timeoutMs = timeoutSeconds * 1000;
+      const sub = nc.subscribe(subject);
+      const decoder = new TextDecoder();
 
-      const nc = await connect({ servers: [`nats://${host}:${port}`] });
-
-      try {
-        const sub = nc.subscribe(subject);
-        const decoder = new TextDecoder();
-
-        const branches = (async function* (): AsyncGenerator<string> {
-          for await (const message of sub) {
-            yield decoder.decode(message.data).trim();
-          }
-        })();
-
-        const waitPromise = waitForBranchNotification(branches, branch);
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          timeoutId = setTimeout(() => {
-            sub.unsubscribe();
-            reject(
-              new Error(
-                `Timed out waiting ${timeoutSeconds}s for branch "${branch}" on subject "${subject}".`,
-              ),
-            );
-          }, timeoutMs);
-        });
-
-        await Promise.race([waitPromise, timeoutPromise]);
-        sub.unsubscribe();
-      } finally {
-        if (timeoutId !== undefined) {
-          clearTimeout(timeoutId);
+      const branches = (async function* (): AsyncGenerator<string> {
+        for await (const message of sub) {
+          yield decoder.decode(message.data).trim();
         }
-        await nc.close();
-      }
+      })();
 
-      console.log(
-        `Received branch "${branch}" notification on subject "${subject}" at nats://${host}:${port}`,
-      );
-    } catch (error) {
-      handleCliError(error);
-      throw error;
+      const waitPromise = waitForBranchNotification(branches, branch);
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          sub.unsubscribe();
+          reject(
+            new Error(
+              `Timed out waiting ${timeoutSeconds}s for branch "${branch}" on subject "${subject}".`,
+            ),
+          );
+        }, timeoutMs);
+      });
+
+      await Promise.race([waitPromise, timeoutPromise]);
+      sub.unsubscribe();
+    } finally {
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
+      await nc.close();
     }
+
+    console.log(
+      `Received branch "${branch}" notification on subject "${subject}" at nats://${host}:${port}`,
+    );
   });
