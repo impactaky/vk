@@ -146,7 +146,10 @@ taskAttemptsCommand
   .option("--json", "Output as JSON")
   .action(async (options) => {
     try {
-      const filters = parseWorkspaceListFilters(options.filter);
+      const parsedFilters = parseWorkspaceListFilters(options.filter);
+      const filters = parsedFilters.status === undefined
+        ? { ...parsedFilters, status: "active" }
+        : parsedFilters;
       const client = await ApiClient.create();
       const attempts = applyWorkspaceListFilters(
         await client.listTaskAttempts(options.taskId, filters),
