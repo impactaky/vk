@@ -9,7 +9,7 @@
     "fmt": "deno fmt",
     "lint": "deno lint",
     "check": "deno check src/main.ts",
-    "test": "deno test --allow-net --allow-read --allow-write --allow-env",
+    "test": "deno test --allow-net --allow-read --allow-write --allow-env $(find src tests -name '*_test.ts' ! -name '*_integration_test.ts' -print)",
     "test:integration": "deno test --allow-net --allow-read --allow-write --allow-env --allow-run tests/*_integration_test.ts"
   },
   "imports": {

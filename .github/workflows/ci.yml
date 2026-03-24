@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  check:
+  verify:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,8 +26,8 @@ jobs:
       - name: Type check
         run: deno check src/main.ts
 
-      - name: Run unit tests
-        run: deno test --allow-read --allow-write --allow-env src/
+      - name: Run unit test suite
+        run: deno task test
 
   integration-test:
     runs-on: ubuntu-latest
@@ -35,5 +35,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run integration tests with Docker Compose
-        run: docker compose run --rm vk
+      - name: Run integration test suite
+        run: docker compose run --rm vk deno task test:integration
