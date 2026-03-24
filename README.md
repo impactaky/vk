@@ -23,7 +23,10 @@ command ahead of time, you can replace it with a narrower
 `--allow-run=<editor>,git,fzf`.
 
 **From GitHub releases:** Download pre-built binaries from the
-[releases page](https://github.com/BloopAI/vk/releases).
+[releases page](https://github.com/BloopAI/vk/releases). Released binaries need
+the same run permissions as the Deno install: keep editor fallback working by
+compiling with broad `--allow-run`, or include your editor executable alongside
+`git,fzf` in a narrower allowlist.
 
 #### 1.1 Configure shell completion (optional)
 
@@ -79,6 +82,17 @@ deno install -g --allow-net --allow-read --allow-write --allow-env --allow-run -
 As above, `--allow-run` is broad by default so editor fallback works with the
 user's configured editor. If you operate with a fixed editor command, you can
 narrow the allowlist manually.
+
+### Build a release binary
+
+```bash
+deno task compile
+```
+
+The checked-in compile task keeps `--allow-run` broad so `vk workspace create`
+and `vk workspace spin-off` can honor `$GIT_EDITOR`, `$VISUAL`, or `$EDITOR`. If
+you distribute a binary with a restricted allowlist instead, include the editor
+executable name together with `git,fzf`.
 
 To uninstall:
 

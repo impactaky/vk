@@ -26,6 +26,13 @@ const EDITOR_INSTRUCTIONS = [
   "# Save and close the editor to continue.",
 ].join("\n");
 
+function buildEditorPermissionError(command: string): Error {
+  return new Error(
+    `Configured editor "${command}" is not allowed to run. ` +
+      "Reinstall or compile vk with --allow-run, or include that editor executable in the --allow-run allowlist.",
+  );
+}
+
 function getConfiguredEditor(): string {
   const editor = Deno.env.get("GIT_EDITOR") ?? Deno.env.get("VISUAL") ??
     Deno.env.get("EDITOR");
@@ -45,6 +52,20 @@ function normalizeEditorPrompt(text: string): string {
     .trim();
 }
 
+async function ensureEditorRunPermission(command: string): Promise<void> {
+  try {
+    const permission = await Deno.permissions.query({ name: "run", command });
+    if (permission.state === "denied") {
+      throw buildEditorPermissionError(command);
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("run access")) {
+      throw buildEditorPermissionError(command);
+    }
+    throw error;
+  }
+}
+
 async function resolvePromptFromEditor(): Promise<string> {
   const [command, ...args] = parseArgsStringToArgv(getConfiguredEditor());
   if (!command) {
@@ -57,13 +78,22 @@ async function resolvePromptFromEditor(): Promise<string> {
 
   try {
     await Deno.writeTextFile(tempFile, `${EDITOR_INSTRUCTIONS}\n`);
+    await ensureEditorRunPermission(command);
 
-    const result = await new Deno.Command(command, {
-      args: [...args, tempFile],
-      stdin: "inherit",
-      stdout: "inherit",
-      stderr: "inherit",
-    }).output();
+    let result: Deno.CommandOutput;
+    try {
+      result = await new Deno.Command(command, {
+        args: [...args, tempFile],
+        stdin: "inherit",
+        stdout: "inherit",
+        stderr: "inherit",
+      }).output();
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("run access")) {
+        throw buildEditorPermissionError(command);
+      }
+      throw error;
+    }
 
     if (result.code !== 0) {
       throw new Error(`Editor exited with status ${result.code}.`);
