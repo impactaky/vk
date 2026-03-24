@@ -3,7 +3,6 @@ import { Table } from "@cliffy/table";
 import { ApiClient } from "../api/client.ts";
 import { applyFilters } from "../utils/filter.ts";
 import { getOrganizationId } from "../utils/organization-resolver.ts";
-import { handleCliError } from "../utils/error-handler.ts";
 
 export const organizationCommand = new Command()
   .description("Manage organizations")
@@ -18,46 +17,41 @@ organizationCommand
   .option("--name <name:string>", "Filter by organization name")
   .option("--json", "Output as JSON")
   .action(async (options) => {
-    try {
-      const client = await ApiClient.create();
-      let organizations = await client.listOrganizations();
+    const client = await ApiClient.create();
+    let organizations = await client.listOrganizations();
 
-      const filters: Record<string, unknown> = {};
-      if (options.name !== undefined) {
-        filters.name = options.name;
-      }
-
-      organizations = applyFilters(organizations, filters);
-
-      if (options.json) {
-        console.log(JSON.stringify(organizations, null, 2));
-        return;
-      }
-
-      if (organizations.length === 0) {
-        console.log("No organizations found.");
-        return;
-      }
-
-      const table = new Table()
-        .header(["ID", "Name", "Slug", "Role", "Created", "Updated"])
-        .body(organizations.map((org): string[] => {
-          const role = "user_role" in org ? String(org.user_role) : "-";
-          return [
-            org.id,
-            org.name,
-            org.slug || "-",
-            role,
-            org.created_at,
-            org.updated_at,
-          ];
-        }));
-
-      table.render();
-    } catch (error) {
-      handleCliError(error);
-      throw error;
+    const filters: Record<string, unknown> = {};
+    if (options.name !== undefined) {
+      filters.name = options.name;
     }
+
+    organizations = applyFilters(organizations, filters);
+
+    if (options.json) {
+      console.log(JSON.stringify(organizations, null, 2));
+      return;
+    }
+
+    if (organizations.length === 0) {
+      console.log("No organizations found.");
+      return;
+    }
+
+    const table = new Table()
+      .header(["ID", "Name", "Slug", "Role", "Created", "Updated"])
+      .body(organizations.map((org): string[] => {
+        const role = "user_role" in org ? String(org.user_role) : "-";
+        return [
+          org.id,
+          org.name,
+          org.slug || "-",
+          role,
+          org.created_at,
+          org.updated_at,
+        ];
+      }));
+
+    table.render();
   });
 
 // Show organization
@@ -67,28 +61,23 @@ organizationCommand
   .arguments("[id:string]")
   .option("--json", "Output as JSON")
   .action(async (options, id) => {
-    try {
-      const client = await ApiClient.create();
-      const organizationId = await getOrganizationId(id, client);
-      const organization = await client.getOrganization(organizationId);
+    const client = await ApiClient.create();
+    const organizationId = await getOrganizationId(id, client);
+    const organization = await client.getOrganization(organizationId);
 
-      if (options.json) {
-        console.log(JSON.stringify(organization, null, 2));
-        return;
-      }
-
-      console.log(`ID:       ${organization.id}`);
-      console.log(`Name:     ${organization.name}`);
-      if (organization.slug) {
-        console.log(`Slug:     ${organization.slug}`);
-      }
-      if (organization.issue_prefix) {
-        console.log(`Issue:    ${organization.issue_prefix}`);
-      }
-      console.log(`Created:  ${organization.created_at}`);
-      console.log(`Updated:  ${organization.updated_at}`);
-    } catch (error) {
-      handleCliError(error);
-      throw error;
+    if (options.json) {
+      console.log(JSON.stringify(organization, null, 2));
+      return;
     }
+
+    console.log(`ID:       ${organization.id}`);
+    console.log(`Name:     ${organization.name}`);
+    if (organization.slug) {
+      console.log(`Slug:     ${organization.slug}`);
+    }
+    if (organization.issue_prefix) {
+      console.log(`Issue:    ${organization.issue_prefix}`);
+    }
+    console.log(`Created:  ${organization.created_at}`);
+    console.log(`Updated:  ${organization.updated_at}`);
   });

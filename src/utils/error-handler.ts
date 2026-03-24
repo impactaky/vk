@@ -4,39 +4,52 @@
 
 import { FzfCancelledError, FzfNotInstalledError } from "./fzf.ts";
 
+type CliErrorOptions = {
+  details?: string[];
+  exitCode?: number;
+  prefixWithError?: boolean;
+};
+
+export class CliError extends Error {
+  readonly details: string[];
+  readonly exitCode: number;
+  readonly prefixWithError: boolean;
+
+  constructor(message: string, options: CliErrorOptions = {}) {
+    super(message);
+    this.name = "CliError";
+    this.details = options.details ?? [];
+    this.exitCode = options.exitCode ?? 1;
+    this.prefixWithError = options.prefixWithError ?? false;
+  }
+}
+
 /**
- * Handle common CLI errors and exit appropriately
- * Returns true if error was handled, false otherwise
+ * Handle common CLI errors and report them.
+ * Returns the exit code if handled, otherwise undefined.
  */
-export function handleCliError(error: unknown): boolean {
+export function reportCliError(error: unknown): number | undefined {
+  if (error instanceof CliError) {
+    const prefix = error.prefixWithError ? "Error: " : "";
+    console.error(`${prefix}${error.message}`);
+    for (const detail of error.details) {
+      console.log(detail);
+    }
+    return error.exitCode;
+  }
+
   if (
     error instanceof FzfNotInstalledError ||
     error instanceof FzfCancelledError
   ) {
     console.error(`Error: ${error.message}`);
-    Deno.exit(1);
+    return 1;
   }
 
   if (error instanceof Error) {
     console.error(`Error: ${error.message}`);
-    Deno.exit(1);
+    return 1;
   }
 
-  return false;
-}
-
-/**
- * Wrap an async action with common error handling
- */
-export async function withErrorHandling<T>(
-  action: () => Promise<T>,
-): Promise<T> {
-  try {
-    return await action();
-  } catch (error) {
-    if (!handleCliError(error)) {
-      throw error;
-    }
-    throw error; // TypeScript needs this for type inference
-  }
+  return undefined;
 }

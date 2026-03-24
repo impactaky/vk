@@ -89,3 +89,45 @@ Deno.test("CLI: vk config set/get shell persists value", async () => {
     }
   }
 });
+
+Deno.test("CLI: vk config set rejects invalid nats-port with exit code 1", async () => {
+  const testHome = `/tmp/test-home-invalid-port-${Date.now()}`;
+
+  try {
+    const command = new Deno.Command("deno", {
+      args: [
+        "run",
+        "--allow-net",
+        "--allow-read",
+        "--allow-write",
+        "--allow-env",
+        "src/main.ts",
+        "config",
+        "set",
+        "nats-port",
+        "nope",
+      ],
+      stdout: "piped",
+      stderr: "piped",
+      env: {
+        VK_API_URL: config.apiUrl,
+        HOME: testHome,
+      },
+    });
+
+    const result = await command.output();
+    const stderrText = new TextDecoder().decode(result.stderr).trim();
+
+    assertEquals(result.code, 1);
+    assertEquals(
+      stderrText,
+      "Invalid value for nats-port. Must be a positive integer.",
+    );
+  } finally {
+    try {
+      await Deno.remove(testHome, { recursive: true });
+    } catch {
+      // Ignore cleanup errors.
+    }
+  }
+});

@@ -1,6 +1,7 @@
 import { Command } from "@cliffy/command";
 import { loadConfig, saveConfig } from "../api/config.ts";
 import { parseExecutorString } from "../utils/executor-parser.ts";
+import { CliError } from "../utils/error-handler.ts";
 
 export const configCommand = new Command()
   .description("Manage CLI configuration")
@@ -49,10 +50,9 @@ configCommand
       case "nats-port": {
         const parsedPort = Number(value);
         if (Number.isNaN(parsedPort) || parsedPort <= 0) {
-          console.error(
+          throw new CliError(
             "Invalid value for nats-port. Must be a positive integer.",
           );
-          Deno.exit(1);
         }
         config.natsPort = parsedPort;
         break;
@@ -61,11 +61,11 @@ configCommand
         config.natsSubject = value;
         break;
       default:
-        console.error(`Unknown configuration key: ${key}`);
-        console.log(
-          "Available keys: api-url, shell, default-executor, nats-host, nats-port, nats-subject",
-        );
-        Deno.exit(1);
+        throw new CliError(`Unknown configuration key: ${key}`, {
+          details: [
+            "Available keys: api-url, shell, default-executor, nats-host, nats-port, nats-subject",
+          ],
+        });
     }
 
     await saveConfig(config);
