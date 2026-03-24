@@ -43,6 +43,41 @@ Deno.test("ApiClient - listWorkspaces uses latest /api/workspaces endpoint", asy
   }
 });
 
+Deno.test("ApiClient - listWorkspaces appends filter query params", async () => {
+  let requestedPath = "";
+
+  const server = Deno.serve({ hostname: "127.0.0.1", port: 0 }, (request) => {
+    const url = new URL(request.url);
+    requestedPath = `${url.pathname}${url.search}`;
+    if (url.pathname === "/api/workspaces") {
+      return Response.json({
+        success: true,
+        data: [{ id: "ws-1", branch: "feature/test", name: "Workspace 1" }],
+      });
+    }
+
+    return new Response("Not found", { status: 404 });
+  });
+
+  try {
+    const address = server.addr as Deno.NetAddr;
+    const client = new ApiClient(`http://127.0.0.1:${address.port}`);
+
+    const workspaces = await client.listWorkspaces("task-1", {
+      archived: false,
+      status: ["ready", "pinned"],
+    });
+
+    assertEquals(
+      requestedPath,
+      "/api/workspaces?task_id=task-1&archived=false&status=ready&status=pinned",
+    );
+    assertEquals(workspaces.length, 1);
+  } finally {
+    await server.shutdown();
+  }
+});
+
 Deno.test("ApiClient - createWorkspace uses latest /api/workspaces/start endpoint", async () => {
   const requestBody: CreateAndStartWorkspaceRequest = {
     prompt: "test prompt",

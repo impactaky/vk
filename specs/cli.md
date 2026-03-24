@@ -148,8 +148,14 @@ Current top-level commands:
 ### `vk workspace list`
 
 - Fetches workspaces from API.
-- Supports optional filter:
+- Supports optional filters:
   - `--task-id <id>`
+  - `--filter <key=value>` (repeatable)
+  - supported keys: `id`, `task_id`, `branch`, `container_ref`,
+    `agent_working_dir`, `setup_completed_at`, `created_at`, `updated_at`,
+    `archived`, `pinned`, `name`, `worktree_deleted`, `status`
+  - derived `status` values: `active`, `archived`, `pinned`, `ready`, `pending`,
+    `deleted`
 - Output:
   - `--json`: prints JSON array
   - default: table with `ID | Task ID | Name | Branch | Archived | Pinned`
@@ -178,8 +184,8 @@ Current top-level commands:
 - Repository selection:
   - `--repo <id-or-name>` (optional, repeatable)
   - repeated `--repo` values are attached in the order provided
-  - if omitted, repository is auto-resolved from current directory context
-    using existing repository resolver behavior
+  - if omitted, repository is auto-resolved from current directory context using
+    existing repository resolver behavior
 - Prompt content must be non-empty text (empty/whitespace input is rejected).
 - Optional options:
   - `--target-branch <name>` (defaults to `main`)
@@ -258,8 +264,8 @@ Current top-level commands:
 
 ### `vk workspace rename-branch [id]`
 
-- Command placement decision: keep `rename-branch` as a standalone
-  `workspace` subcommand.
+- Command placement decision: keep `rename-branch` as a standalone `workspace`
+  subcommand.
 - Renames the workspace branch for one workspace.
 - Required option:
   - `--new-branch-name <name>`

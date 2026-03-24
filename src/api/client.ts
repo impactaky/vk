@@ -127,15 +127,44 @@ export class ApiClient {
     })();
   }
 
-  /** List workspaces. Calls GET /api/workspaces with optional task_id filter. */
-  listWorkspaces(taskId?: string): Promise<Workspace[]> {
-    const query = taskId ? `?task_id=${taskId}` : "";
-    return this.request<Workspace[]>(`/workspaces${query}`);
+  /** List workspaces. Calls GET /api/workspaces with optional filters. */
+  listWorkspaces(
+    taskId?: string,
+    filters: Record<string, unknown> = {},
+  ): Promise<Workspace[]> {
+    const params = new URLSearchParams();
+
+    if (taskId) {
+      params.set("task_id", taskId);
+    }
+
+    for (const [key, value] of Object.entries(filters)) {
+      if (value === undefined || value === null) {
+        continue;
+      }
+
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          params.append(key, String(item));
+        }
+        continue;
+      }
+
+      params.append(key, String(value));
+    }
+
+    const query = params.toString();
+    return this.request<Workspace[]>(
+      `/workspaces${query.length > 0 ? `?${query}` : ""}`,
+    );
   }
 
   /** CLI-facing alias retained for command module naming. */
-  listTaskAttempts(taskId?: string): Promise<Workspace[]> {
-    return this.listWorkspaces(taskId);
+  listTaskAttempts(
+    taskId?: string,
+    filters: Record<string, unknown> = {},
+  ): Promise<Workspace[]> {
+    return this.listWorkspaces(taskId, filters);
   }
 
   /** Get a single workspace by ID. Calls GET /api/workspaces/:id. */

@@ -21,6 +21,14 @@ export function applyFilters<T extends Record<string, any>>(
 
       const itemValue = item[key];
 
+      if (Array.isArray(filterValue)) {
+        if (Array.isArray(itemValue)) {
+          return filterValue.some((value) => itemValue.includes(value));
+        }
+
+        return filterValue.includes(itemValue);
+      }
+
       if (Array.isArray(itemValue)) {
         return itemValue.includes(filterValue);
       }
