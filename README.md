@@ -13,8 +13,14 @@ Get started with `vk` in under 2 minutes:
 **From Deno:**
 
 ```bash
-deno install -g --allow-net --allow-read --allow-write --allow-env --allow-run=git,fzf -n vk https://raw.githubusercontent.com/BloopAI/vk/main/src/main.ts
+deno install -g --allow-net --allow-read --allow-write --allow-env --allow-run -n vk https://raw.githubusercontent.com/BloopAI/vk/main/src/main.ts
 ```
+
+`vk workspace create` / `vk workspace spin-off` can launch the editor from
+`$GIT_EDITOR`, `$VISUAL`, or `$EDITOR`. The install example keeps
+`--allow-run` broad because the executable name is user-configured. If you pin
+your editor command ahead of time, you can replace it with a narrower
+`--allow-run=<editor>,git,fzf`.
 
 **From GitHub releases:** Download pre-built binaries from the
 [releases page](https://github.com/BloopAI/vk/releases).
@@ -67,8 +73,12 @@ git clone https://github.com/BloopAI/vk.git
 cd vk
 
 # Install globally
-deno install -g --allow-net --allow-read --allow-write --allow-env --allow-run=git,fzf -n vk --config deno.json src/main.ts
+deno install -g --allow-net --allow-read --allow-write --allow-env --allow-run -n vk --config deno.json src/main.ts
 ```
+
+As above, `--allow-run` is broad by default so editor fallback works with the
+user's configured editor. If you operate with a fixed editor command, you can
+narrow the allowlist manually.
 
 To uninstall:
 
@@ -116,6 +126,8 @@ vk workspace list --json
 vk workspace list --task-id <task-id>
 vk workspace show <attempt-id>
 vk workspace show --json <attempt-id>
+vk workspace create --repo <repo-id-or-name>   # opens $GIT_EDITOR / $VISUAL / $EDITOR if prompt flags are omitted
+vk workspace spin-off <attempt-id>             # opens editor if prompt flags are omitted
 vk workspace spin-off <attempt-id> --description "Follow-up work"
 ```
 

@@ -13,7 +13,9 @@ function assertWorkspaceCreateResponse(parsed: {
   execution_process?: { id?: string } | null;
 }) {
   assertExists(parsed.workspace?.id);
-  if (parsed.execution_process !== undefined && parsed.execution_process !== null) {
+  if (
+    parsed.execution_process !== undefined && parsed.execution_process !== null
+  ) {
     assertExists(parsed.execution_process.id);
   }
 }
@@ -185,6 +187,23 @@ async function cleanupAttempt(attemptId: string | undefined): Promise<void> {
     return;
   }
   await apiCall(`/workspaces/${attemptId}`, { method: "DELETE" });
+}
+
+async function makeEditorScript(contents: string): Promise<string> {
+  const scriptPath = await Deno.makeTempFile({
+    prefix: "vk-editor-script-",
+    suffix: ".sh",
+  });
+  await Deno.writeTextFile(
+    scriptPath,
+    `#!/bin/sh
+cat <<'EOF' > "$1"
+${contents}
+EOF
+`,
+  );
+  await Deno.chmod(scriptPath, 0o755);
+  return scriptPath;
 }
 
 Deno.test("API: workspaces endpoint returns array when accessible", async () => {
@@ -362,36 +381,110 @@ Deno.test("CLI: vk workspace show --json auto-detects ID from branch", async () 
   }
 });
 
-Deno.test("CLI: vk workspace create requires prompt source", async () => {
-  const command = new Deno.Command("deno", {
-    args: [
-      "run",
-      "--allow-net",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "src/main.ts",
-      "workspace",
-      "create",
-      "--repo",
-      "repo-1",
-    ],
-    stdout: "piped",
-    stderr: "piped",
-    env: {
-      VK_API_URL: config.apiUrl,
-      HOME: "/tmp/test-home-task-attempts-create-missing-task-id",
-    },
+Deno.test("CLI: vk workspace create uses EDITOR when prompt source is omitted", async () => {
+  const testHome = await Deno.makeTempDir({
+    prefix: "vk-workspace-create-editor-",
   });
-
-  const { code, stderr } = await command.output();
-  const stderrText = new TextDecoder().decode(stderr);
-
-  assertEquals(code, 1);
-  assertEquals(
-    stderrText.includes("Option --description or --file is required."),
-    true,
+  const editorScript = await makeEditorScript(
+    "Prompt from editor\n# ignored comment\n",
   );
+  let workspaceCreateBody = "";
+
+  const server = Deno.serve(
+    { hostname: "127.0.0.1", port: 0 },
+    async (request) => {
+      const { pathname } = new URL(request.url);
+
+      if (pathname === "/api/repos") {
+        return Response.json({
+          success: true,
+          data: [{
+            id: "repo-1",
+            path: Deno.cwd(),
+            name: "vk",
+            display_name: "VK",
+            setup_script: null,
+            cleanup_script: null,
+            copy_files: null,
+            parallel_setup_script: false,
+            dev_server_script: null,
+            default_target_branch: null,
+            default_working_dir: null,
+            created_at: "2026-01-01T00:00:00Z",
+            updated_at: "2026-01-01T00:00:00Z",
+          }],
+        });
+      }
+
+      if (pathname === "/api/workspaces/start") {
+        workspaceCreateBody = await request.text();
+        return Response.json({
+          success: true,
+          data: {
+            workspace: {
+              id: "ws-editor",
+              branch: "feature/editor",
+              name: "Workspace Editor",
+            },
+            execution_process: { id: "proc-editor" },
+          },
+        });
+      }
+
+      return new Response("Not found", { status: 404 });
+    },
+  );
+
+  try {
+    const address = server.addr as Deno.NetAddr;
+    const command = new Deno.Command("deno", {
+      args: [
+        "run",
+        "--allow-net",
+        "--allow-read",
+        "--allow-write",
+        "--allow-env",
+        "--allow-run",
+        "src/main.ts",
+        "workspace",
+        "create",
+        "--repo",
+        "repo-1",
+        "--json",
+      ],
+      stdout: "piped",
+      stderr: "piped",
+      env: {
+        VK_API_URL: `http://127.0.0.1:${address.port}`,
+        HOME: testHome,
+        EDITOR: editorScript,
+      },
+    });
+
+    const { code, stdout, stderr } = await command.output();
+    const stderrText = new TextDecoder().decode(stderr);
+
+    assertEquals(
+      code,
+      0,
+      `Expected exit code 0 for workspace create via editor. stderr: ${stderrText}`,
+    );
+    assertEquals(
+      workspaceCreateBody,
+      JSON.stringify({
+        prompt: "Prompt from editor",
+        executor_config: { executor: "CLAUDE_CODE", variant: "DEFAULT" },
+        repos: [{ repo_id: "repo-1", target_branch: "main" }],
+      }),
+    );
+
+    const parsed = JSON.parse(new TextDecoder().decode(stdout));
+    assertEquals(parsed.workspace.id, "ws-editor");
+  } finally {
+    await server.shutdown();
+    await Deno.remove(editorScript);
+    await Deno.remove(testHome, { recursive: true });
+  }
 });
 
 Deno.test("CLI: vk workspace create --description uses /api/workspaces/start", async () => {
@@ -801,36 +894,46 @@ Deno.test("CLI: vk workspace create resolves repo by id", async () => {
   await cleanupAttempt(parsed.workspace?.id);
 });
 
-Deno.test("CLI: vk workspace spin-off requires prompt source", async () => {
-  const command = new Deno.Command("deno", {
-    args: [
-      "run",
-      "--allow-net",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "src/main.ts",
-      "workspace",
-      "spin-off",
-      "parent-attempt-1",
-    ],
-    stdout: "piped",
-    stderr: "piped",
-    env: {
-      VK_API_URL: config.apiUrl,
-      HOME: "/tmp/test-home-task-attempts-spin-off-missing-description",
-    },
-  });
+Deno.test(
+  "CLI: vk workspace spin-off rejects empty editor content when prompt source is omitted",
+  async () => {
+    const editorScript = await makeEditorScript("# comment only\n   \n");
+    try {
+      const command = new Deno.Command("deno", {
+        args: [
+          "run",
+          "--allow-net",
+          "--allow-read",
+          "--allow-write",
+          "--allow-env",
+          "--allow-run",
+          "src/main.ts",
+          "workspace",
+          "spin-off",
+          "parent-attempt-1",
+        ],
+        stdout: "piped",
+        stderr: "piped",
+        env: {
+          VK_API_URL: config.apiUrl,
+          HOME: "/tmp/test-home-task-attempts-spin-off-editor-empty",
+          EDITOR: editorScript,
+        },
+      });
 
-  const { code, stderr } = await command.output();
-  const stderrText = new TextDecoder().decode(stderr);
+      const { code, stderr } = await command.output();
+      const stderrText = new TextDecoder().decode(stderr);
 
-  assertEquals(code, 1);
-  assertEquals(
-    stderrText.includes("Option --description or --file is required."),
-    true,
-  );
-});
+      assertEquals(code, 1);
+      assertEquals(
+        stderrText.includes("Editor content must contain non-comment text."),
+        true,
+      );
+    } finally {
+      await Deno.remove(editorScript);
+    }
+  },
+);
 
 Deno.test(
   "CLI: vk workspace spin-off rejects --description with --file",
