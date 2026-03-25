@@ -47,8 +47,7 @@ export async function resolveNatsConnectionOptions(options: {
 export function isWorkspaceFinishedStatus(
   status: WorkspaceWatchStatus,
 ): boolean {
-  return status === "SetupComplete" || status === "SetupFailed" ||
-    status === "ExecutorComplete" || status === "ExecutorFailed";
+  return status === "archived" || status === "deleted";
 }
 
 export function getWorkspaceWatchStatus(

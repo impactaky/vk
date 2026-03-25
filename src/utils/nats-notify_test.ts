@@ -34,7 +34,7 @@ Deno.test("createWorkspaceStatusNotification falls back to completion from setup
     workspaceId: "ws-1",
     branch: "feature/x",
     status: "SetupComplete",
-    finished: true,
+    finished: false,
   });
 });
 
@@ -66,7 +66,7 @@ Deno.test("waitForWorkspaceNotification resolves on terminal workspace notificat
       type: "workspace-status" as const,
       workspaceId: "ws-1",
       branch: "feature/x",
-      status: "ExecutorComplete" as const,
+      status: "archived" as const,
       finished: true,
     };
   })();
@@ -75,7 +75,7 @@ Deno.test("waitForWorkspaceNotification resolves on terminal workspace notificat
     notifications,
     "ws-1",
   );
-  assertEquals(notification.status, "ExecutorComplete");
+  assertEquals(notification.status, "archived");
 });
 
 Deno.test("waitForWorkspaceNotification rejects if the stream ends too early", async () => {
