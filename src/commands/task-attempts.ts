@@ -378,7 +378,10 @@ taskAttemptsCommand
   .option("--host <host:string>", "NATS host (default: localhost)")
   .option("--port <port:number>", "NATS port (default: 4222)")
   .option("--subject <subject:string>", "NATS subject (default: vk.notify)")
-  .option("--timeout <seconds:number>", "Max seconds to wait (default: 300)")
+  .option(
+    "--timeout <seconds:number>",
+    "Max seconds to wait (default: disabled)",
+  )
   .action(async (options, id: string) => {
     let timeoutId: number | undefined;
 
@@ -396,8 +399,6 @@ taskAttemptsCommand
       const { host, port, subject } = await resolveNatsConnectionOptions(
         options,
       );
-      const timeoutSeconds = options.timeout ?? 300;
-      const timeoutMs = timeoutSeconds * 1000;
       const nc = await connect({ servers: [`nats://${host}:${port}`] });
 
       try {
@@ -406,18 +407,25 @@ taskAttemptsCommand
           notificationStream(sub),
           id,
         );
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          timeoutId = setTimeout(() => {
-            sub.unsubscribe();
-            reject(
-              new Error(
-                `Timed out waiting ${timeoutSeconds}s for workspace "${id}" on subject "${subject}".`,
-              ),
-            );
-          }, timeoutMs);
-        });
+        let notification;
+        if (options.timeout !== undefined) {
+          const timeoutSeconds = options.timeout;
+          const timeoutMs = timeoutSeconds * 1000;
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(() => {
+              sub.unsubscribe();
+              reject(
+                new Error(
+                  `Timed out waiting ${timeoutSeconds}s for workspace "${id}" on subject "${subject}".`,
+                ),
+              );
+            }, timeoutMs);
+          });
 
-        const notification = await Promise.race([waitPromise, timeoutPromise]);
+          notification = await Promise.race([waitPromise, timeoutPromise]);
+        } else {
+          notification = await waitPromise;
+        }
         sub.unsubscribe();
         console.log(
           `Workspace ${id} finished with status ${notification.status} on subject "${subject}" at nats://${host}:${port}`,
