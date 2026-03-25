@@ -1,20 +1,19 @@
 import { Command } from "@cliffy/command";
 import { connect } from "nats.deno";
-import { loadConfig } from "../api/config.ts";
 import { getCurrentBranch } from "../utils/git.ts";
 import { handleCliError } from "../utils/error-handler.ts";
-
-const DEFAULT_NATS_HOST = "localhost";
-const DEFAULT_NATS_PORT = 4222;
-const DEFAULT_NATS_SUBJECT = "vk.notify";
+import {
+  encodeNotification,
+  resolveNatsConnectionOptions,
+} from "../utils/nats-notify.ts";
 
 export const notifyCommand = new Command()
   .description("Publish the current git branch to NATS")
-  .option("--host <host:string>", `NATS host (default: ${DEFAULT_NATS_HOST})`)
-  .option("--port <port:number>", `NATS port (default: ${DEFAULT_NATS_PORT})`)
+  .option("--host <host:string>", "NATS host (default: localhost)")
+  .option("--port <port:number>", "NATS port (default: 4222)")
   .option(
     "--subject <subject:string>",
-    `NATS subject (default: ${DEFAULT_NATS_SUBJECT})`,
+    "NATS subject (default: vk.notify)",
   )
   .action(async (options) => {
     try {
@@ -24,16 +23,14 @@ export const notifyCommand = new Command()
         Deno.exit(1);
       }
 
-      const config = await loadConfig();
-      const host = options.host || config.natsHost || DEFAULT_NATS_HOST;
-      const port = options.port || config.natsPort || DEFAULT_NATS_PORT;
-      const subject = options.subject || config.natsSubject ||
-        DEFAULT_NATS_SUBJECT;
+      const { host, port, subject } = await resolveNatsConnectionOptions(
+        options,
+      );
 
       const nc = await connect({ servers: [`nats://${host}:${port}`] });
 
       try {
-        nc.publish(subject, new TextEncoder().encode(branch));
+        nc.publish(subject, encodeNotification({ type: "branch", branch }));
         await nc.flush();
       } finally {
         await nc.close();

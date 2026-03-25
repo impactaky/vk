@@ -49,6 +49,8 @@ export interface Workspace {
   task_id: string | null;
   /** Docker container reference for the workspace environment. */
   container_ref: string | null;
+  /** Optional lifecycle status when provided by the API. */
+  status?: WorkspaceStatus | null;
   branch: string;
   agent_working_dir: string | null;
   setup_completed_at: string | null;
