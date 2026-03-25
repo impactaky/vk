@@ -5,6 +5,11 @@ export const DEFAULT_NATS_HOST = "localhost";
 export const DEFAULT_NATS_PORT = 4222;
 export const DEFAULT_NATS_SUBJECT = "vk.notify";
 
+export type WorkspaceWatchStatus =
+  | WorkspaceStatus
+  | "archived"
+  | "deleted";
+
 export type BranchNotification = {
   type: "branch";
   branch: string;
@@ -14,7 +19,7 @@ export type WorkspaceStatusNotification = {
   type: "workspace-status";
   workspaceId: string;
   branch: string;
-  status: WorkspaceStatus;
+  status: WorkspaceWatchStatus;
   finished: boolean;
 };
 
@@ -39,12 +44,24 @@ export async function resolveNatsConnectionOptions(options: {
   };
 }
 
-export function isWorkspaceFinishedStatus(status: WorkspaceStatus): boolean {
+export function isWorkspaceFinishedStatus(
+  status: WorkspaceWatchStatus,
+): boolean {
   return status === "SetupComplete" || status === "SetupFailed" ||
     status === "ExecutorComplete" || status === "ExecutorFailed";
 }
 
-export function getWorkspaceWatchStatus(workspace: Workspace): WorkspaceStatus {
+export function getWorkspaceWatchStatus(
+  workspace: Workspace,
+): WorkspaceWatchStatus {
+  if (workspace.worktree_deleted === true) {
+    return "deleted";
+  }
+
+  if (workspace.archived) {
+    return "archived";
+  }
+
   if (workspace.status) {
     return workspace.status;
   }
@@ -100,7 +117,7 @@ export function decodeNotification(data: Uint8Array): VkNotification {
         type: "workspace-status",
         workspaceId: parsed.workspaceId,
         branch: parsed.branch,
-        status: parsed.status as WorkspaceStatus,
+        status: parsed.status as WorkspaceWatchStatus,
         finished: parsed.finished,
       };
     }
