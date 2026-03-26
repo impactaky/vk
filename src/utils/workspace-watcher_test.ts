@@ -67,18 +67,3 @@ Deno.test("detectWorkspaceStatusChanges reports archived transitions", () => {
   assertEquals(changes[0].status, "archived");
   assertEquals(changes[0].finished, true);
 });
-
-Deno.test("detectWorkspaceStatusChanges reports deleted transitions", () => {
-  const previous = snapshotWorkspaceStatuses([
-    makeWorkspace("ws-1", "SetupRunning"),
-  ]);
-  const deletedWorkspace = {
-    ...makeWorkspace("ws-1", "SetupRunning"),
-    worktree_deleted: true,
-  };
-  const changes = detectWorkspaceStatusChanges([deletedWorkspace], previous);
-
-  assertEquals(changes.length, 1);
-  assertEquals(changes[0].status, "deleted");
-  assertEquals(changes[0].finished, true);
-});

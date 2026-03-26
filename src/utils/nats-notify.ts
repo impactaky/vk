@@ -7,8 +7,7 @@ export const DEFAULT_NATS_SUBJECT = "vk.notify";
 
 export type WorkspaceWatchStatus =
   | WorkspaceStatus
-  | "archived"
-  | "deleted";
+  | "archived";
 
 export type BranchNotification = {
   type: "branch";
@@ -47,16 +46,12 @@ export async function resolveNatsConnectionOptions(options: {
 export function isWorkspaceFinishedStatus(
   status: WorkspaceWatchStatus,
 ): boolean {
-  return status === "archived" || status === "deleted";
+  return status === "archived";
 }
 
 export function getWorkspaceWatchStatus(
   workspace: Workspace,
 ): WorkspaceWatchStatus {
-  if (workspace.worktree_deleted === true) {
-    return "deleted";
-  }
-
   if (workspace.archived) {
     return "archived";
   }

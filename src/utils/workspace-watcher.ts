@@ -4,15 +4,11 @@ import {
   type WorkspaceStatusNotification,
 } from "./nats-notify.ts";
 
-type WorkspaceActivityStatus = "active" | "archived" | "deleted";
+type WorkspaceActivityStatus = "active" | "archived";
 
 function getWorkspaceActivityStatus(
   workspace: Workspace,
 ): WorkspaceActivityStatus {
-  if (workspace.worktree_deleted === true) {
-    return "deleted";
-  }
-
   if (workspace.archived) {
     return "archived";
   }
@@ -29,10 +25,7 @@ export function detectWorkspaceStatusChanges(
   for (const workspace of workspaces) {
     const currentStatus = getWorkspaceActivityStatus(workspace);
     const previousStatus = previousStatuses.get(workspace.id);
-    if (
-      previousStatus === "active" &&
-      (currentStatus === "archived" || currentStatus === "deleted")
-    ) {
+    if (previousStatus === "active" && currentStatus === "archived") {
       changes.push(createWorkspaceStatusNotification(workspace));
     }
   }
