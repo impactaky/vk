@@ -1,5 +1,6 @@
 import { Command } from "@cliffy/command";
 import { Table } from "@cliffy/table";
+import { connect } from "nats.deno";
 import { parseArgsStringToArgv } from "string-argv";
 import { loadConfig } from "../api/config.ts";
 import { ApiClient } from "../api/client.ts";
@@ -12,6 +13,18 @@ import {
   applyWorkspaceListFilters,
   parseWorkspaceListFilters,
 } from "../utils/workspace-list-filters.ts";
+import {
+  createWorkspaceStatusNotification,
+  encodeNotification,
+  isWorkspaceFinishedStatus,
+  notificationStream,
+  resolveNatsConnectionOptions,
+  waitForWorkspaceNotification,
+} from "../utils/nats-notify.ts";
+import {
+  detectWorkspaceStatusChanges,
+  snapshotWorkspaceStatuses,
+} from "../utils/workspace-watcher.ts";
 
 type PromptSourceOptions = {
   description?: string;
@@ -352,6 +365,127 @@ taskAttemptsCommand
           ? `Workspace ${spinOffResult.workspace.id} spun off from ${attemptId}.`
           : `Workspace ${spinOffResult.workspace.id} created from ${attemptId}.`,
       );
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+taskAttemptsCommand
+  .command("wait")
+  .description("Wait for a workspace to finish")
+  .arguments("<id:string>")
+  .option("--host <host:string>", "NATS host (default: localhost)")
+  .option("--port <port:number>", "NATS port (default: 4222)")
+  .option("--subject <subject:string>", "NATS subject (default: vk.notify)")
+  .option(
+    "--timeout <seconds:number>",
+    "Max seconds to wait (default: disabled)",
+  )
+  .action(async (options, id: string) => {
+    let timeoutId: number | undefined;
+
+    try {
+      const client = await ApiClient.create();
+      const workspace = await client.getTaskAttempt(id);
+      const initialStatus = createWorkspaceStatusNotification(workspace).status;
+      if (isWorkspaceFinishedStatus(initialStatus)) {
+        console.log(
+          `Workspace ${id} already finished with status ${initialStatus}.`,
+        );
+        return;
+      }
+
+      const { host, port, subject } = await resolveNatsConnectionOptions(
+        options,
+      );
+      const nc = await connect({ servers: [`nats://${host}:${port}`] });
+
+      try {
+        const sub = nc.subscribe(subject);
+        const waitPromise = waitForWorkspaceNotification(
+          notificationStream(sub),
+          id,
+        );
+        let notification;
+        if (options.timeout !== undefined) {
+          const timeoutSeconds = options.timeout;
+          const timeoutMs = timeoutSeconds * 1000;
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(() => {
+              sub.unsubscribe();
+              reject(
+                new Error(
+                  `Timed out waiting ${timeoutSeconds}s for workspace "${id}" on subject "${subject}".`,
+                ),
+              );
+            }, timeoutMs);
+          });
+
+          notification = await Promise.race([waitPromise, timeoutPromise]);
+        } else {
+          notification = await waitPromise;
+        }
+        sub.unsubscribe();
+        console.log(
+          `Workspace ${id} finished with status ${notification.status} on subject "${subject}" at nats://${host}:${port}`,
+        );
+      } finally {
+        if (timeoutId !== undefined) {
+          clearTimeout(timeoutId);
+        }
+        await nc.close();
+      }
+    } catch (error) {
+      handleCliError(error);
+      throw error;
+    }
+  });
+
+taskAttemptsCommand
+  .command("watcher")
+  .description("Watch workspace status changes and publish notifications")
+  .option("--host <host:string>", "NATS host (default: localhost)")
+  .option("--port <port:number>", "NATS port (default: 4222)")
+  .option("--subject <subject:string>", "NATS subject (default: vk.notify)")
+  .option(
+    "--interval <seconds:number>",
+    "Polling interval in seconds (default: 5)",
+  )
+  .action(async (options) => {
+    try {
+      const client = await ApiClient.create();
+      const { host, port, subject } = await resolveNatsConnectionOptions(
+        options,
+      );
+      const intervalSeconds = options.interval ?? 5;
+      const intervalMs = intervalSeconds * 1000;
+      const nc = await connect({ servers: [`nats://${host}:${port}`] });
+
+      try {
+        let previousStatuses = new Map<string, string>();
+
+        while (true) {
+          const workspaces = await client.listTaskAttempts();
+          const changes = detectWorkspaceStatusChanges(
+            workspaces,
+            previousStatuses,
+          );
+
+          for (const change of changes) {
+            nc.publish(subject, encodeNotification(change));
+            console.log(
+              `Published workspace ${change.workspaceId} status ${change.status}.`,
+            );
+          }
+
+          await nc.flush();
+          previousStatuses = snapshotWorkspaceStatuses(workspaces);
+          await new Promise((resolve) => setTimeout(resolve, intervalMs));
+        }
+      } finally {
+        await nc.close();
+      }
     } catch (error) {
       handleCliError(error);
       throw error;
