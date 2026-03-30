@@ -32,6 +32,7 @@ type PromptSourceOptions = {
 };
 
 type RepoOptionValue = string | string[] | undefined;
+type TargetBranchOptionValue = string | string[] | undefined;
 
 const EDITOR_INSTRUCTIONS = [
   "# Enter the workspace prompt.",
@@ -156,9 +157,21 @@ function normalizeRepoOptionValues(repoOption: RepoOptionValue): string[] {
     .filter((value) => value.length > 0);
 }
 
+function normalizeTargetBranchOptionValues(
+  targetBranchOption: TargetBranchOptionValue,
+): string[] {
+  const values = Array.isArray(targetBranchOption)
+    ? targetBranchOption
+    : [targetBranchOption];
+  return values
+    .flatMap((value) => (value ? value.split(",") : []))
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+}
+
 async function resolveWorkspaceRepoInputs(
   repoOption: RepoOptionValue,
-  targetBranch: string,
+  targetBranchOption: TargetBranchOptionValue,
   client: ApiClient,
 ): Promise<Array<{ repo_id: string; target_branch: string }>> {
   const requestedRepos = normalizeRepoOptionValues(repoOption);
@@ -167,8 +180,29 @@ async function resolveWorkspaceRepoInputs(
       requestedRepos.map((repo) => getRepositoryId(repo, client)),
     )
     : [await getRepositoryId(undefined, client)];
+  const targetBranches = normalizeTargetBranchOptionValues(targetBranchOption);
 
-  return repoIds.map((repo_id) => ({ repo_id, target_branch: targetBranch }));
+  if (targetBranches.length === 0) {
+    return repoIds.map((repo_id) => ({ repo_id, target_branch: "main" }));
+  }
+
+  if (targetBranches.length === 1) {
+    return repoIds.map((repo_id) => ({
+      repo_id,
+      target_branch: targetBranches[0],
+    }));
+  }
+
+  if (targetBranches.length !== repoIds.length) {
+    throw new Error(
+      "When using repeated --target-branch, provide exactly one target branch per repository.",
+    );
+  }
+
+  return repoIds.map((repo_id, index) => ({
+    repo_id,
+    target_branch: targetBranches[index],
+  }));
 }
 
 export const taskAttemptsCommand = new Command()
@@ -269,7 +303,9 @@ taskAttemptsCommand
   .option("--repo <repo:string>", "Repository ID or name (repeatable)", {
     collect: true,
   })
-  .option("--target-branch <name:string>", "Target branch name")
+  .option("--target-branch <name:string>", "Target branch name (repeatable)", {
+    collect: true,
+  })
   .option(
     "--executor <executor:string>",
     "Executor profile in <name>:<variant> format",
@@ -283,10 +319,9 @@ taskAttemptsCommand
       const executor = parseExecutorString(
         options.executor || config.defaultExecutor || "CLAUDE_CODE:DEFAULT",
       );
-      const targetBranch = options.targetBranch || "main";
       const repos = await resolveWorkspaceRepoInputs(
         options.repo,
-        targetBranch,
+        options.targetBranch,
         client,
       );
 

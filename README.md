@@ -144,6 +144,7 @@ vk workspace show <attempt-id>
 vk workspace show --json <attempt-id>
 vk workspace create --repo <repo-id-or-name>   # opens $GIT_EDITOR / $VISUAL / $EDITOR if prompt flags are omitted
 vk workspace create --repo repo-1 --repo repo-2 --target-branch develop
+vk workspace create --repo repo-1 --target-branch develop --repo repo-2 --target-branch release
 vk workspace spin-off <attempt-id>             # opens editor if prompt flags are omitted
 vk workspace spin-off <attempt-id> --description "Follow-up work"
 ```
