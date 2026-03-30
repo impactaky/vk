@@ -895,7 +895,7 @@ Deno.test("CLI: vk workspace create --description uses /api/workspaces/start", a
 });
 
 Deno.test(
-  "CLI: vk workspace create supports repeated --repo options",
+  "CLI: vk workspace create supports repeated --repo options with default main",
   async () => {
     const testHome = await Deno.makeTempDir({
       prefix: "vk-workspace-create-multi-repo-",
@@ -982,8 +982,6 @@ Deno.test(
           "repo-1",
           "--repo",
           "repo-two",
-          "--target-branch",
-          "develop",
           "--json",
         ],
         stdout: "piped",
@@ -1008,8 +1006,8 @@ Deno.test(
           prompt: "test",
           executor_config: { executor: "CLAUDE_CODE", variant: "DEFAULT" },
           repos: [
-            { repo_id: "repo-1", target_branch: "develop" },
-            { repo_id: "repo-2", target_branch: "develop" },
+            { repo_id: "repo-1", target_branch: "main" },
+            { repo_id: "repo-2", target_branch: "main" },
           ],
         }),
       );
@@ -1155,7 +1153,7 @@ Deno.test(
 );
 
 Deno.test(
-  "CLI: vk workspace create rejects mismatched repeated --target-branch counts",
+  "CLI: vk workspace create rejects mismatched --target-branch counts",
   async () => {
     const testHome = await Deno.makeTempDir({
       prefix: "vk-workspace-create-target-branch-mismatch-",
@@ -1228,10 +1226,6 @@ Deno.test(
           "repo-two",
           "--target-branch",
           "develop",
-          "--target-branch",
-          "release",
-          "--target-branch",
-          "hotfix",
         ],
         stdout: "piped",
         stderr: "piped",
@@ -1247,7 +1241,7 @@ Deno.test(
       assertEquals(code, 1);
       assertEquals(
         stderrText.includes(
-          "When using repeated --target-branch, provide exactly one target branch per repository.",
+          "When using --target-branch, provide exactly one target branch per repository.",
         ),
         true,
       );

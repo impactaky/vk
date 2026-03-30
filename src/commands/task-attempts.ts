@@ -186,16 +186,9 @@ async function resolveWorkspaceRepoInputs(
     return repoIds.map((repo_id) => ({ repo_id, target_branch: "main" }));
   }
 
-  if (targetBranches.length === 1) {
-    return repoIds.map((repo_id) => ({
-      repo_id,
-      target_branch: targetBranches[0],
-    }));
-  }
-
   if (targetBranches.length !== repoIds.length) {
     throw new Error(
-      "When using repeated --target-branch, provide exactly one target branch per repository.",
+      "When using --target-branch, provide exactly one target branch per repository.",
     );
   }
 

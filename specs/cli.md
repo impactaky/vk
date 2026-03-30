@@ -189,9 +189,8 @@ Current top-level commands:
 - Prompt content must be non-empty text (empty/whitespace input is rejected).
 - Optional options:
   - `--target-branch <name>` (repeatable; defaults to `main`)
-  - one `--target-branch` value applies to all selected repositories
   - repeated `--target-branch` values map to repeated `--repo` values by order
-  - if multiple `--target-branch` values are provided, the count must match the selected repository count
+  - if any `--target-branch` values are provided, the count must match the selected repository count
   - `--executor <name:variant>` (defaults to configured `defaultExecutor`,
     otherwise `CLAUDE_CODE:DEFAULT`)
 - API request:
