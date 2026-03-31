@@ -188,7 +188,9 @@ Current top-level commands:
     existing repository resolver behavior
 - Prompt content must be non-empty text (empty/whitespace input is rejected).
 - Optional options:
-  - `--target-branch <name>` (defaults to `main`)
+  - `--target-branch <name>` (repeatable; defaults to `main`)
+  - repeated `--target-branch` values map to repeated `--repo` values by order
+  - if any `--target-branch` values are provided, the count must match the selected repository count
   - `--executor <name:variant>` (defaults to configured `defaultExecutor`,
     otherwise `CLAUDE_CODE:DEFAULT`)
 - API request:

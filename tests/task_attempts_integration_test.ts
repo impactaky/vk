@@ -895,7 +895,7 @@ Deno.test("CLI: vk workspace create --description uses /api/workspaces/start", a
 });
 
 Deno.test(
-  "CLI: vk workspace create supports repeated --repo options",
+  "CLI: vk workspace create supports repeated --repo options with default main",
   async () => {
     const testHome = await Deno.makeTempDir({
       prefix: "vk-workspace-create-multi-repo-",
@@ -982,8 +982,6 @@ Deno.test(
           "repo-1",
           "--repo",
           "repo-two",
-          "--target-branch",
-          "develop",
           "--json",
         ],
         stdout: "piped",
@@ -1008,14 +1006,245 @@ Deno.test(
           prompt: "test",
           executor_config: { executor: "CLAUDE_CODE", variant: "DEFAULT" },
           repos: [
-            { repo_id: "repo-1", target_branch: "develop" },
-            { repo_id: "repo-2", target_branch: "develop" },
+            { repo_id: "repo-1", target_branch: "main" },
+            { repo_id: "repo-2", target_branch: "main" },
           ],
         }),
       );
 
       const parsed = JSON.parse(new TextDecoder().decode(stdout));
       assertEquals(parsed.workspace.id, "ws-multi");
+    } finally {
+      await server.shutdown();
+      await Deno.remove(testHome, { recursive: true });
+    }
+  },
+);
+
+Deno.test(
+  "CLI: vk workspace create maps repeated --target-branch values by repo order",
+  async () => {
+    const testHome = await Deno.makeTempDir({
+      prefix: "vk-workspace-create-per-repo-branch-",
+    });
+    let workspaceCreateBody = "";
+
+    const server = Deno.serve(
+      { hostname: "127.0.0.1", port: 0 },
+      async (request) => {
+        const { pathname } = new URL(request.url);
+
+        if (pathname === "/api/repos") {
+          return Response.json({
+            success: true,
+            data: [
+              {
+                id: "repo-1",
+                path: "/tmp/repo-1",
+                name: "repo-one",
+                display_name: "Repo One",
+                setup_script: null,
+                cleanup_script: null,
+                copy_files: null,
+                parallel_setup_script: false,
+                dev_server_script: null,
+                default_target_branch: null,
+                default_working_dir: null,
+                created_at: "2026-01-01T00:00:00Z",
+                updated_at: "2026-01-01T00:00:00Z",
+              },
+              {
+                id: "repo-2",
+                path: "/tmp/repo-2",
+                name: "repo-two",
+                display_name: "Repo Two",
+                setup_script: null,
+                cleanup_script: null,
+                copy_files: null,
+                parallel_setup_script: false,
+                dev_server_script: null,
+                default_target_branch: null,
+                default_working_dir: null,
+                created_at: "2026-01-01T00:00:00Z",
+                updated_at: "2026-01-01T00:00:00Z",
+              },
+            ],
+          });
+        }
+
+        if (pathname === "/api/workspaces/start") {
+          workspaceCreateBody = await request.text();
+          return Response.json({
+            success: true,
+            data: {
+              workspace: {
+                id: "ws-per-repo-branch",
+                branch: "feature/per-repo-branch",
+                name: "Workspace Per Repo Branch",
+              },
+              execution_process: { id: "proc-per-repo-branch" },
+            },
+          });
+        }
+
+        return new Response("Not found", { status: 404 });
+      },
+    );
+
+    try {
+      const address = server.addr as Deno.NetAddr;
+      const command = new Deno.Command("deno", {
+        args: [
+          "run",
+          "--allow-net",
+          "--allow-read",
+          "--allow-write",
+          "--allow-env",
+          "src/main.ts",
+          "workspace",
+          "create",
+          "--description",
+          "test",
+          "--repo",
+          "repo-1",
+          "--repo",
+          "repo-two",
+          "--target-branch",
+          "develop",
+          "--target-branch",
+          "release",
+          "--json",
+        ],
+        stdout: "piped",
+        stderr: "piped",
+        env: {
+          VK_API_URL: `http://127.0.0.1:${address.port}`,
+          HOME: testHome,
+        },
+      });
+
+      const { code, stdout, stderr } = await command.output();
+      const stderrText = new TextDecoder().decode(stderr);
+
+      assertEquals(
+        code,
+        0,
+        `Expected exit code 0 for per-repo target branches. stderr: ${stderrText}`,
+      );
+      assertEquals(
+        workspaceCreateBody,
+        JSON.stringify({
+          prompt: "test",
+          executor_config: { executor: "CLAUDE_CODE", variant: "DEFAULT" },
+          repos: [
+            { repo_id: "repo-1", target_branch: "develop" },
+            { repo_id: "repo-2", target_branch: "release" },
+          ],
+        }),
+      );
+
+      const parsed = JSON.parse(new TextDecoder().decode(stdout));
+      assertEquals(parsed.workspace.id, "ws-per-repo-branch");
+    } finally {
+      await server.shutdown();
+      await Deno.remove(testHome, { recursive: true });
+    }
+  },
+);
+
+Deno.test(
+  "CLI: vk workspace create rejects mismatched --target-branch counts",
+  async () => {
+    const testHome = await Deno.makeTempDir({
+      prefix: "vk-workspace-create-target-branch-mismatch-",
+    });
+
+    const server = Deno.serve(
+      { hostname: "127.0.0.1", port: 0 },
+      (request) => {
+        const { pathname } = new URL(request.url);
+
+        if (pathname === "/api/repos") {
+          return Response.json({
+            success: true,
+            data: [
+              {
+                id: "repo-1",
+                path: "/tmp/repo-1",
+                name: "repo-one",
+                display_name: "Repo One",
+                setup_script: null,
+                cleanup_script: null,
+                copy_files: null,
+                parallel_setup_script: false,
+                dev_server_script: null,
+                default_target_branch: null,
+                default_working_dir: null,
+                created_at: "2026-01-01T00:00:00Z",
+                updated_at: "2026-01-01T00:00:00Z",
+              },
+              {
+                id: "repo-2",
+                path: "/tmp/repo-2",
+                name: "repo-two",
+                display_name: "Repo Two",
+                setup_script: null,
+                cleanup_script: null,
+                copy_files: null,
+                parallel_setup_script: false,
+                dev_server_script: null,
+                default_target_branch: null,
+                default_working_dir: null,
+                created_at: "2026-01-01T00:00:00Z",
+                updated_at: "2026-01-01T00:00:00Z",
+              },
+            ],
+          });
+        }
+
+        return new Response("Not found", { status: 404 });
+      },
+    );
+
+    try {
+      const address = server.addr as Deno.NetAddr;
+      const command = new Deno.Command("deno", {
+        args: [
+          "run",
+          "--allow-net",
+          "--allow-read",
+          "--allow-write",
+          "--allow-env",
+          "src/main.ts",
+          "workspace",
+          "create",
+          "--description",
+          "test",
+          "--repo",
+          "repo-1",
+          "--repo",
+          "repo-two",
+          "--target-branch",
+          "develop",
+        ],
+        stdout: "piped",
+        stderr: "piped",
+        env: {
+          VK_API_URL: `http://127.0.0.1:${address.port}`,
+          HOME: testHome,
+        },
+      });
+
+      const { code, stderr } = await command.output();
+      const stderrText = new TextDecoder().decode(stderr);
+
+      assertEquals(code, 1);
+      assertEquals(
+        stderrText.includes(
+          "When using --target-branch, provide exactly one target branch per repository.",
+        ),
+        true,
+      );
     } finally {
       await server.shutdown();
       await Deno.remove(testHome, { recursive: true });
