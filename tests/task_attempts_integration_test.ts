@@ -1161,7 +1161,7 @@ Deno.test(
 
     const server = Deno.serve(
       { hostname: "127.0.0.1", port: 0 },
-      async (request) => {
+      (request) => {
         const { pathname } = new URL(request.url);
 
         if (pathname === "/api/repos") {
